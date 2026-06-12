@@ -84,9 +84,9 @@ export default function AdminOverview() {
             {recent.map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-2 py-3 text-sm">
                 <span className="font-medium text-ink">
-                  {r.firstName} {r.lastName}
+                  {r.playerName || `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim()}
                 </span>
-                <span className="text-muted" dir="ltr">{r.phone}</span>
+                <span className="text-muted" dir="ltr">{r.phoneFather || r.phoneMother || r.phonePlayer || r.phone || ""}</span>
                 <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_BADGE[r.status]}`}>
                   {t.admin.status[r.status]}
                 </span>

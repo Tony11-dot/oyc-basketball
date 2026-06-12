@@ -34,8 +34,10 @@ fallback **won't persist**. Wire up these free stores:
 - **Data → Upstash Redis** (free, no card): create a database at
   <https://upstash.com>, copy the **REST URL** + **REST token** into
   `KV_REST_API_URL` / `KV_REST_API_TOKEN`.
-- **Uploads → Vercel Blob** (free allowance on Hobby): Vercel project →
-  **Storage → Create → Blob**, then copy `BLOB_READ_WRITE_TOKEN`.
+- **Uploads + filled registration PDFs → Vercel Blob** (free allowance on
+  Hobby): Vercel project → **Storage → Create → Blob**, then copy
+  `BLOB_READ_WRITE_TOKEN`. Without it, registration PDFs are emailed but the
+  admin "View PDF" button has nothing persistent to open.
 
 Until these are set the public site still renders (seeded content), but admin
 edits, registrations, and uploads won't be saved.

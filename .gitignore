@@ -40,7 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Runtime data (reseeds from src/lib/seed.ts) and uploads
-/data/*.json
+# Runtime data (reseeds from src/lib/seed.ts), generated PDFs, and uploads
+/data/
 /public/uploads/*
 !/public/uploads/.gitkeep

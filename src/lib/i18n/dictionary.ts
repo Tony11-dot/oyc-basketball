@@ -51,6 +51,17 @@ export interface Dict {
     registerAnother: string;
     perks: string[];
     errors: { required: string; phone: string; email: string; generic: string };
+    form: {
+      sectionPlayer: string; sectionParents: string; sectionContact: string; sectionClub: string; sectionSign: string;
+      player: string; idNumber: string; birthDate: string; phonePlayer: string;
+      father: string; mother: string; phoneFather: string; phoneMother: string;
+      address: string; school: string; grade: string;
+      jerseySize: string; jerseyPlaceholder: string;
+      payment: string; paymentPlaceholder: string; paymentCash: string; paymentCheck: string; paymentCard: string;
+      guardian: string; date: string;
+      signature: string; signatureHint: string; clear: string;
+      consent: string; feeNote: string; optional: string;
+    };
   };
   footer: { contact: string; address: string; follow: string; rights: string; adminLink: string };
   admin: {
@@ -184,6 +195,8 @@ export interface Dict {
       delete: string;
       deleteConfirm: string;
       allStatuses: string;
+      viewPdf: string;
+      noPdf: string;
     };
     status: { new: string; signed: string; archived: string };
     overview: { totalRegs: string; thisMonth: string; teams: string; players: string; latest: string; viewAll: string; none: string };
@@ -223,15 +236,28 @@ export const dictionaries: Record<Locale, Dict> = {
       email: "البريد الإلكتروني",
       notes: "ملاحظات",
       notesOptional: "ملاحظات (اختياري)",
-      submit: "متابعة إلى التوقيع",
-      submitting: "جارٍ الفتح…",
-      successTitle: "تم استلام بياناتك!",
-      successBody: "فتحنا لك استمارة التوقيع — أكمل التوقيع عبر DocuSign.",
+      submit: "إرسال التسجيل",
+      submitting: "جارٍ الإرسال…",
+      successTitle: "تم استلام تسجيلك!",
+      successBody: "أرسلنا تأكيداً إلى بريدك الإلكتروني، وستتواصل معك إدارة النادي قريباً.",
       signCta: "فتح استمارة التوقيع",
       signHelp: "ستُفتح استمارة DocuSign بنافذة جديدة، مع تعبئة اسمك وبريدك مسبقاً.",
       registerAnother: "تسجيل شخص آخر",
       perks: ["تدريبات منتظمة", "مباريات في دوري IBBA", "روح أرثوذكسية وأخوّة"],
       errors: { required: "حقل مطلوب", phone: "رقم هاتف غير صالح", email: "بريد إلكتروني غير صالح", generic: "حدث خطأ. حاول مجدداً." },
+      form: {
+        sectionPlayer: "بيانات اللاعب/ة", sectionParents: "بيانات الوالدين", sectionContact: "العنوان والمدرسة", sectionClub: "النادي", sectionSign: "الإقرار والتوقيع",
+        player: "اسم اللاعب/ة", idNumber: "رقم الهويّة", birthDate: "تاريخ الميلاد", phonePlayer: "هاتف اللاعب/ة",
+        father: "اسم الأب", mother: "اسم الأم", phoneFather: "هاتف الأب", phoneMother: "هاتف الأم",
+        address: "العنوان", school: "المدرسة", grade: "الصف",
+        jerseySize: "مقاس الزيّ الرياضي", jerseyPlaceholder: "— اختر المقاس —",
+        payment: "طريقة دفع الرسوم", paymentPlaceholder: "— طريقة الدفع —", paymentCash: "نقداً", paymentCheck: "شيكات", paymentCard: "بطاقة اعتماد",
+        guardian: "اسم وليّ الأمر", date: "التاريخ",
+        signature: "توقيع وليّ الأمر", signatureHint: "وقّع بإصبعك أو الفأرة داخل الإطار", clear: "مسح",
+        consent: "أُقرّ بأنني وليّ أمر اللاعب/ة، وأوافق على شروط التسجيل، وعلى نشر صور ابني/ابنتي ضمن فعاليات الجمعية، وأن التسجيل مشروط بفحص طبّي ودفع الرسوم.",
+        feeNote: "رسوم التسجيل السنوية: 3,500 ش.ج (لا تشمل 30 ش.ج لاتحاد كرة السلة). التسجيل مشروط بتسديد رسوم السنوات السابقة.",
+        optional: "اختياري",
+      },
     },
     footer: { contact: "تواصل", address: "العنوان", follow: "تابعنا", rights: "جميع الحقوق محفوظة.", adminLink: "الإدارة" },
     admin: {
@@ -365,6 +391,8 @@ export const dictionaries: Record<Locale, Dict> = {
         delete: "حذف",
         deleteConfirm: "حذف هذا التسجيل؟ لا يمكن التراجع.",
         allStatuses: "كل الحالات",
+        viewPdf: "عرض الاستمارة (PDF)",
+        noPdf: "لا توجد استمارة محفوظة",
       },
       status: { new: "جديد", signed: "موقَّع", archived: "مؤرشف" },
       overview: { totalRegs: "إجمالي التسجيلات", thisMonth: "هذا الشهر", teams: "الفرق", players: "اللاعبون", latest: "أحدث التسجيلات", viewAll: "عرض الكل", none: "لا تسجيلات بعد." },
@@ -402,15 +430,28 @@ export const dictionaries: Record<Locale, Dict> = {
       email: "אימייל",
       notes: "הערות",
       notesOptional: "הערות (לא חובה)",
-      submit: "המשך לחתימה",
-      submitting: "פותח…",
-      successTitle: "הפרטים התקבלו!",
-      successBody: "פתחנו עבורכם את טופס החתימה — השלימו את החתימה ב-DocuSign.",
+      submit: "שליחת הרשמה",
+      submitting: "שולח…",
+      successTitle: "ההרשמה התקבלה!",
+      successBody: "שלחנו אישור לאימייל שלכם, והמועדון יצור איתכם קשר בקרוב.",
       signCta: "פתיחת טופס החתימה",
       signHelp: "טופס DocuSign ייפתח בכרטיסייה חדשה, עם השם והאימייל ממולאים מראש.",
       registerAnother: "הרשמה נוספת",
       perks: ["אימונים קבועים", "משחקים בליגת IBBA", "רוח אורתודוקסית ואחווה"],
       errors: { required: "שדה חובה", phone: "מספר טלפון לא תקין", email: "כתובת אימייל לא תקינה", generic: "אירעה שגיאה. נסו שוב." },
+      form: {
+        sectionPlayer: "פרטי השחקן/ית", sectionParents: "פרטי ההורים", sectionContact: "כתובת ובית ספר", sectionClub: "מועדון", sectionSign: "הצהרה וחתימה",
+        player: "שם השחקן/ית", idNumber: "מספר זהות", birthDate: "תאריך לידה", phonePlayer: "טלפון השחקן/ית",
+        father: "שם האב", mother: "שם האם", phoneFather: "טלפון האב", phoneMother: "טלפון האם",
+        address: "כתובת", school: "בית ספר", grade: "כיתה",
+        jerseySize: "מידת מדים", jerseyPlaceholder: "— בחר מידה —",
+        payment: "אופן תשלום", paymentPlaceholder: "— אופן תשלום —", paymentCash: "מזומן", paymentCheck: "צ'קים", paymentCard: "כרטיס אשראי",
+        guardian: "שם האפוטרופוס", date: "תאריך",
+        signature: "חתימת האפוטרופוס", signatureHint: "חתמו עם האצבע או העכבר במסגרת", clear: "ניקוי",
+        consent: "אני מאשר/ת כי אני האפוטרופוס של השחקן/ית, מסכים/ה לתנאי ההרשמה ולפרסום תמונות ילדיי במסגרת פעילויות העמותה, וכי ההרשמה מותנית בבדיקה רפואית ובתשלום.",
+        feeNote: "דמי הרשמה שנתיים: 3,500 ₪ (לא כולל 30 ₪ לאיגוד הכדורסל). ההרשמה מותנית בתשלום חובות קודמים.",
+        optional: "רשות",
+      },
     },
     footer: { contact: "צור קשר", address: "כתובת", follow: "עקבו אחרינו", rights: "כל הזכויות שמורות.", adminLink: "ניהול" },
     admin: {
@@ -544,6 +585,8 @@ export const dictionaries: Record<Locale, Dict> = {
         delete: "מחיקה",
         deleteConfirm: "למחוק את ההרשמה? לא ניתן לבטל.",
         allStatuses: "כל הסטטוסים",
+        viewPdf: "צפייה בטופס (PDF)",
+        noPdf: "אין טופס שמור",
       },
       status: { new: "חדש", signed: "חתום", archived: "בארכיון" },
       overview: { totalRegs: "סך ההרשמות", thisMonth: "החודש", teams: "קבוצות", players: "שחקנים", latest: "הרשמות אחרונות", viewAll: "הצגת הכל", none: "אין הרשמות עדיין." },
@@ -581,15 +624,28 @@ export const dictionaries: Record<Locale, Dict> = {
       email: "Email",
       notes: "Notes",
       notesOptional: "Notes (optional)",
-      submit: "Continue to signing",
-      submitting: "Opening…",
-      successTitle: "Details received!",
-      successBody: "We opened the signing form for you — complete it via DocuSign.",
+      submit: "Submit registration",
+      submitting: "Submitting…",
+      successTitle: "Registration received!",
+      successBody: "We emailed you a confirmation and the club will be in touch soon.",
       signCta: "Open the signing form",
       signHelp: "A DocuSign form opens in a new tab, with your name and email pre-filled.",
       registerAnother: "Register someone else",
       perks: ["Regular training", "Games in the IBBA league", "Orthodox spirit & brotherhood"],
       errors: { required: "Required field", phone: "Invalid phone number", email: "Invalid email address", generic: "Something went wrong. Please try again." },
+      form: {
+        sectionPlayer: "Player details", sectionParents: "Parents", sectionContact: "Address & school", sectionClub: "Club", sectionSign: "Declaration & signature",
+        player: "Player name", idNumber: "ID number", birthDate: "Date of birth", phonePlayer: "Player phone",
+        father: "Father's name", mother: "Mother's name", phoneFather: "Father's phone", phoneMother: "Mother's phone",
+        address: "Address", school: "School", grade: "Grade / class",
+        jerseySize: "Jersey size", jerseyPlaceholder: "— Select size —",
+        payment: "Payment method", paymentPlaceholder: "— Payment method —", paymentCash: "Cash", paymentCheck: "Cheques", paymentCard: "Credit card",
+        guardian: "Guardian name", date: "Date",
+        signature: "Guardian signature", signatureHint: "Sign with your finger or mouse in the box", clear: "Clear",
+        consent: "I confirm I am the player's guardian, agree to the registration terms and to publishing my child's photos within the club's activities, and that registration is subject to a medical check and payment of fees.",
+        feeNote: "Annual registration fee: ₪3,500 (excludes the ₪30 basketball-association fee). Registration is subject to payment of previous years' dues.",
+        optional: "optional",
+      },
     },
     footer: { contact: "Contact", address: "Address", follow: "Follow us", rights: "All rights reserved.", adminLink: "Admin" },
     admin: {
@@ -723,6 +779,8 @@ export const dictionaries: Record<Locale, Dict> = {
         delete: "Delete",
         deleteConfirm: "Delete this registration? This cannot be undone.",
         allStatuses: "All statuses",
+        viewPdf: "View form (PDF)",
+        noPdf: "No saved form",
       },
       status: { new: "New", signed: "Signed", archived: "Archived" },
       overview: { totalRegs: "Total registrations", thisMonth: "This month", teams: "Teams", players: "Players", latest: "Latest registrations", viewAll: "View all", none: "No registrations yet." },

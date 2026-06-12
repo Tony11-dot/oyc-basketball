@@ -63,43 +63,60 @@ const row = (label: string, value: string) =>
 
 /**
  * Fire both emails for a new registration: a confirmation to the registrant and
- * a notification to the club inbox. Never throws — failures are logged so a mail
- * problem can't break the registration itself.
+ * a notification to the club inbox, each with the filled PDF attached. Never
+ * throws — failures are logged so a mail problem can't break the registration.
  */
-export async function sendRegistrationEmails(reg: Registration): Promise<void> {
+export async function sendRegistrationEmails(reg: Registration, pdf?: Uint8Array): Promise<void> {
   if (!mailEnabled()) {
     console.warn("[mail] SMTP_PASS not set — skipping registration emails");
     return;
   }
-  const name = `${reg.firstName} ${reg.lastName}`.trim();
+  const player = reg.playerName || `${reg.firstName ?? ""} ${reg.lastName ?? ""}`.trim();
+  const greet = reg.guardianName || player;
+  const phone = reg.phoneFather || reg.phoneMother || reg.phonePlayer || reg.phone || "";
   const t = transporter();
 
   const details = `<table role="presentation" style="width:100%;border-collapse:collapse">
-      ${row("Name", name)}${row("Phone", reg.phone)}${row("Email", reg.email)}
-      ${reg.notes ? row("Notes", reg.notes) : ""}
+      ${row("Player", player)}
+      ${reg.idNumber ? row("ID number", reg.idNumber) : ""}
+      ${reg.birthDate ? row("Date of birth", reg.birthDate) : ""}
+      ${reg.guardianName ? row("Guardian", reg.guardianName) : ""}
+      ${phone ? row("Phone", phone) : ""}
+      ${row("Email", reg.email)}
+      ${reg.jerseySize ? row("Jersey size", reg.jerseySize) : ""}
+      ${reg.paymentMethod ? row("Payment", reg.paymentMethod) : ""}
+      ${reg.school ? row("School", reg.school) : ""}
+      ${reg.classGrade ? row("Grade", reg.classGrade) : ""}
+      ${reg.address ? row("Address", reg.address) : ""}
     </table>`;
+
+  const attachments = pdf
+    ? [{ filename: `registration-${player || reg.id}.pdf`, content: Buffer.from(pdf), contentType: "application/pdf" }]
+    : undefined;
 
   const confirmation = t.sendMail({
     from: FROM,
     to: reg.email,
     subject: "We received your registration — OYC Nazareth",
-    text: `Hi ${name},\n\nThank you for registering with OYC Nazareth Orthodox Basketball Club. We received your details and a club member will be in touch soon.\n\n— OYC Nazareth`,
+    text: `Hi ${greet},\n\nThank you for registering ${player} with OYC Nazareth Orthodox Basketball Club. Your completed form is attached, and a club member will be in touch soon.\n\n— OYC Nazareth`,
     html: shell(
-      `Thank you, ${esc(reg.firstName)}! 🏀`,
+      `Thank you, ${esc(greet)}! 🏀`,
       `<p style="color:#5a6b82;font-size:14px;line-height:1.6">
-         Thank you for registering with <b>OYC Nazareth Orthodox Basketball Club</b>.
-         We received your details and a club member will be in touch soon.
+         Thank you for registering <b>${esc(player)}</b> with <b>OYC Nazareth Orthodox Basketball Club</b>.
+         Your completed registration form is attached, and a club member will be in touch soon.
        </p>${details}`,
     ),
+    attachments,
   });
 
   const notify = t.sendMail({
     from: FROM,
     to: ADMIN_TO,
     replyTo: reg.email,
-    subject: `New registration: ${name}`,
-    text: `New registration\n\nName: ${name}\nPhone: ${reg.phone}\nEmail: ${reg.email}${reg.notes ? `\nNotes: ${reg.notes}` : ""}`,
+    subject: `New registration: ${player}`,
+    text: `New registration\n\nPlayer: ${player}\nGuardian: ${reg.guardianName ?? ""}\nPhone: ${phone}\nEmail: ${reg.email}`,
     html: shell("New registration received", details),
+    attachments,
   });
 
   const results = await Promise.allSettled([confirmation, notify]);

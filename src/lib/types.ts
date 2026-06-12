@@ -101,18 +101,53 @@ export interface GalleryImage {
   aspectRatio?: string;
 }
 
-/** A registration submitted from the public site (before/after DocuSign). */
+/** A registration submitted from the public site. Mirrors the official OYC
+ * Nazareth registration form (استمارة التسجيل) — every field below maps to a
+ * field in /public/forms/registration-template.pdf (see lib/registrationPdf). */
 export interface Registration {
   id: string;
   createdAt: string; // ISO timestamp
-  firstName: string;
-  lastName: string;
-  phone: string;
-  email: string;
-  notes?: string;
   status: RegistrationStatus;
-  /** Set when the signer is recorded as having completed the DocuSign form. */
+
+  // --- Player ---
+  playerName: string;
+  idNumber: string;
+  birthDate: string;
+  phonePlayer?: string;
+
+  // --- Parents ---
+  fatherName?: string;
+  motherName?: string;
+  phoneFather?: string;
+  phoneMother?: string;
+
+  // --- Contact / school ---
+  email: string;
+  address?: string;
+  school?: string;
+  classGrade?: string;
+
+  // --- Club ---
+  jerseySize?: string;
+  paymentMethod?: string;
+
+  // --- Signing ---
+  guardianName: string;
+  dateSigned?: string;
+  /** True once a signature image was captured + drawn onto the filled PDF. */
+  hasSignature?: boolean;
+  /** Vercel Blob URL of the filled PDF (production). In dev the PDF lives on
+   * disk and is served by /api/registrations/[id]/pdf instead. */
+  pdfUrl?: string;
+
+  /** Set when the registration is marked completed in the admin. */
   signedAt?: string;
+
+  // --- Legacy (older records / seed data) ---
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  notes?: string;
 }
 
 /** Per-field text styling chosen in the admin Content editor. All optional —

@@ -3,6 +3,7 @@ import { getRegistrations, updateRegistrations } from "@/lib/db";
 import { isAuthed } from "@/lib/auth";
 import { validateRegistration } from "@/lib/validation";
 import { sendRegistrationEmails } from "@/lib/mail";
+import { getAssets, fillRegistrationPdf, storeFilledPdf } from "@/lib/registrationPdf";
 import type { Registration } from "@/lib/types";
 
 // GET — list registrations (admin only), newest first.
@@ -28,19 +29,38 @@ export async function POST(request: Request) {
   const result = validateRegistration(body);
   if (!result.ok) return Response.json({ error: result.error }, { status: 422 });
 
+  const signature =
+    typeof (body as Record<string, unknown>).signature === "string"
+      ? ((body as Record<string, unknown>).signature as string)
+      : undefined;
+  const id = randomUUID();
+
+  // Generate + store the filled official PDF. Best-effort: a PDF/storage hiccup
+  // must never lose the registration, so we record it either way.
+  let pdf: Uint8Array | undefined;
+  let pdfUrl: string | undefined;
+  try {
+    const { template, font } = await getAssets(request.url);
+    pdf = await fillRegistrationPdf(template, font, result.value, signature);
+    ({ pdfUrl } = await storeFilledPdf(id, pdf));
+  } catch (e) {
+    console.error("[registrations] PDF generation/storage failed:", e);
+  }
+
   const registration: Registration = {
-    id: randomUUID(),
+    id,
     createdAt: new Date().toISOString(),
-    ...result.value,
     status: "new",
+    ...result.value,
+    hasSignature: !!signature,
+    pdfUrl,
   };
 
   await updateRegistrations((list) => [registration, ...list]);
 
-  // Send confirmation + club notification. sendRegistrationEmails never throws,
-  // so a mail failure can't break the registration; we still await it so the
-  // serverless function stays alive until the SMTP exchange completes.
-  await sendRegistrationEmails(registration);
+  // Confirmation + club notification with the filled PDF attached. Never throws;
+  // awaited so the serverless function stays alive through the SMTP exchange.
+  await sendRegistrationEmails(registration, pdf);
 
   return Response.json({ registration }, { status: 201 });
 }

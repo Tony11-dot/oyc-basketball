@@ -16,6 +16,7 @@ const STATUS_BADGE: Record<RegistrationStatus, string> = {
 
 export default function RegistrationsAdmin() {
   const { t } = useI18n();
+  const f = t.register.form;
   const toast = useToast();
   const [list, setList] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,11 +40,11 @@ export default function RegistrationsAdmin() {
     return list.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
       if (!q) return true;
-      return (
-        `${r.firstName} ${r.lastName}`.toLowerCase().includes(q) ||
-        r.phone.toLowerCase().includes(q) ||
-        r.email.toLowerCase().includes(q)
-      );
+      const hay = [
+        playerOf(r), r.idNumber, r.email, r.guardianName,
+        r.phonePlayer, r.phoneFather, r.phoneMother, r.phone,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
     });
   }, [list, query, statusFilter]);
 
@@ -128,10 +129,8 @@ export default function RegistrationsAdmin() {
                   onClick={() => setOpenId(r.id)}
                   className="cursor-pointer border-b border-line last:border-0 transition hover:bg-surface"
                 >
-                  <td className="px-4 py-3 font-medium text-ink">
-                    {r.firstName} {r.lastName}
-                  </td>
-                  <td className="hidden px-4 py-3 text-muted sm:table-cell" dir="ltr">{r.phone}</td>
+                  <td className="px-4 py-3 font-medium text-ink">{playerOf(r)}</td>
+                  <td className="hidden px-4 py-3 text-muted sm:table-cell" dir="ltr">{phoneOf(r)}</td>
                   <td className="hidden px-4 py-3 text-muted md:table-cell" dir="ltr">{r.email}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_BADGE[r.status]}`}>
@@ -152,13 +151,40 @@ export default function RegistrationsAdmin() {
         {open && (
           <div className="space-y-4 text-sm">
             <div className="grid grid-cols-2 gap-3">
-              <Detail label={t.admin.reg.name} value={`${open.firstName} ${open.lastName}`} />
+              <Detail label={f.player} value={playerOf(open)} />
               <Detail label={t.admin.reg.status} value={t.admin.status[open.status]} />
-              <Detail label={t.admin.reg.phone} value={open.phone} ltr />
+              {open.idNumber && <Detail label={f.idNumber} value={open.idNumber} ltr />}
+              {open.birthDate && <Detail label={f.birthDate} value={open.birthDate} ltr />}
+              {open.guardianName && <Detail label={f.guardian} value={open.guardianName} />}
+              {open.fatherName && <Detail label={f.father} value={open.fatherName} />}
+              {open.motherName && <Detail label={f.mother} value={open.motherName} />}
+              {open.phoneFather && <Detail label={f.phoneFather} value={open.phoneFather} ltr />}
+              {open.phoneMother && <Detail label={f.phoneMother} value={open.phoneMother} ltr />}
+              {open.phonePlayer && <Detail label={f.phonePlayer} value={open.phonePlayer} ltr />}
+              {(open.phone && !open.playerName) && <Detail label={t.admin.reg.phone} value={open.phone} ltr />}
               <Detail label={t.admin.reg.email} value={open.email} ltr />
+              {open.school && <Detail label={f.school} value={open.school} />}
+              {open.classGrade && <Detail label={f.grade} value={open.classGrade} />}
+              {open.jerseySize && <Detail label={f.jerseySize} value={open.jerseySize} ltr />}
+              {open.paymentMethod && <Detail label={f.payment} value={open.paymentMethod} />}
+              {open.address && <Detail label={f.address} value={open.address} />}
+              {open.dateSigned && <Detail label={f.date} value={open.dateSigned} ltr />}
               <Detail label={t.admin.reg.date} value={new Date(open.createdAt).toLocaleString()} ltr />
             </div>
             {open.notes && <Detail label={t.admin.reg.notes} value={open.notes} />}
+
+            {hasPdf(open) ? (
+              <a
+                href={`/api/registrations/${open.id}/pdf`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-xl border border-brand/30 bg-brand-50 px-4 py-3 text-sm font-bold text-brand-dark transition hover:bg-brand-100"
+              >
+                📄 {t.admin.reg.viewPdf}
+              </a>
+            ) : (
+              <p className="rounded-xl bg-surface px-4 py-3 text-center text-xs text-muted">{t.admin.reg.noPdf}</p>
+            )}
 
             <div className="flex flex-wrap gap-2 border-t border-line pt-4">
               {open.status !== "signed" ? (
@@ -180,6 +206,15 @@ export default function RegistrationsAdmin() {
     </AdminShell>
   );
 }
+
+// Display the player name (new schema) falling back to legacy first/last.
+const playerOf = (r: Registration) =>
+  r.playerName || `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim();
+// Best contact phone across the new + legacy fields.
+const phoneOf = (r: Registration) =>
+  r.phoneFather || r.phoneMother || r.phonePlayer || r.phone || "";
+// New-schema records always attempt a filled PDF; legacy ones never had one.
+const hasPdf = (r: Registration) => !!(r.pdfUrl || r.playerName);
 
 function Detail({ label, value, ltr }: { label: string; value: string; ltr?: boolean }) {
   return (
