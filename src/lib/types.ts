@@ -1,0 +1,180 @@
+// Shared domain types for the OYC Nazareth basketball site + admin platform.
+
+export type Locale = "ar" | "he" | "en";
+
+export type Localized = Record<Locale, string>;
+
+export type RegistrationStatus = "new" | "signed" | "archived";
+
+/** Admin settings stored in the database (e.g. the changeable admin password). */
+export interface AdminSettings {
+  passwordSalt?: string;
+  passwordHash?: string;
+}
+
+/**
+ * A player in the club roster. Players live in a shared pool and are attached to
+ * one or more teams by id, so the same player can appear on multiple teams and
+ * new teams can pick from existing players (or create a player on the spot).
+ */
+export interface Player {
+  id: string;
+  name: Localized;
+  /** Jersey number (free text so "00" etc. work). */
+  number?: string;
+  /** Playing position, localized (e.g. Guard / Forward / Center). */
+  position?: Localized;
+  image?: string;
+  /** CSS object-position for the cropped photo, e.g. "center top". */
+  imagePosition?: string;
+  /** CSS aspect-ratio for the photo frame, e.g. "4 / 5". */
+  aspectRatio?: string;
+}
+
+/**
+ * A scheduled / played match for a team: against whom, when (date + weekday is
+ * derived from the date), where, and a link to that game on the IBBA site.
+ */
+export interface Match {
+  id: string;
+  opponent: Localized;
+  /** Optional opponent logo/crest. */
+  opponentLogo?: string;
+  /** ISO date-time. The weekday is derived from this for display. */
+  date: string;
+  where: Localized;
+  /** Link to this fixture / standings on the IBBA website. */
+  ibbaLink?: string;
+}
+
+/**
+ * A team. The public "Teams" section lists these as cards; tapping one opens a
+ * full-screen detail sheet with its players, matches and IBBA link. Modeled on
+ * the editable-card pattern (own photo, frame, detail background).
+ */
+export interface Team {
+  id: string;
+  name: Localized;
+  description: Localized;
+  /** Team logo / photo shown on the card. */
+  image: string;
+  imagePosition?: string;
+  aspectRatio?: string;
+  /** Optional background for the full-screen detail view. */
+  detailBg?: string;
+  /** Link to this team's page on the IBBA website. */
+  ibbaLink?: string;
+  /** Players attached to this team, referencing {@link Player.id}. */
+  playerIds: string[];
+  /** Fixtures for this team. */
+  matches: Match[];
+  /** When false the team is hidden from the public site. */
+  enabled: boolean;
+  /** Sort order on the public site and admin list (ascending). */
+  order: number;
+  createdAt: string;
+}
+
+/**
+ * A highlight reel. Each reel is either an uploaded/linked video or an external
+ * embed (YouTube / Instagram). They cycle horizontally "like a train".
+ */
+export interface Highlight {
+  id: string;
+  /** Direct video URL (uploaded mp4/webm, or any direct file link). */
+  videoUrl?: string;
+  /** External video link (YouTube / Instagram) — embedded in an iframe. */
+  embedUrl?: string;
+  /** Optional poster image (shown before play / as a fallback). */
+  poster?: string;
+  caption: Localized;
+  /** CSS aspect-ratio for the reel frame, e.g. "9 / 16" (vertical reels). */
+  aspectRatio?: string;
+}
+
+/** A slide in the photo gallery carousel, managed in the admin. */
+export interface GalleryImage {
+  id: string;
+  image: string;
+  caption: Localized;
+  imagePosition?: string;
+  aspectRatio?: string;
+}
+
+/** A registration submitted from the public site (before/after DocuSign). */
+export interface Registration {
+  id: string;
+  createdAt: string; // ISO timestamp
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  notes?: string;
+  status: RegistrationStatus;
+  /** Set when the signer is recorded as having completed the DocuSign form. */
+  signedAt?: string;
+}
+
+/** Per-field text styling chosen in the admin Content editor. All optional —
+ * unset properties fall back to the site's default design. */
+export interface TextStyle {
+  fontFamily?: string; // id from FONT_OPTIONS
+  fontSize?: number; // px
+  bold?: boolean;
+  italic?: boolean;
+  align?: "start" | "center" | "end";
+  color?: string; // hex
+}
+
+// ---- Custom content blocks (the admin "block builder") ----------------------
+
+export type BlockType = "heading" | "paragraph" | "image" | "button";
+
+/** Max width of a block on larger screens. On phones every block is full-width
+ * so the layout always stays natural and readable. */
+export type BlockWidth = "full" | "wide" | "medium" | "narrow";
+
+export interface Block {
+  id: string;
+  type: BlockType;
+  text?: Localized;
+  image?: string;
+  href?: string;
+  style?: TextStyle;
+  align: "start" | "center" | "end";
+  width: BlockWidth;
+}
+
+/** Where the custom block section sits on the public page. */
+export type BlocksPosition = "afterHero" | "afterTeams" | "beforeRegister" | "beforeFooter";
+
+export interface SiteContent {
+  hero: {
+    title: Localized;
+    subtitle: Localized;
+    body: Localized;
+    image: string;
+    imagePosition?: string;
+    aspectRatio?: string;
+  };
+  footer: {
+    phone: string;
+    email: string;
+    address: Localized;
+    social: { label: string; url: string }[];
+  };
+  /** Optional per-field text styles, keyed by STYLE_KEYS (e.g. "hero.title"). */
+  styles?: Record<string, TextStyle>;
+  /** Admin-built custom blocks and where they render on the page. */
+  blocks?: Block[];
+  blocksPosition?: BlocksPosition;
+  /** Photo gallery carousel slides, managed in the admin. */
+  gallery?: GalleryImage[];
+  /** Optional background image per section, keyed by section id
+   * (home/teams/highlights/gallery/register). */
+  backgrounds?: Record<string, string>;
+  /** Admin-chosen order of the reorderable sections on the home page. */
+  sectionOrder?: string[];
+  /** Section ids hidden from the page + nav (managed in admin → Sections). */
+  hiddenSections?: string[];
+}

@@ -1,0 +1,140 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand palette — deep orthodox navy */
+  --color-brand: #12306e;
+  --color-brand-dark: #0c2150;
+  --color-brand-darker: #081636;
+  --color-brand-light: #3f63b8;
+  --color-brand-50: #eef2fb;
+  --color-brand-100: #d8e1f5;
+  --color-brand-200: #b3c4ec;
+
+  /* Accent — club red (from the crest: stars + banner) */
+  --color-accent: #c62631;
+  --color-accent-dark: #9a1620;
+  --color-accent-light: #ec6b73;
+
+  --color-ink: #101828;
+  --color-muted: #5a6b82;
+  --color-line: #e4ebf3;
+  --color-surface: #f5f8fd;
+
+  --font-sans: var(--font-rubik), var(--font-cairo), -apple-system, "Segoe UI", system-ui, sans-serif;
+
+  --shadow-soft: 0 4px 24px rgba(16, 24, 40, 0.08);
+  --shadow-card: 0 8px 30px rgba(16, 24, 40, 0.1);
+  --shadow-brand: 0 10px 30px rgba(18, 48, 110, 0.28);
+}
+
+/* Arabic renders in Cairo (Rubik has no Arabic glyphs). */
+html[lang="ar"] body {
+  font-family: var(--font-cairo), var(--font-rubik), system-ui, sans-serif;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f1b2d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* offset for the fixed navbar when jumping to #anchors */
+  scroll-padding-top: 84px;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Mirror decorative, direction-aware elements under RTL */
+[dir="rtl"] .flip-x {
+  transform: scaleX(-1);
+}
+
+::selection {
+  background: var(--color-brand-100);
+  color: var(--color-brand-dark);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-brand-200);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-light);
+}
+
+.container-x {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .container-x {
+    padding-inline: 2rem;
+  }
+}
+
+/* Branded gradients used across hero / footer / admin */
+.brand-gradient {
+  background: linear-gradient(135deg, #0c2150 0%, #12306e 55%, #3f63b8 100%);
+}
+
+.brand-gradient-animated {
+  background: linear-gradient(135deg, #081636, #0c2150, #12306e, #3f63b8);
+  background-size: 300% 300%;
+  animation: brandShift 14s ease infinite;
+}
+
+/* Red accent gradient for highlight CTAs / badges */
+.accent-gradient {
+  background: linear-gradient(135deg, #9a1620 0%, #c62631 55%, #ec6b73 100%);
+}
+
+@keyframes brandShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Subtle entrance used by non-Framer elements */
+@keyframes floatUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .brand-gradient-animated {
+    animation: none;
+  }
+}
