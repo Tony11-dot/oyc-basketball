@@ -123,9 +123,10 @@ export interface Dict {
       content: string;
       contentSub: string;
     };
-    contentTabs: { hero: string; highlights: string; gallery: string; historic: string; staff: string; volunteers: string; blocks: string; footer: string; backgrounds: string };
+    contentTabs: { hero: string; highlights: string; gallery: string; historic: string; staff: string; volunteers: string; register: string; blocks: string; footer: string; backgrounds: string };
     people: { addStaff: string; addVolunteer: string; emptyStaff: string; emptyVolunteers: string; name: string; role: string; photo: string };
     historicEditor: { title: string; body: string; image: string };
+    registerEditor: { eyebrow: string; heading: string; subheading: string; feeNote: string; consent: string; perks: string; addPerk: string; feeAmount: string; feeAmountHint: string };
     preview: { label: string };
     toasts: { saved: string; saveError: string };
     imageUpload: { upload: string; replace: string; remove: string; uploading: string; failed: string };
@@ -267,7 +268,7 @@ export const dictionaries: Record<Locale, Dict> = {
     register: {
       eyebrow: "انضمّ إلينا",
       heading: "التسجيل في النادي",
-      subheading: "اترك بياناتك وأكمل استمارة التوقيع عبر DocuSign.",
+      subheading: "املأ بياناتك ووقّع استمارة التسجيل هنا مباشرة.",
       firstName: "الاسم الأول",
       lastName: "اسم العائلة",
       phone: "الهاتف",
@@ -279,7 +280,7 @@ export const dictionaries: Record<Locale, Dict> = {
       successTitle: "تم استلام تسجيلك!",
       successBody: "أرسلنا تأكيداً إلى بريدك الإلكتروني، وستتواصل معك إدارة النادي قريباً.",
       signCta: "فتح استمارة التوقيع",
-      signHelp: "ستُفتح استمارة DocuSign بنافذة جديدة، مع تعبئة اسمك وبريدك مسبقاً.",
+      signHelp: "وقّع داخل الإطار أدناه لإكمال التسجيل.",
       registerAnother: "تسجيل شخص آخر",
       perks: ["تدريبات منتظمة", "مباريات في دوري IBBA", "روح أرثوذكسية وأخوّة"],
       errors: { required: "حقل مطلوب", phone: "رقم هاتف غير صالح", email: "بريد إلكتروني غير صالح", generic: "حدث خطأ. حاول مجدداً." },
@@ -345,9 +346,10 @@ export const dictionaries: Record<Locale, Dict> = {
         content: "المحتوى",
         contentSub: "تحرير النصوص والخطوط والصور. تتحدث المعاينة فوراً؛ تُنشر التغييرات عند الحفظ.",
       },
-      contentTabs: { hero: "الرئيسية", highlights: "أبرز اللقطات", gallery: "الصور", historic: "لمحة تاريخية", staff: "الطاقم", volunteers: "المتطوّعون", blocks: "بلوكات", footer: "التذييل", backgrounds: "الخلفيات" },
+      contentTabs: { hero: "الرئيسية", highlights: "أبرز اللقطات", gallery: "الصور", historic: "لمحة تاريخية", staff: "الطاقم", volunteers: "المتطوّعون", register: "التسجيل", blocks: "بلوكات", footer: "التذييل", backgrounds: "الخلفيات" },
       people: { addStaff: "إضافة عضو طاقم", addVolunteer: "إضافة متطوّع", emptyStaff: "لم تتم إضافة أعضاء الطاقم بعد.", emptyVolunteers: "لم تتم إضافة متطوّعين بعد.", name: "الاسم", role: "الدور", photo: "الصورة" },
       historicEditor: { title: "العنوان", body: "النص", image: "الصورة" },
+      registerEditor: { eyebrow: "تمهيد", heading: "العنوان", subheading: "العنوان الفرعي", feeNote: "ملاحظة الرسوم", consent: "نص الإقرار", perks: "المزايا", addPerk: "إضافة ميزة", feeAmount: "قيمة الرسوم (₪)", feeAmountHint: "المبلغ الذي يُدفع بالبطاقة" },
       preview: { label: "معاينة حية — تتحدث عند الحفظ" },
       toasts: { saved: "تم الحفظ — ظاهر على الموقع", saveError: "تعذّر الحفظ" },
       imageUpload: { upload: "رفع صورة", replace: "استبدال الصورة", remove: "إزالة", uploading: "جارٍ الرفع…", failed: "فشل الرفع" },
@@ -487,7 +489,7 @@ export const dictionaries: Record<Locale, Dict> = {
     register: {
       eyebrow: "הצטרפו אלינו",
       heading: "הרשמה למועדון",
-      subheading: "השאירו פרטים והשלימו את טופס החתימה ב-DocuSign.",
+      subheading: "מלאו את הפרטים וחתמו על טופס ההרשמה כאן.",
       firstName: "שם פרטי",
       lastName: "שם משפחה",
       phone: "טלפון",
@@ -499,7 +501,7 @@ export const dictionaries: Record<Locale, Dict> = {
       successTitle: "ההרשמה התקבלה!",
       successBody: "שלחנו אישור לאימייל שלכם, והמועדון יצור איתכם קשר בקרוב.",
       signCta: "פתיחת טופס החתימה",
-      signHelp: "טופס DocuSign ייפתח בכרטיסייה חדשה, עם השם והאימייל ממולאים מראש.",
+      signHelp: "חתמו במסגרת שלמטה כדי להשלים את ההרשמה.",
       registerAnother: "הרשמה נוספת",
       perks: ["אימונים קבועים", "משחקים בליגת IBBA", "רוח אורתודוקסית ואחווה"],
       errors: { required: "שדה חובה", phone: "מספר טלפון לא תקין", email: "כתובת אימייל לא תקינה", generic: "אירעה שגיאה. נסו שוב." },
@@ -565,9 +567,10 @@ export const dictionaries: Record<Locale, Dict> = {
         content: "תוכן",
         contentSub: "עריכת טקסט, גופנים ותמונות. התצוגה מתעדכנת תוך כדי; השינויים נשמרים בלחיצה.",
       },
-      contentTabs: { hero: "בית", highlights: "שיאים", gallery: "גלריה", historic: "מבט היסטורי", staff: "צוות", volunteers: "מתנדבים", blocks: "בלוקים", footer: "כותרת תחתונה", backgrounds: "רקעים" },
+      contentTabs: { hero: "בית", highlights: "שיאים", gallery: "גלריה", historic: "מבט היסטורי", staff: "צוות", volunteers: "מתנדבים", register: "הרשמה", blocks: "בלוקים", footer: "כותרת תחתונה", backgrounds: "רקעים" },
       people: { addStaff: "הוספת איש צוות", addVolunteer: "הוספת מתנדב", emptyStaff: "עדיין לא נוספו אנשי צוות.", emptyVolunteers: "עדיין לא נוספו מתנדבים.", name: "שם", role: "תפקיד", photo: "תמונה" },
       historicEditor: { title: "כותרת", body: "טקסט", image: "תמונה" },
+      registerEditor: { eyebrow: "תווית", heading: "כותרת", subheading: "כותרת משנה", feeNote: "הערת תשלום", consent: "טקסט הסכמה", perks: "יתרונות", addPerk: "הוספת יתרון", feeAmount: "סכום התשלום (₪)", feeAmountHint: "הסכום שייגבה בכרטיס" },
       preview: { label: "תצוגה חיה — מתעדכנת בעת שמירה" },
       toasts: { saved: "נשמר — באתר עכשיו", saveError: "השמירה נכשלה" },
       imageUpload: { upload: "העלאת תמונה", replace: "החלפת תמונה", remove: "הסרה", uploading: "מעלה…", failed: "ההעלאה נכשלה" },
@@ -707,7 +710,7 @@ export const dictionaries: Record<Locale, Dict> = {
     register: {
       eyebrow: "Join us",
       heading: "Register with the club",
-      subheading: "Leave your details and complete the signing form via DocuSign.",
+      subheading: "Leave your details and sign the registration form right here.",
       firstName: "First name",
       lastName: "Last name",
       phone: "Phone",
@@ -719,7 +722,7 @@ export const dictionaries: Record<Locale, Dict> = {
       successTitle: "Registration received!",
       successBody: "We emailed you a confirmation and the club will be in touch soon.",
       signCta: "Open the signing form",
-      signHelp: "A DocuSign form opens in a new tab, with your name and email pre-filled.",
+      signHelp: "Sign in the box below to complete your registration.",
       registerAnother: "Register someone else",
       perks: ["Regular training", "Games in the IBBA league", "Orthodox spirit & brotherhood"],
       errors: { required: "Required field", phone: "Invalid phone number", email: "Invalid email address", generic: "Something went wrong. Please try again." },
@@ -785,9 +788,10 @@ export const dictionaries: Record<Locale, Dict> = {
         content: "Content",
         contentSub: "Edit text, fonts and images. The preview updates as you type; changes go live on save.",
       },
-      contentTabs: { hero: "Home", highlights: "Highlights", gallery: "Gallery", historic: "Historic", staff: "Staff", volunteers: "Volunteers", blocks: "Blocks", footer: "Footer", backgrounds: "Backgrounds" },
+      contentTabs: { hero: "Home", highlights: "Highlights", gallery: "Gallery", historic: "Historic", staff: "Staff", volunteers: "Volunteers", register: "Register", blocks: "Blocks", footer: "Footer", backgrounds: "Backgrounds" },
       people: { addStaff: "Add staff member", addVolunteer: "Add volunteer", emptyStaff: "No staff added yet.", emptyVolunteers: "No volunteers added yet.", name: "Name", role: "Role", photo: "Photo" },
       historicEditor: { title: "Title", body: "Body", image: "Image" },
+      registerEditor: { eyebrow: "Eyebrow", heading: "Heading", subheading: "Subheading", feeNote: "Fee note", consent: "Consent text", perks: "Perks", addPerk: "Add perk", feeAmount: "Fee amount (₪)", feeAmountHint: "the total charged by card" },
       preview: { label: "Live preview — updates when you Save" },
       toasts: { saved: "Saved — live on the site", saveError: "Could not save" },
       imageUpload: { upload: "Upload image", replace: "Replace image", remove: "Remove", uploading: "Uploading…", failed: "Upload failed" },

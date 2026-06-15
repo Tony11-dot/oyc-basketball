@@ -59,7 +59,7 @@ export default async function HomePage() {
     historic: <Historic key="historic" historic={content.historic ?? EMPTY_HISTORIC} bg={bg("historic")} styles={content.styles} />,
     staff: <People key="staff" kind="staff" people={content.staff ?? []} bg={bg("staff")} tinted />,
     volunteers: <People key="volunteers" kind="volunteers" people={content.volunteers ?? []} bg={bg("volunteers")} />,
-    register: <Register key="register" bg={bg("register")} />,
+    register: <Register key="register" bg={bg("register")} content={content.register} />,
     contact: <Footer key="contact" footer={content.footer} styles={content.styles} />,
   };
   const DEFAULT_ORDER = ["home", "teams", "games", "highlights", "gallery", "historic", "staff", "volunteers", "register", "contact"];

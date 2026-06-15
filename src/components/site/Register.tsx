@@ -3,15 +3,23 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { useToast } from "@/components/ui/Toast";
 import { isValidEmail, isValidPhone } from "@/lib/validation";
-import { JERSEY_SIZES } from "@/lib/registrationFields";
+import { JERSEY_SIZES, FEE_AGOROT } from "@/lib/registrationFields";
+import type { RegisterContent } from "@/lib/types";
 import { SectionBg } from "./SectionBg";
 import { cn } from "@/lib/cn";
 
 // The credit-card option value (matches the PDF/dropdown string).
 const CARD_VALUE = "بطاقة اعتماد";
+
+// Stripe publishable key (public). When unset, the embedded card fields are
+// hidden and card payment falls back to the redirect checkout / offline flow.
+const STRIPE_PK = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = STRIPE_PK ? loadStripe(STRIPE_PK) : null;
 
 interface FormValues {
   playerName: string;
@@ -32,6 +40,9 @@ interface FormValues {
   dateSigned: string;
 }
 
+type PayFn = (opts: { email?: string }) => Promise<{ error?: string; paymentIntentId?: string }>;
+type PayRef = React.MutableRefObject<PayFn | null>;
+
 const todayISO = () => {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
@@ -43,19 +54,49 @@ const toDisplayDate = (iso: string) => {
   return d && m && y ? `${d}/${m}/${y}` : iso;
 };
 
-export function Register({ bg }: { bg?: string }) {
-  const { t } = useI18n();
+// Wrapper: provide the Stripe Elements context when a publishable key exists, so
+// the embedded Payment Element can render inside the form.
+export function Register({ bg, content }: { bg?: string; content?: RegisterContent }) {
+  // Card total from the admin-set fee (whole shekels → agorot), else the default.
+  const amount = content?.feeAmount && content.feeAmount > 0 ? Math.round(content.feeAmount * 100) : FEE_AGOROT;
+  if (stripePromise) {
+    return (
+      <Elements
+        stripe={stripePromise}
+        options={{
+          mode: "payment",
+          amount,
+          currency: "ils",
+          appearance: { theme: "stripe", variables: { colorPrimary: "#12306e", borderRadius: "12px" } },
+        }}
+      >
+        <RegisterForm bg={bg} content={content} stripeReady />
+      </Elements>
+    );
+  }
+  return <RegisterForm bg={bg} content={content} stripeReady={false} />;
+}
+
+function RegisterForm({ bg, content, stripeReady }: { bg?: string; content?: RegisterContent; stripeReady: boolean }) {
+  const { t, pick } = useI18n();
   const toast = useToast();
   const f = t.register.form;
   const [done, setDone] = useState(false);
   const [consent, setConsent] = useState(false);
   const [consentError, setConsentError] = useState(false);
   const [sigError, setSigError] = useState(false);
+  const [payError, setPayError] = useState("");
 
-  // Credit-card details (card option only). Held locally and never sent to our
-  // server — a real charge goes through the payment provider's secure gateway.
-  const [card, setCard] = useState({ name: "", number: "", expiry: "", cvc: "" });
-  const [cardError, setCardError] = useState(false);
+  // Editable section copy (admin Content → Register), falling back to defaults.
+  const eyebrow = content?.eyebrow ? pick(content.eyebrow) : t.register.eyebrow;
+  const heading = content?.heading ? pick(content.heading) : t.register.heading;
+  const subheading = content?.subheading ? pick(content.subheading) : t.register.subheading;
+  const feeNote = content?.feeNote && pick(content.feeNote) ? pick(content.feeNote) : f.feeNote;
+  const consentText = content?.consent && pick(content.consent) ? pick(content.consent) : f.consent;
+  const perks = content?.perks?.length ? content.perks.map((p) => pick(p)).filter(Boolean) : t.register.perks;
+
+  // Set by the embedded Stripe field so the form's submit can trigger the charge.
+  const payRef = useRef<PayFn | null>(null);
 
   const {
     register,
@@ -78,7 +119,6 @@ export function Register({ bg }: { bg?: string }) {
 
   const paymentMethod = watch("paymentMethod");
   const isCard = paymentMethod === CARD_VALUE;
-  const cardComplete = !!(card.name && card.number && card.expiry && card.cvc);
 
   // ---- Signature pad --------------------------------------------------------
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -129,8 +169,7 @@ export function Register({ bg }: { bg?: string }) {
   function registerAnother() {
     setDone(false);
     setConsent(false);
-    setCard({ name: "", number: "", expiry: "", cvc: "" });
-    setCardError(false);
+    setPayError("");
     clearSig();
     reset();
     setValue("dateSigned", todayISO());
@@ -140,14 +179,26 @@ export function Register({ bg }: { bg?: string }) {
     let bad = false;
     if (!consent) { setConsentError(true); bad = true; }
     if (!signed) { setSigError(true); bad = true; }
-    // When paying by card, the card panel must be filled in.
-    if (values.paymentMethod === CARD_VALUE && !cardComplete) { setCardError(true); bad = true; }
     if (bad) return;
+    setPayError("");
+
+    const card = values.paymentMethod === CARD_VALUE;
+
+    // Card + embedded Stripe → charge the card on our site first, then save the
+    // registration with the (verified) PaymentIntent id.
+    let paymentIntentId: string | undefined;
+    if (card && stripeReady) {
+      if (!payRef.current) { setPayError(t.register.errors.generic); return; }
+      const r = await payRef.current({ email: values.email });
+      if (r.error || !r.paymentIntentId) {
+        setPayError(r.error || t.register.errors.generic);
+        return;
+      }
+      paymentIntentId = r.paymentIntentId;
+    }
 
     const signature = canvasRef.current?.toDataURL("image/png");
-    // Card details are intentionally NOT included — they go to the payment
-    // provider's secure gateway, never to our own backend.
-    const payload = { ...values, dateSigned: toDisplayDate(values.dateSigned), signature };
+    const payload = { ...values, dateSigned: toDisplayDate(values.dateSigned), signature, paymentIntentId };
 
     try {
       const res = await fetch("/api/registrations", {
@@ -158,29 +209,22 @@ export function Register({ bg }: { bg?: string }) {
       if (!res.ok) throw new Error("request failed");
       const data = await res.json();
 
-      // Paying by card → start the secure checkout and redirect. If the payment
-      // provider isn't configured yet (501), we just complete the registration
-      // and the fee is settled offline (the success screen still shows).
-      if (values.paymentMethod === CARD_VALUE && data?.registration?.id) {
+      // Card but no embedded Stripe (no publishable key) → try the redirect
+      // checkout; if that's not configured either, the registration still
+      // completes and the fee is settled offline.
+      if (card && !stripeReady && data?.registration?.id) {
         try {
           const pay = await fetch("/api/payments/checkout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              registrationId: data.registration.id,
-              customerName: values.playerName,
-              customerEmail: values.email,
-            }),
+            body: JSON.stringify({ registrationId: data.registration.id, customerName: values.playerName, customerEmail: values.email }),
           });
           if (pay.ok) {
             const { url } = await pay.json();
-            if (url) {
-              window.location.href = url;
-              return;
-            }
+            if (url) { window.location.href = url; return; }
           }
         } catch {
-          /* provider not ready — fall through to the success screen */
+          /* provider not ready — fall through to success */
         }
       }
 
@@ -207,19 +251,19 @@ export function Register({ bg }: { bg?: string }) {
           className="relative overflow-hidden rounded-3xl brand-gradient-animated p-8 text-white md:p-10 lg:sticky lg:top-24"
         >
           <span className="inline-block rounded-full bg-white/15 px-3.5 py-1 text-xs font-bold uppercase tracking-wider">
-            {t.register.eyebrow}
+            {eyebrow}
           </span>
-          <h2 className="mt-5 text-3xl font-extrabold leading-tight md:text-4xl">{t.register.heading}</h2>
-          <p className="mt-4 max-w-md text-white/85">{t.register.subheading}</p>
+          <h2 className="mt-5 text-3xl font-extrabold leading-tight md:text-4xl">{heading}</h2>
+          <p className="mt-4 max-w-md text-white/85">{subheading}</p>
           <ul className="mt-8 space-y-3 text-sm">
-            {t.register.perks.map((p) => (
+            {perks.map((p) => (
               <li key={p} className="flex items-center gap-3">
                 <span className="grid size-6 place-items-center rounded-full bg-white/20 text-xs">✓</span>
                 {p}
               </li>
             ))}
           </ul>
-          <p className="mt-8 rounded-2xl bg-white/10 p-4 text-xs leading-relaxed text-white/80">{f.feeNote}</p>
+          <p className="mt-8 rounded-2xl bg-white/10 p-4 text-xs leading-relaxed text-white/80">{feeNote}</p>
           <div className="pointer-events-none absolute -bottom-16 -end-16 size-56 rounded-full bg-white/10 blur-2xl" />
         </motion.div>
 
@@ -347,31 +391,16 @@ export function Register({ bg }: { bg?: string }) {
                     </div>
                   )}
 
-                  {/* Card → reveal the secure card panel. */}
+                  {/* Card → secure payment. Embedded Stripe fields when available. */}
                   {isCard && (
-                    <div className={cn("sm:col-span-2 space-y-3 rounded-2xl border p-4", cardError ? "border-rose-400 bg-rose-50/40" : "border-brand/25 bg-brand-50/40")}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-bold text-brand-dark">💳 {f.cardTitle}</span>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <label className="block sm:col-span-2">
-                          <span className="mb-1.5 block text-sm font-semibold text-ink">{f.cardName}</span>
-                          <input value={card.name} onChange={(e) => { setCard((c) => ({ ...c, name: e.target.value })); setCardError(false); }} className={inputCls(false)} autoComplete="cc-name" />
-                        </label>
-                        <label className="block sm:col-span-2">
-                          <span className="mb-1.5 block text-sm font-semibold text-ink">{f.cardNumber}</span>
-                          <input value={card.number} onChange={(e) => { setCard((c) => ({ ...c, number: e.target.value })); setCardError(false); }} className={inputCls(false)} dir="ltr" inputMode="numeric" autoComplete="cc-number" placeholder="•••• •••• •••• ••••" />
-                        </label>
-                        <label className="block">
-                          <span className="mb-1.5 block text-sm font-semibold text-ink">{f.cardExpiry}</span>
-                          <input value={card.expiry} onChange={(e) => { setCard((c) => ({ ...c, expiry: e.target.value })); setCardError(false); }} className={inputCls(false)} dir="ltr" inputMode="numeric" autoComplete="cc-exp" placeholder="MM / YY" />
-                        </label>
-                        <label className="block">
-                          <span className="mb-1.5 block text-sm font-semibold text-ink">{f.cardCvc}</span>
-                          <input value={card.cvc} onChange={(e) => { setCard((c) => ({ ...c, cvc: e.target.value })); setCardError(false); }} className={inputCls(false)} dir="ltr" inputMode="numeric" autoComplete="cc-csc" placeholder="•••" />
-                        </label>
-                      </div>
-                      {cardError && <p className="text-xs font-medium text-rose-600">{t.register.errors.required}</p>}
+                    <div className={cn("sm:col-span-2 space-y-3 rounded-2xl border p-4", payError ? "border-rose-400 bg-rose-50/40" : "border-brand/25 bg-brand-50/40")}>
+                      <span className="text-sm font-bold text-brand-dark">💳 {f.cardTitle}</span>
+                      {stripeReady ? (
+                        <StripePaymentField payRef={payRef} onChange={() => setPayError("")} />
+                      ) : (
+                        <p className="text-sm text-ink/80">{f.payPending}</p>
+                      )}
+                      {payError && <p className="text-xs font-medium text-rose-600">{payError}</p>}
                       <p className="flex items-start gap-1.5 text-xs text-muted">
                         <span aria-hidden>🔒</span>
                         <span>{f.paySecureNote}</span>
@@ -420,7 +449,7 @@ export function Register({ bg }: { bg?: string }) {
                       onChange={(e) => { setConsent(e.target.checked); if (e.target.checked) setConsentError(false); }}
                       className="mt-0.5 size-4 shrink-0 accent-brand"
                     />
-                    <span className={cn("text-xs leading-relaxed", consentError ? "text-rose-600" : "text-muted")}>{f.consent}</span>
+                    <span className={cn("text-xs leading-relaxed", consentError ? "text-rose-600" : "text-muted")}>{consentText}</span>
                   </label>
                 </FieldSet>
 
@@ -439,6 +468,37 @@ export function Register({ bg }: { bg?: string }) {
       </div>
     </section>
   );
+}
+
+// Embedded Stripe Payment Element. Lives inside <Elements>, so it can use the
+// Stripe hooks; it exposes a `pay()` function (via payRef) that the form's submit
+// calls to validate + charge the card — keeping card entry on our own page once.
+function StripePaymentField({ payRef, onChange }: { payRef: PayRef; onChange: () => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  payRef.current = async ({ email }) => {
+    if (!stripe || !elements) return { error: "not_ready" };
+    const { error: submitErr } = await elements.submit();
+    if (submitErr) return { error: submitErr.message };
+    const res = await fetch("/api/payments/intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: FEE_AGOROT, email }),
+    });
+    if (!res.ok) return { error: "payment_unavailable" };
+    const { clientSecret } = await res.json();
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      clientSecret,
+      confirmParams: { return_url: window.location.href },
+      redirect: "if_required",
+    });
+    if (error) return { error: error.message };
+    return { paymentIntentId: paymentIntent?.id };
+  };
+
+  return <PaymentElement onChange={onChange} options={{ layout: "tabs" }} />;
 }
 
 const selectCls =

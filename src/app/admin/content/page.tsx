@@ -13,16 +13,20 @@ import { HighlightsEditor } from "@/components/admin/HighlightsEditor";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
-import type { Block, BlocksPosition, GalleryImage, HistoricSection, Highlight, Localized, Person, SiteContent, TextStyle } from "@/lib/types";
+import type { Block, BlocksPosition, GalleryImage, HistoricSection, Highlight, Localized, Person, RegisterContent, SiteContent, TextStyle } from "@/lib/types";
 import { STYLE_KEYS } from "@/lib/textStyle";
 import { cn } from "@/lib/cn";
 
-type Tab = "hero" | "highlights" | "gallery" | "historic" | "staff" | "volunteers" | "blocks" | "footer" | "backgrounds";
+type Tab = "hero" | "highlights" | "gallery" | "historic" | "staff" | "volunteers" | "register" | "blocks" | "footer" | "backgrounds";
 
 const BG_SECTIONS = ["home", "teams", "games", "highlights", "gallery", "historic", "staff", "volunteers", "register"] as const;
 
 const emptyLocalized = (): Localized => ({ ar: "", he: "", en: "" });
 const emptyHistoric = (): HistoricSection => ({ title: emptyLocalized(), body: emptyLocalized(), image: "" });
+const emptyRegister = (): RegisterContent => ({
+  eyebrow: emptyLocalized(), heading: emptyLocalized(), subheading: emptyLocalized(),
+  feeNote: emptyLocalized(), consent: emptyLocalized(), perks: [],
+});
 
 const plainInput =
   "h-10 w-full rounded-xl border border-line bg-white px-3.5 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
@@ -45,6 +49,7 @@ export default function ContentAdmin() {
     { id: "historic", label: t.admin.contentTabs.historic },
     { id: "staff", label: t.admin.contentTabs.staff },
     { id: "volunteers", label: t.admin.contentTabs.volunteers },
+    { id: "register", label: t.admin.contentTabs.register },
     { id: "blocks", label: t.admin.contentTabs.blocks },
     { id: "backgrounds", label: t.admin.contentTabs.backgrounds },
     { id: "footer", label: t.admin.contentTabs.footer },
@@ -116,6 +121,8 @@ export default function ContentAdmin() {
   const setVolunteers = (volunteers: Person[]) => setContent((c) => (c ? { ...c, volunteers } : c));
   const setHistoric = (patch: Partial<HistoricSection>) =>
     setContent((c) => (c ? { ...c, historic: { ...(c.historic ?? emptyHistoric()), ...patch } } : c));
+  const setRegister = (patch: Partial<RegisterContent>) =>
+    setContent((c) => (c ? { ...c, register: { ...(c.register ?? emptyRegister()), ...patch } } : c));
   const setBackground = (id: string, url: string) =>
     setContent((c) => (c ? { ...c, backgrounds: { ...(c.backgrounds ?? {}), [id]: url } } : c));
   const setBlocksPosition = (blocksPosition: BlocksPosition) =>
@@ -230,6 +237,47 @@ export default function ContentAdmin() {
               roleLabel={t.admin.people.role}
             />
           )}
+
+          {tab === "register" && (() => {
+            const r = content.register ?? emptyRegister();
+            const setPerk = (i: number, v: Localized) => setRegister({ perks: r.perks.map((p, j) => (j === i ? v : p)) });
+            const addPerk = () => setRegister({ perks: [...r.perks, emptyLocalized()] });
+            const removePerk = (i: number) => setRegister({ perks: r.perks.filter((_, j) => j !== i) });
+            return (
+              <div className="space-y-4">
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-semibold text-ink">
+                    {t.admin.registerEditor.feeAmount} <span className="font-normal text-muted">— {t.admin.registerEditor.feeAmountHint}</span>
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    dir="ltr"
+                    value={r.feeAmount ?? 3530}
+                    onChange={(e) => setRegister({ feeAmount: Number(e.target.value) })}
+                    className={cn(plainInput, "max-w-40")}
+                  />
+                </label>
+                <LocalizedField label={t.admin.registerEditor.eyebrow} value={r.eyebrow} onChange={(eyebrow) => setRegister({ eyebrow })} />
+                <LocalizedField label={t.admin.registerEditor.heading} value={r.heading} onChange={(heading) => setRegister({ heading })} />
+                <LocalizedField label={t.admin.registerEditor.subheading} value={r.subheading} onChange={(subheading) => setRegister({ subheading })} />
+                <LocalizedField label={t.admin.registerEditor.feeNote} textarea rows={3} value={r.feeNote} onChange={(feeNote) => setRegister({ feeNote })} />
+                <LocalizedField label={t.admin.registerEditor.consent} textarea rows={3} value={r.consent} onChange={(consent) => setRegister({ consent })} />
+                <div className="space-y-3 border-t border-line pt-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-ink">{t.admin.registerEditor.perks}</span>
+                    <Button size="sm" variant="subtle" onClick={addPerk}>+ {t.admin.registerEditor.addPerk}</Button>
+                  </div>
+                  {r.perks.map((p, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <div className="flex-1"><LocalizedField label={`#${i + 1}`} value={p} onChange={(v) => setPerk(i, v)} /></div>
+                      <button type="button" onClick={() => removePerk(i)} aria-label="delete" className="mt-7 grid size-8 shrink-0 place-items-center rounded-md bg-rose-50 text-rose-600 transition hover:bg-rose-100">✕</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {tab === "blocks" && (
             <BlockBuilder

@@ -169,4 +169,29 @@ export const seedContent: SiteContent = {
     },
     image: "",
   },
+  register: {
+    eyebrow: { ar: "انضمّ إلينا", he: "הצטרפו אלינו", en: "Join us" },
+    heading: { ar: "التسجيل في النادي", he: "הרשמה למועדון", en: "Register with the club" },
+    subheading: {
+      ar: "املأ بياناتك ووقّع استمارة التسجيل هنا مباشرة.",
+      he: "מלאו את הפרטים וחתמו על טופס ההרשמה כאן.",
+      en: "Leave your details and sign the registration form right here.",
+    },
+    feeNote: {
+      ar: "رسوم التسجيل السنوية: 3,500 ش.ج (لا تشمل 30 ش.ج لاتحاد كرة السلة). التسجيل مشروط بتسديد رسوم السنوات السابقة.",
+      he: "דמי הרשמה שנתיים: 3,500 ₪ (לא כולל 30 ₪ לאיגוד הכדורסל). ההרשמה מותנית בתשלום חובות קודמים.",
+      en: "Annual registration fee: ₪3,500 (excludes the ₪30 basketball-association fee). Registration is subject to payment of previous years' dues.",
+    },
+    consent: {
+      ar: "أُقرّ بأنني وليّ أمر اللاعب/ة، وأوافق على شروط التسجيل، وعلى نشر صور ابني/ابنتي ضمن فعاليات الجمعية، وأن التسجيل مشروط بفحص طبّي ودفع الرسوم.",
+      he: "אני מאשר/ת כי אני האפוטרופוס של השחקן/ית, מסכים/ה לתנאי ההרשמה ולפרסום תמונות ילדיי במסגרת פעילויות העמותה, וכי ההרשמה מותנית בבדיקה רפואית ובתשלום.",
+      en: "I confirm I am the player's guardian, agree to the registration terms and to publishing my child's photos within the club's activities, and that registration is subject to a medical check and payment of fees.",
+    },
+    perks: [
+      { ar: "تدريبات منتظمة", he: "אימונים קבועים", en: "Regular training" },
+      { ar: "مباريات في دوري IBBA", he: "משחקים בליגת IBBA", en: "Games in the IBBA league" },
+      { ar: "روح أرثوذكسية وأخوّة", he: "רוח אורתודוקסית ואחווה", en: "Orthodox spirit & brotherhood" },
+    ],
+    feeAmount: 3530,
+  },
 };

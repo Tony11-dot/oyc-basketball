@@ -4,6 +4,7 @@ import { isAuthed } from "@/lib/auth";
 import { validateRegistration } from "@/lib/validation";
 import { sendRegistrationEmails } from "@/lib/mail";
 import { getAssets, fillRegistrationPdf, storeFilledPdf } from "@/lib/registrationPdf";
+import { verifyPaymentIntent } from "@/lib/payments";
 import type { Registration } from "@/lib/types";
 
 // GET — list registrations (admin only), newest first.
@@ -17,7 +18,7 @@ export async function GET() {
   return Response.json({ registrations });
 }
 
-// POST — submit a registration (public). The site then opens the DocuSign form.
+// POST — submit a registration (public). Fills + stores the official PDF.
 export async function POST(request: Request) {
   let body: unknown;
   try {
@@ -34,6 +35,22 @@ export async function POST(request: Request) {
       ? ((body as Record<string, unknown>).signature as string)
       : undefined;
   const id = randomUUID();
+
+  // If a card was paid via the embedded Payment Element, the client passes the
+  // PaymentIntent id; we verify it actually succeeded before marking it paid.
+  const paymentIntentId =
+    typeof (body as Record<string, unknown>).paymentIntentId === "string"
+      ? ((body as Record<string, unknown>).paymentIntentId as string)
+      : undefined;
+  let paymentStatus: Registration["paymentStatus"];
+  let paymentRef: string | undefined;
+  if (paymentIntentId) {
+    const { paid } = await verifyPaymentIntent(paymentIntentId);
+    if (paid) {
+      paymentStatus = "paid";
+      paymentRef = paymentIntentId;
+    }
+  }
 
   // Generate + store the filled official PDF. Best-effort: a PDF/storage hiccup
   // must never lose the registration, so we record it either way.
@@ -54,6 +71,8 @@ export async function POST(request: Request) {
     ...result.value,
     hasSignature: !!signature,
     pdfUrl,
+    paymentStatus,
+    paymentRef,
   };
 
   await updateRegistrations((list) => [registration, ...list]);

@@ -122,6 +122,22 @@ export interface HistoricSection {
   aspectRatio?: string;
 }
 
+/** Editable copy for the Registration section (the form labels stay fixed; this
+ * is the surrounding marketing/legal text the admin can change). */
+export interface RegisterContent {
+  eyebrow: Localized;
+  heading: Localized;
+  subheading: Localized;
+  /** The fee note shown in the invitation panel. */
+  feeNote: Localized;
+  /** The consent text beside the signature checkbox. */
+  consent: Localized;
+  /** Bullet-point perks listed in the invitation panel. */
+  perks: Localized[];
+  /** The amount charged by card, in whole shekels (₪). Drives the Stripe total. */
+  feeAmount?: number;
+}
+
 /** A registration submitted from the public site. Mirrors the official OYC
  * Nazareth registration form (استمارة التسجيل) — every field below maps to a
  * field in /public/forms/registration-template.pdf (see lib/registrationPdf). */
@@ -236,6 +252,8 @@ export interface SiteContent {
   volunteers?: Person[];
   /** "Historic Glance" narrative section content. */
   historic?: HistoricSection;
+  /** Editable copy for the Registration section. */
+  register?: RegisterContent;
   /** Optional background image per section, keyed by section id
    * (home/teams/highlights/gallery/register). */
   backgrounds?: Record<string, string>;

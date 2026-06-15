@@ -31,6 +31,7 @@ export async function PATCH(request: Request) {
     staff: body.staff ?? c.staff,
     volunteers: body.volunteers ?? c.volunteers,
     historic: body.historic ?? c.historic,
+    register: body.register ?? c.register,
     backgrounds: body.backgrounds ?? c.backgrounds,
     sectionOrder: body.sectionOrder ?? c.sectionOrder,
     hiddenSections: body.hiddenSections ?? c.hiddenSections,

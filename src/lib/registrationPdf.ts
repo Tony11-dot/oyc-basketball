@@ -91,16 +91,26 @@ function drawChoiceBoxes(
   rect: Rect,
   options: readonly string[],
   selected: string,
+  opts?: { clearLeft?: number; fontSize?: number },
 ) {
-  const fontSize = 8;
-  const boxSize = 8;
+  const fontSize = opts?.fontSize ?? 8;
+  const clearLeft = opts?.clearLeft ?? 0;
+  const boxSize = fontSize + 1;
   const gap = 3; // box → label
-  const itemGap = 12; // between options
-  const pad = 3;
-  const rowH = boxSize + 6;
+  const itemGap = 14; // between options
+  const pad = 4;
   const rtl = options.some(hasArabic);
   const ink = rgb(0.05, 0.07, 0.12);
   const line = rgb(0.25, 0.27, 0.32);
+  const white = rgb(1, 1, 1);
+
+  // The layout/clear area: the field rectangle, optionally extended to the left
+  // so we can erase leftover template text (e.g. a stray "بطاقة اعتماد").
+  const area = { x: rect.x - clearLeft, y: rect.y, width: rect.width + clearLeft, height: rect.height };
+
+  // White-out the whole area first — removes the old dropdown box and any static
+  // text underneath, so our option row is the only thing showing.
+  page.drawRectangle({ x: area.x, y: area.y - 4, width: area.width + 4, height: area.height + 8, color: white });
 
   const items = options.map((opt) => {
     const label = hasArabic(opt) ? toVisual(opt) : opt;
@@ -108,11 +118,12 @@ function drawChoiceBoxes(
     return { opt, label, width: boxSize + gap + labelW };
   });
 
+  const rowH = boxSize + 7;
   // Logical left-to-right placement with wrapping; mirrored horizontally for RTL.
   let cx = pad;
   let row = 0;
   const placed = items.map((it) => {
-    if (cx > pad && cx + it.width > rect.width - pad) {
+    if (cx > pad && cx + it.width > area.width - pad) {
       row += 1;
       cx = pad;
     }
@@ -121,18 +132,18 @@ function drawChoiceBoxes(
     return { ...it, lx, row };
   });
 
-  const topY = rect.y + rect.height - pad;
+  const topY = area.y + area.height - pad;
   for (const p of placed) {
-    const x = rtl ? rect.x + rect.width - p.lx - p.width : rect.x + p.lx;
+    const x = rtl ? area.x + area.width - p.lx - p.width : area.x + p.lx;
     const boxX = rtl ? x + p.width - boxSize : x;
     const labelX = rtl ? x : x + boxSize + gap;
     const yTop = topY - p.row * rowH;
     const boxY = yTop - boxSize;
-    page.drawRectangle({ x: boxX, y: boxY, width: boxSize, height: boxSize, borderWidth: 0.8, borderColor: line });
+    page.drawRectangle({ x: boxX, y: boxY, width: boxSize, height: boxSize, borderWidth: 0.9, borderColor: line });
     if (p.opt === selected) {
-      page.drawText("X", { x: boxX + 1.3, y: boxY + 0.8, size: boxSize, font, color: ink });
+      page.drawText("X", { x: boxX + 1.6, y: boxY + 1.4, size: boxSize - 1, font, color: ink });
     }
-    page.drawText(p.label, { x: labelX, y: boxY + 0.8, size: fontSize, font, color: ink });
+    page.drawText(p.label, { x: labelX, y: boxY + 1.4, size: fontSize, font, color: ink });
   }
 }
 
@@ -180,8 +191,14 @@ export async function fillRegistrationPdf(
       const rect = field.acroField.getWidgets()[0].getRectangle();
       const options = CHOICE_OPTIONS[fieldName];
       if (options) {
-        // Always draw the full set of boxes; X the chosen one (if any).
-        drawChoiceBoxes(page, font, rect, options, value != null ? String(value) : "");
+        // Always draw the full set of boxes; X the chosen one (if any). For the
+        // payment row we extend the clear area left to erase a stray template
+        // label and give the three Arabic options room on one tidy RTL line.
+        const choiceOpts =
+          fieldName === "payment_method"
+            ? { clearLeft: rect.x - 46, fontSize: 9 }
+            : undefined;
+        drawChoiceBoxes(page, font, rect, options, value != null ? String(value) : "", choiceOpts);
       } else if (value != null && value !== "") {
         drawValue(page, font, rect, String(value));
       }

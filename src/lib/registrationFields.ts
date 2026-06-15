@@ -7,6 +7,11 @@
 export const JERSEY_SIZES = ["8", "10", "12", "14", "XXS", "XS", "S", "M", "L", "XL"] as const;
 export const PAYMENT_VALUES = ["نقدا", "شيكات", "بطاقة اعتماد"] as const;
 
+// Registration fee in the smallest currency unit (agorot): ₪3,530.00.
+// Shared by the client (Stripe Payment Element) and the server (PaymentIntent).
+export const FEE_AGOROT = 3_530_00;
+export const CURRENCY = "ILS";
+
 // Every field on the official form is now required (the club asked for complete
 // records). dateSigned is auto-filled client-side, so it stays effectively
 // mandatory too. Keep these in sync with validation.ts and Register.tsx.
