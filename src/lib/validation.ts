@@ -11,15 +11,12 @@ export const isValidEmail = (v: string) => EMAIL_RE.test(v.trim());
 export type { RegistrationInput };
 
 const str = (v: unknown) => (v == null ? "" : String(v).trim());
-const optStr = (v: unknown) => {
-  const s = str(v);
-  return s ? s : undefined;
-};
 
 /**
- * Validate a registration submission against the official form. Player name, ID,
- * birth date, a valid email, at least one contact phone, and the guardian name
- * are required; everything else is optional. The drawn signature is validated
+ * Validate a registration submission against the official form. Every field is
+ * required (the club asked for complete records): player name, ID, birth date,
+ * all three phones, both parents, a valid email, address, school, grade, jersey
+ * size, payment method and the guardian name. The drawn signature is validated
  * separately in the API route.
  */
 export function validateRegistration(
@@ -31,49 +28,47 @@ export function validateRegistration(
   const playerName = str(b.playerName);
   const idNumber = str(b.idNumber);
   const birthDate = str(b.birthDate);
+  const phonePlayer = str(b.phonePlayer);
+  const fatherName = str(b.fatherName);
+  const motherName = str(b.motherName);
+  const phoneFather = str(b.phoneFather);
+  const phoneMother = str(b.phoneMother);
   const email = str(b.email);
+  const address = str(b.address);
+  const school = str(b.school);
+  const classGrade = str(b.classGrade);
+  const jerseySize = str(b.jerseySize);
+  const paymentMethod = str(b.paymentMethod);
   const guardianName = str(b.guardianName);
+  const dateSigned = str(b.dateSigned);
 
-  const phonePlayer = optStr(b.phonePlayer);
-  const phoneFather = optStr(b.phoneFather);
-  const phoneMother = optStr(b.phoneMother);
-  const jerseySize = optStr(b.jerseySize);
-  const paymentMethod = optStr(b.paymentMethod);
+  // Required text fields (label → value).
+  const required: [string, string][] = [
+    ["playerName", playerName], ["idNumber", idNumber], ["birthDate", birthDate],
+    ["phonePlayer", phonePlayer], ["fatherName", fatherName], ["motherName", motherName],
+    ["phoneFather", phoneFather], ["phoneMother", phoneMother], ["address", address],
+    ["school", school], ["classGrade", classGrade], ["jerseySize", jerseySize],
+    ["paymentMethod", paymentMethod], ["guardianName", guardianName], ["dateSigned", dateSigned],
+  ];
+  for (const [name, value] of required) if (!value) return { ok: false, error: `${name} is required` };
 
-  if (!playerName) return { ok: false, error: "playerName is required" };
-  if (!idNumber) return { ok: false, error: "idNumber is required" };
-  if (!birthDate) return { ok: false, error: "birthDate is required" };
   if (!isValidEmail(email)) return { ok: false, error: "valid email is required" };
-  if (!guardianName) return { ok: false, error: "guardianName is required" };
 
-  const phones = [phonePlayer, phoneFather, phoneMother].filter(Boolean) as string[];
-  if (phones.length === 0) return { ok: false, error: "at least one phone is required" };
+  const phones = [phonePlayer, phoneFather, phoneMother];
   if (phones.some((p) => !isValidPhone(p))) return { ok: false, error: "invalid phone number" };
 
-  if (jerseySize && !(JERSEY_SIZES as readonly string[]).includes(jerseySize))
+  if (!(JERSEY_SIZES as readonly string[]).includes(jerseySize))
     return { ok: false, error: "invalid jersey size" };
-  if (paymentMethod && !(PAYMENT_VALUES as readonly string[]).includes(paymentMethod))
+  if (!(PAYMENT_VALUES as readonly string[]).includes(paymentMethod))
     return { ok: false, error: "invalid payment method" };
 
   return {
     ok: true,
     value: {
-      playerName,
-      idNumber,
-      birthDate,
-      phonePlayer,
-      fatherName: optStr(b.fatherName),
-      motherName: optStr(b.motherName),
-      phoneFather,
-      phoneMother,
-      email,
-      address: optStr(b.address),
-      school: optStr(b.school),
-      classGrade: optStr(b.classGrade),
-      jerseySize,
-      paymentMethod,
-      guardianName,
-      dateSigned: optStr(b.dateSigned),
+      playerName, idNumber, birthDate, phonePlayer,
+      fatherName, motherName, phoneFather, phoneMother,
+      email, address, school, classGrade,
+      jerseySize, paymentMethod, guardianName, dateSigned,
     },
   };
 }

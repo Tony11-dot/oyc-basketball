@@ -20,7 +20,7 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title: "OYC Nazareth Basketball",
+  title: "OYC Basketball",
   description:
     "Orthodox Youth Club Nazareth basketball — our teams, highlights, gallery and registration.",
 };

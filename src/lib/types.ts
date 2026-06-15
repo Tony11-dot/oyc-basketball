@@ -101,6 +101,27 @@ export interface GalleryImage {
   aspectRatio?: string;
 }
 
+/** A staff member or volunteer — a person with a localized name + role + photo.
+ * Shared shape so the Staff and Volunteers sections render identically. */
+export interface Person {
+  id: string;
+  name: Localized;
+  /** Role / title, e.g. Coach, Team Manager, Volunteer. */
+  role: Localized;
+  image?: string;
+  imagePosition?: string;
+  aspectRatio?: string;
+}
+
+/** The "Historic Glance" narrative section — an editable title + body + photo. */
+export interface HistoricSection {
+  title: Localized;
+  body: Localized;
+  image?: string;
+  imagePosition?: string;
+  aspectRatio?: string;
+}
+
 /** A registration submitted from the public site. Mirrors the official OYC
  * Nazareth registration form (استمارة التسجيل) — every field below maps to a
  * field in /public/forms/registration-template.pdf (see lib/registrationPdf). */
@@ -130,6 +151,10 @@ export interface Registration {
   // --- Club ---
   jerseySize?: string;
   paymentMethod?: string;
+  /** Payment lifecycle for card payments (others are settled offline). */
+  paymentStatus?: "pending" | "paid";
+  /** Reference id returned by the payment provider once a card payment clears. */
+  paymentRef?: string;
 
   // --- Signing ---
   guardianName: string;
@@ -205,6 +230,12 @@ export interface SiteContent {
   blocksPosition?: BlocksPosition;
   /** Photo gallery carousel slides, managed in the admin. */
   gallery?: GalleryImage[];
+  /** Coaching / administrative staff shown in the Staff section. */
+  staff?: Person[];
+  /** Club volunteers shown in the Volunteers section. */
+  volunteers?: Person[];
+  /** "Historic Glance" narrative section content. */
+  historic?: HistoricSection;
   /** Optional background image per section, keyed by section id
    * (home/teams/highlights/gallery/register). */
   backgrounds?: Record<string, string>;

@@ -8,7 +8,7 @@ import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { SiteContent } from "@/lib/types";
 
 // Every reorderable / hideable page section (matches the home page + nav tabs).
-const SECTION_IDS = ["home", "teams", "highlights", "gallery", "register", "contact"] as const;
+const SECTION_IDS = ["home", "teams", "games", "highlights", "gallery", "historic", "staff", "volunteers", "register", "contact"] as const;
 type SId = (typeof SECTION_IDS)[number];
 
 export default function SectionsAdmin() {

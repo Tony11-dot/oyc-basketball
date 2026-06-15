@@ -1,3 +1,15 @@
+import type { Metadata } from "next";
+
+// Admin browser-tab title + favicon (the crest logo), distinct from the public
+// site's "OYC Basketball".
+export const metadata: Metadata = {
+  title: "OYC Basketball Admin",
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png" }],
+    shortcut: "/favicon.ico",
+  },
+};
+
 // Admin follows the selected site language/direction (Hebrew + RTL by default),
 // set on <html> by the LanguageProvider — same as the public site.
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

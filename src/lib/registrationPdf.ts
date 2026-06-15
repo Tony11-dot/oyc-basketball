@@ -13,7 +13,14 @@ import { PDFDocument, PDFRef, rgb, type PDFForm, type PDFField, type PDFFont, ty
 import fontkit from "@pdf-lib/fontkit";
 import reshaper from "arabic-reshaper";
 import type { Registration } from "./types";
-import { PDF_FIELD_MAP, SIGNATURE_FIELD, type RegistrationInput } from "./registrationFields";
+import { JERSEY_SIZES, PAYMENT_VALUES, PDF_FIELD_MAP, SIGNATURE_FIELD, type RegistrationInput } from "./registrationFields";
+
+// Choice fields are rendered as a row of option boxes (like the paper form) with
+// an X in the selected one — instead of writing the chosen value as plain text.
+const CHOICE_OPTIONS: Record<string, readonly string[]> = {
+  jersey_size: JERSEY_SIZES,
+  payment_method: PAYMENT_VALUES,
+};
 
 // Mirror db.ts: ephemeral /tmp on Vercel, project ./data locally.
 const DATA_DIR = process.env.VERCEL ? "/tmp/oyc-data" : path.join(process.cwd(), "data");
@@ -72,6 +79,63 @@ function drawValue(page: PDFPage, font: PDFFont, rect: Rect, value: string) {
   page.drawText(text, { x, y, size, font, color: rgb(0.05, 0.07, 0.12) });
 }
 
+/**
+ * Render a set of option boxes within (and flowing from) the field rectangle,
+ * marking the selected option with an X — mirroring the printed paper form. The
+ * grid wraps onto extra rows when the options don't fit on one line, and lays
+ * out right-to-left for Arabic option labels.
+ */
+function drawChoiceBoxes(
+  page: PDFPage,
+  font: PDFFont,
+  rect: Rect,
+  options: readonly string[],
+  selected: string,
+) {
+  const fontSize = 8;
+  const boxSize = 8;
+  const gap = 3; // box → label
+  const itemGap = 12; // between options
+  const pad = 3;
+  const rowH = boxSize + 6;
+  const rtl = options.some(hasArabic);
+  const ink = rgb(0.05, 0.07, 0.12);
+  const line = rgb(0.25, 0.27, 0.32);
+
+  const items = options.map((opt) => {
+    const label = hasArabic(opt) ? toVisual(opt) : opt;
+    const labelW = font.widthOfTextAtSize(label, fontSize);
+    return { opt, label, width: boxSize + gap + labelW };
+  });
+
+  // Logical left-to-right placement with wrapping; mirrored horizontally for RTL.
+  let cx = pad;
+  let row = 0;
+  const placed = items.map((it) => {
+    if (cx > pad && cx + it.width > rect.width - pad) {
+      row += 1;
+      cx = pad;
+    }
+    const lx = cx;
+    cx += it.width + itemGap;
+    return { ...it, lx, row };
+  });
+
+  const topY = rect.y + rect.height - pad;
+  for (const p of placed) {
+    const x = rtl ? rect.x + rect.width - p.lx - p.width : rect.x + p.lx;
+    const boxX = rtl ? x + p.width - boxSize : x;
+    const labelX = rtl ? x : x + boxSize + gap;
+    const yTop = topY - p.row * rowH;
+    const boxY = yTop - boxSize;
+    page.drawRectangle({ x: boxX, y: boxY, width: boxSize, height: boxSize, borderWidth: 0.8, borderColor: line });
+    if (p.opt === selected) {
+      page.drawText("X", { x: boxX + 1.3, y: boxY + 0.8, size: boxSize, font, color: ink });
+    }
+    page.drawText(p.label, { x: labelX, y: boxY + 0.8, size: fontSize, font, color: ink });
+  }
+}
+
 // ---- field removal (low level; pdf-lib can't removeField a /Sig) ------------
 const sameRef = (a: unknown, b: PDFRef) =>
   a instanceof PDFRef && a.objectNumber === b.objectNumber && a.generationNumber === b.generationNumber;
@@ -113,8 +177,13 @@ export async function fillRegistrationPdf(
     }
     try {
       const value = (data as unknown as Record<string, unknown>)[key];
-      if (value != null && value !== "") {
-        drawValue(page, font, field.acroField.getWidgets()[0].getRectangle(), String(value));
+      const rect = field.acroField.getWidgets()[0].getRectangle();
+      const options = CHOICE_OPTIONS[fieldName];
+      if (options) {
+        // Always draw the full set of boxes; X the chosen one (if any).
+        drawChoiceBoxes(page, font, rect, options, value != null ? String(value) : "");
+      } else if (value != null && value !== "") {
+        drawValue(page, font, rect, String(value));
       }
     } catch {
       /* keep going — one bad field shouldn't fail the whole fill */

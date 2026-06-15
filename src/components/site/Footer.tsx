@@ -16,18 +16,25 @@ export function Footer({ footer, styles }: { footer: SiteContent["footer"]; styl
         {/* Single full-width row — spreads edge to edge so there's no empty
             column when contact details aren't set. */}
         <div className="flex flex-col items-center gap-6 text-center md:flex-row md:items-center md:justify-between md:gap-10 md:text-start">
-          {/* brand + address */}
+          {/* brand + address (the address links straight into Waze navigation) */}
           <div className="flex items-center gap-4">
             <span className="inline-flex shrink-0 rounded-2xl bg-white p-2 shadow-soft">
               <Logo className="h-14 w-auto" />
             </span>
             {pick(footer.address) && (
-              <p
-                className="max-w-xs whitespace-pre-line text-sm text-white/80"
+              <a
+                href={`https://waze.com/ul?q=${encodeURIComponent(pick(footer.address))}&navigate=yes`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={t.footer.directions}
+                className="group max-w-xs whitespace-pre-line text-sm text-white/80 transition hover:text-white"
                 style={styleToCss(styles?.["footer.address"])}
               >
                 📍 {pick(footer.address)}
-              </p>
+                <span className="mt-0.5 block text-xs text-white/55 transition group-hover:text-white/80">
+                  {t.footer.directions} ↗
+                </span>
+              </a>
             )}
           </div>
 

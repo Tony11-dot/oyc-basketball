@@ -9,8 +9,12 @@ export interface Dict {
   nav: {
     home: string;
     teams: string;
+    games: string;
     highlights: string;
     gallery: string;
+    historic: string;
+    staff: string;
+    volunteers: string;
     register: string;
     contact: string;
   };
@@ -30,6 +34,14 @@ export interface Dict {
     teamIbba: string;
     open: string;
   };
+  games: {
+    eyebrow: string; heading: string; subheading: string; empty: string;
+    filterTeam: string; filterPlayer: string; allTeams: string; allPlayers: string;
+    upcoming: string; past: string; vs: string; at: string; viewIbba: string;
+  };
+  historic: { eyebrow: string };
+  staff: { eyebrow: string; heading: string; subheading: string; empty: string };
+  volunteers: { eyebrow: string; heading: string; subheading: string; empty: string };
   highlights: { eyebrow: string; heading: string; subheading: string; empty: string };
   gallery: { eyebrow: string; heading: string; subheading: string };
   register: {
@@ -58,12 +70,15 @@ export interface Dict {
       address: string; school: string; grade: string;
       jerseySize: string; jerseyPlaceholder: string;
       payment: string; paymentPlaceholder: string; paymentCash: string; paymentCheck: string; paymentCard: string;
+      paymentWithin7Days: string;
+      cardTitle: string; cardName: string; cardNumber: string; cardExpiry: string; cardCvc: string;
+      payNow: string; paySecureNote: string; payPending: string;
       guardian: string; date: string;
       signature: string; signatureHint: string; clear: string;
       consent: string; feeNote: string; optional: string;
     };
   };
-  footer: { contact: string; address: string; follow: string; rights: string; adminLink: string };
+  footer: { contact: string; address: string; directions: string; follow: string; rights: string; adminLink: string };
   admin: {
     loading: string;
     viewSite: string;
@@ -72,7 +87,8 @@ export interface Dict {
     saving: string;
     refresh: string;
     actions: { add: string; edit: string; delete: string; cancel: string; search: string };
-    nav: { overview: string; registrations: string; teams: string; content: string; sections: string; settings: string };
+    nav: { overview: string; registrations: string; teams: string; players: string; content: string; sections: string; settings: string };
+    players: { add: string; none: string; search: string; name: string; addNew: string; pickerPlaceholder: string };
     settings: {
       title: string;
       subtitle: string;
@@ -102,10 +118,14 @@ export interface Dict {
       registrationsSub: string;
       teams: string;
       teamsSub: string;
+      players: string;
+      playersSub: string;
       content: string;
       contentSub: string;
     };
-    contentTabs: { hero: string; highlights: string; gallery: string; blocks: string; footer: string; backgrounds: string };
+    contentTabs: { hero: string; highlights: string; gallery: string; historic: string; staff: string; volunteers: string; blocks: string; footer: string; backgrounds: string };
+    people: { addStaff: string; addVolunteer: string; emptyStaff: string; emptyVolunteers: string; name: string; role: string; photo: string };
+    historicEditor: { title: string; body: string; image: string };
     preview: { label: string };
     toasts: { saved: string; saveError: string };
     imageUpload: { upload: string; replace: string; remove: string; uploading: string; failed: string };
@@ -207,7 +227,7 @@ export const dictionaries: Record<Locale, Dict> = {
   ar: {
     dir: "rtl",
     langName: "العربية",
-    nav: { home: "الرئيسية", teams: "الفرق", highlights: "أبرز اللقطات", gallery: "الصور", register: "التسجيل", contact: "تواصل" },
+    nav: { home: "الرئيسية", teams: "الفرق", games: "المباريات", highlights: "أبرز اللقطات", gallery: "الصور", historic: "لمحة تاريخية", staff: "الطاقم", volunteers: "المتطوّعون", register: "التسجيل", contact: "تواصل" },
     hero: { badge: "نادي الشبيبة الأرثوذكسية — الناصرة", cta: "سجّل الآن", secondary: "شاهد الفرق" },
     teams: {
       eyebrow: "فرقنا",
@@ -224,6 +244,24 @@ export const dictionaries: Record<Locale, Dict> = {
       teamIbba: "صفحة الفريق على IBBA",
       open: "التفاصيل",
     },
+    games: {
+      eyebrow: "الجدول",
+      heading: "المباريات",
+      subheading: "كل مبارياتنا مرتّبة حسب التاريخ — من الأقرب إلى الأبعد.",
+      empty: "لا توجد مباريات مجدولة بعد.",
+      filterTeam: "حسب الفريق",
+      filterPlayer: "حسب اللاعب",
+      allTeams: "كل الفرق",
+      allPlayers: "كل اللاعبين",
+      upcoming: "القادمة",
+      past: "السابقة",
+      vs: "ضد",
+      at: "في",
+      viewIbba: "صفحة IBBA",
+    },
+    historic: { eyebrow: "من تاريخنا" },
+    staff: { eyebrow: "طاقمنا", heading: "الطاقم", subheading: "المدرّبون والإداريون خلف النادي.", empty: "لم تتم إضافة أعضاء الطاقم بعد." },
+    volunteers: { eyebrow: "أيادٍ بيضاء", heading: "المتطوّعون", subheading: "من يمنحون وقتهم لخدمة النادي.", empty: "لم تتم إضافة متطوّعين بعد." },
     highlights: { eyebrow: "لقطات", heading: "أبرز اللقطات", subheading: "أجمل اللحظات من الملعب.", empty: "لا توجد مقاطع بعد." },
     gallery: { eyebrow: "من أجوائنا", heading: "الصور", subheading: "لحظات من المباريات والحياة في النادي." },
     register: {
@@ -252,6 +290,9 @@ export const dictionaries: Record<Locale, Dict> = {
         address: "العنوان", school: "المدرسة", grade: "الصف",
         jerseySize: "مقاس الزيّ الرياضي", jerseyPlaceholder: "— اختر المقاس —",
         payment: "طريقة دفع الرسوم", paymentPlaceholder: "— طريقة الدفع —", paymentCash: "نقداً", paymentCheck: "شيكات", paymentCard: "بطاقة اعتماد",
+        paymentWithin7Days: "يُرجى تسديد الرسوم خلال 7 أيام من تاريخ التسجيل.",
+        cardTitle: "تفاصيل البطاقة", cardName: "الاسم على البطاقة", cardNumber: "رقم البطاقة", cardExpiry: "تاريخ الانتهاء", cardCvc: "الرمز السرّي",
+        payNow: "ادفع الآن", paySecureNote: "تتم المعالجة عبر بوّابة دفع آمنة؛ لا نحتفظ ببيانات بطاقتك.", payPending: "سيُكمَّل الدفع بعد الإرسال.",
         guardian: "اسم وليّ الأمر", date: "التاريخ",
         signature: "توقيع وليّ الأمر", signatureHint: "وقّع بإصبعك أو الفأرة داخل الإطار", clear: "مسح",
         consent: "أُقرّ بأنني وليّ أمر اللاعب/ة، وأوافق على شروط التسجيل، وعلى نشر صور ابني/ابنتي ضمن فعاليات الجمعية، وأن التسجيل مشروط بفحص طبّي ودفع الرسوم.",
@@ -259,7 +300,7 @@ export const dictionaries: Record<Locale, Dict> = {
         optional: "اختياري",
       },
     },
-    footer: { contact: "تواصل", address: "العنوان", follow: "تابعنا", rights: "جميع الحقوق محفوظة.", adminLink: "الإدارة" },
+    footer: { contact: "تواصل", address: "العنوان", directions: "الاتجاهات عبر Waze", follow: "تابعنا", rights: "جميع الحقوق محفوظة.", adminLink: "الإدارة" },
     admin: {
       loading: "جارٍ التحميل…",
       viewSite: "عرض الموقع",
@@ -268,7 +309,8 @@ export const dictionaries: Record<Locale, Dict> = {
       saving: "جارٍ الحفظ…",
       refresh: "تحديث",
       actions: { add: "إضافة", edit: "تعديل", delete: "حذف", cancel: "إلغاء", search: "بحث" },
-      nav: { overview: "نظرة عامة", registrations: "التسجيلات", teams: "الفرق", content: "المحتوى", sections: "الأقسام", settings: "الإعدادات" },
+      nav: { overview: "نظرة عامة", registrations: "التسجيلات", teams: "الفرق", players: "اللاعبون", content: "المحتوى", sections: "الأقسام", settings: "الإعدادات" },
+      players: { add: "إضافة لاعب", none: "لا يوجد لاعبون في القائمة بعد.", search: "ابحث عن لاعب…", name: "الاسم", addNew: "+ إنشاء لاعب جديد", pickerPlaceholder: "ابحث أو أضف لاعباً…" },
       settings: {
         title: "الإعدادات",
         subtitle: "تغيير كلمة مرور الإدارة.",
@@ -298,10 +340,14 @@ export const dictionaries: Record<Locale, Dict> = {
         registrationsSub: "عرض من سجّل في النادي ومتابعة حالة التوقيع.",
         teams: "الفرق",
         teamsSub: "أنشئ الفرق وأضف اللاعبين والمباريات وروابط IBBA.",
+        players: "اللاعبون",
+        playersSub: "القائمة العامة لكل اللاعبين. أضف، عدّل أو احذف؛ تُستخدم في كل الفرق.",
         content: "المحتوى",
         contentSub: "تحرير النصوص والخطوط والصور. تتحدث المعاينة فوراً؛ تُنشر التغييرات عند الحفظ.",
       },
-      contentTabs: { hero: "الرئيسية", highlights: "أبرز اللقطات", gallery: "الصور", blocks: "بلوكات", footer: "التذييل", backgrounds: "الخلفيات" },
+      contentTabs: { hero: "الرئيسية", highlights: "أبرز اللقطات", gallery: "الصور", historic: "لمحة تاريخية", staff: "الطاقم", volunteers: "المتطوّعون", blocks: "بلوكات", footer: "التذييل", backgrounds: "الخلفيات" },
+      people: { addStaff: "إضافة عضو طاقم", addVolunteer: "إضافة متطوّع", emptyStaff: "لم تتم إضافة أعضاء الطاقم بعد.", emptyVolunteers: "لم تتم إضافة متطوّعين بعد.", name: "الاسم", role: "الدور", photo: "الصورة" },
+      historicEditor: { title: "العنوان", body: "النص", image: "الصورة" },
       preview: { label: "معاينة حية — تتحدث عند الحفظ" },
       toasts: { saved: "تم الحفظ — ظاهر على الموقع", saveError: "تعذّر الحفظ" },
       imageUpload: { upload: "رفع صورة", replace: "استبدال الصورة", remove: "إزالة", uploading: "جارٍ الرفع…", failed: "فشل الرفع" },
@@ -401,7 +447,7 @@ export const dictionaries: Record<Locale, Dict> = {
   he: {
     dir: "rtl",
     langName: "עברית",
-    nav: { home: "בית", teams: "קבוצות", highlights: "שיאים", gallery: "גלריה", register: "הרשמה", contact: "צור קשר" },
+    nav: { home: "בית", teams: "קבוצות", games: "משחקים", highlights: "שיאים", gallery: "גלריה", historic: "מבט היסטורי", staff: "צוות", volunteers: "מתנדבים", register: "הרשמה", contact: "צור קשר" },
     hero: { badge: "מועדון הנוער האורתודוקסי — נצרת", cta: "להרשמה", secondary: "לקבוצות" },
     teams: {
       eyebrow: "הקבוצות שלנו",
@@ -418,6 +464,24 @@ export const dictionaries: Record<Locale, Dict> = {
       teamIbba: "עמוד הקבוצה ב-IBBA",
       open: "פרטים",
     },
+    games: {
+      eyebrow: "לוח משחקים",
+      heading: "משחקים",
+      subheading: "כל המשחקים שלנו לפי תאריך — מהקרוב לרחוק.",
+      empty: "אין משחקים מתוזמנים עדיין.",
+      filterTeam: "לפי קבוצה",
+      filterPlayer: "לפי שחקן",
+      allTeams: "כל הקבוצות",
+      allPlayers: "כל השחקנים",
+      upcoming: "הקרובים",
+      past: "שהיו",
+      vs: "נגד",
+      at: "ב־",
+      viewIbba: "עמוד IBBA",
+    },
+    historic: { eyebrow: "מההיסטוריה שלנו" },
+    staff: { eyebrow: "הצוות שלנו", heading: "צוות", subheading: "המאמנים והאנשי מנהלה שמאחורי המועדון.", empty: "עדיין לא נוספו אנשי צוות." },
+    volunteers: { eyebrow: "ידיים תורמות", heading: "מתנדבים", subheading: "מי שתורמים מזמנם למען המועדון.", empty: "עדיין לא נוספו מתנדבים." },
     highlights: { eyebrow: "קליפים", heading: "שיאים", subheading: "הרגעים הכי טובים מהמגרש.", empty: "אין סרטונים עדיין." },
     gallery: { eyebrow: "הצצה אלינו", heading: "גלריה", subheading: "רגעים מהמשחקים ומחיי המועדון." },
     register: {
@@ -446,6 +510,9 @@ export const dictionaries: Record<Locale, Dict> = {
         address: "כתובת", school: "בית ספר", grade: "כיתה",
         jerseySize: "מידת מדים", jerseyPlaceholder: "— בחר מידה —",
         payment: "אופן תשלום", paymentPlaceholder: "— אופן תשלום —", paymentCash: "מזומן", paymentCheck: "צ'קים", paymentCard: "כרטיס אשראי",
+        paymentWithin7Days: "יש להסדיר את התשלום תוך 7 ימים ממועד ההרשמה.",
+        cardTitle: "פרטי כרטיס", cardName: "השם על הכרטיס", cardNumber: "מספר כרטיס", cardExpiry: "תוקף", cardCvc: "קוד אבטחה",
+        payNow: "לתשלום", paySecureNote: "התשלום מתבצע דרך שער תשלום מאובטח; איננו שומרים את פרטי הכרטיס.", payPending: "התשלום יושלם לאחר השליחה.",
         guardian: "שם האפוטרופוס", date: "תאריך",
         signature: "חתימת האפוטרופוס", signatureHint: "חתמו עם האצבע או העכבר במסגרת", clear: "ניקוי",
         consent: "אני מאשר/ת כי אני האפוטרופוס של השחקן/ית, מסכים/ה לתנאי ההרשמה ולפרסום תמונות ילדיי במסגרת פעילויות העמותה, וכי ההרשמה מותנית בבדיקה רפואית ובתשלום.",
@@ -453,7 +520,7 @@ export const dictionaries: Record<Locale, Dict> = {
         optional: "רשות",
       },
     },
-    footer: { contact: "צור קשר", address: "כתובת", follow: "עקבו אחרינו", rights: "כל הזכויות שמורות.", adminLink: "ניהול" },
+    footer: { contact: "צור קשר", address: "כתובת", directions: "ניווט ב-Waze", follow: "עקבו אחרינו", rights: "כל הזכויות שמורות.", adminLink: "ניהול" },
     admin: {
       loading: "טוען…",
       viewSite: "צפייה באתר",
@@ -462,7 +529,8 @@ export const dictionaries: Record<Locale, Dict> = {
       saving: "שומר…",
       refresh: "רענון",
       actions: { add: "הוספה", edit: "עריכה", delete: "מחיקה", cancel: "ביטול", search: "חיפוש" },
-      nav: { overview: "סקירה", registrations: "הרשמות", teams: "קבוצות", content: "תוכן", sections: "מקטעים", settings: "הגדרות" },
+      nav: { overview: "סקירה", registrations: "הרשמות", teams: "קבוצות", players: "שחקנים", content: "תוכן", sections: "מקטעים", settings: "הגדרות" },
+      players: { add: "הוספת שחקן", none: "אין עדיין שחקנים ברשימה.", search: "חיפוש שחקן…", name: "שם", addNew: "+ יצירת שחקן חדש", pickerPlaceholder: "חיפוש או הוספת שחקן…" },
       settings: {
         title: "הגדרות",
         subtitle: "שינוי סיסמת הניהול.",
@@ -492,10 +560,14 @@ export const dictionaries: Record<Locale, Dict> = {
         registrationsSub: "מי נרשם למועדון ומעקב אחר סטטוס החתימה.",
         teams: "קבוצות",
         teamsSub: "צרו קבוצות והוסיפו שחקנים, משחקים וקישורי IBBA.",
+        players: "שחקנים",
+        playersSub: "הרשימה הכללית של כל השחקנים. הוסיפו, ערכו או מחקו; משמשת בכל הקבוצות.",
         content: "תוכן",
         contentSub: "עריכת טקסט, גופנים ותמונות. התצוגה מתעדכנת תוך כדי; השינויים נשמרים בלחיצה.",
       },
-      contentTabs: { hero: "בית", highlights: "שיאים", gallery: "גלריה", blocks: "בלוקים", footer: "כותרת תחתונה", backgrounds: "רקעים" },
+      contentTabs: { hero: "בית", highlights: "שיאים", gallery: "גלריה", historic: "מבט היסטורי", staff: "צוות", volunteers: "מתנדבים", blocks: "בלוקים", footer: "כותרת תחתונה", backgrounds: "רקעים" },
+      people: { addStaff: "הוספת איש צוות", addVolunteer: "הוספת מתנדב", emptyStaff: "עדיין לא נוספו אנשי צוות.", emptyVolunteers: "עדיין לא נוספו מתנדבים.", name: "שם", role: "תפקיד", photo: "תמונה" },
+      historicEditor: { title: "כותרת", body: "טקסט", image: "תמונה" },
       preview: { label: "תצוגה חיה — מתעדכנת בעת שמירה" },
       toasts: { saved: "נשמר — באתר עכשיו", saveError: "השמירה נכשלה" },
       imageUpload: { upload: "העלאת תמונה", replace: "החלפת תמונה", remove: "הסרה", uploading: "מעלה…", failed: "ההעלאה נכשלה" },
@@ -595,7 +667,7 @@ export const dictionaries: Record<Locale, Dict> = {
   en: {
     dir: "ltr",
     langName: "English",
-    nav: { home: "Home", teams: "Teams", highlights: "Highlights", gallery: "Gallery", register: "Register", contact: "Contact" },
+    nav: { home: "Home", teams: "Teams", games: "Games", highlights: "Highlights", gallery: "Gallery", historic: "Historic glance", staff: "Staff", volunteers: "Volunteers", register: "Register", contact: "Contact" },
     hero: { badge: "Orthodox Youth Club — Nazareth", cta: "Register now", secondary: "See teams" },
     teams: {
       eyebrow: "Our teams",
@@ -612,6 +684,24 @@ export const dictionaries: Record<Locale, Dict> = {
       teamIbba: "Team page on IBBA",
       open: "Details",
     },
+    games: {
+      eyebrow: "Schedule",
+      heading: "Games",
+      subheading: "Every one of our games, ordered by date — soonest first.",
+      empty: "No games scheduled yet.",
+      filterTeam: "By team",
+      filterPlayer: "By player",
+      allTeams: "All teams",
+      allPlayers: "All players",
+      upcoming: "Upcoming",
+      past: "Past",
+      vs: "vs",
+      at: "at",
+      viewIbba: "IBBA page",
+    },
+    historic: { eyebrow: "From our history" },
+    staff: { eyebrow: "Our staff", heading: "Staff", subheading: "The coaches and administrators behind the club.", empty: "No staff added yet." },
+    volunteers: { eyebrow: "Helping hands", heading: "Volunteers", subheading: "The people who give their time to the club.", empty: "No volunteers added yet." },
     highlights: { eyebrow: "Clips", heading: "Highlights", subheading: "The best moments from the court.", empty: "No clips yet." },
     gallery: { eyebrow: "A look inside", heading: "Gallery", subheading: "Moments from the games and club life." },
     register: {
@@ -640,6 +730,9 @@ export const dictionaries: Record<Locale, Dict> = {
         address: "Address", school: "School", grade: "Grade / class",
         jerseySize: "Jersey size", jerseyPlaceholder: "— Select size —",
         payment: "Payment method", paymentPlaceholder: "— Payment method —", paymentCash: "Cash", paymentCheck: "Cheques", paymentCard: "Credit card",
+        paymentWithin7Days: "Please settle the fee within 7 days of registering.",
+        cardTitle: "Card details", cardName: "Name on card", cardNumber: "Card number", cardExpiry: "Expiry", cardCvc: "CVC",
+        payNow: "Pay now", paySecureNote: "Processed through a secure payment gateway; we never store your card details.", payPending: "Payment will be completed after you submit.",
         guardian: "Guardian name", date: "Date",
         signature: "Guardian signature", signatureHint: "Sign with your finger or mouse in the box", clear: "Clear",
         consent: "I confirm I am the player's guardian, agree to the registration terms and to publishing my child's photos within the club's activities, and that registration is subject to a medical check and payment of fees.",
@@ -647,7 +740,7 @@ export const dictionaries: Record<Locale, Dict> = {
         optional: "optional",
       },
     },
-    footer: { contact: "Contact", address: "Address", follow: "Follow us", rights: "All rights reserved.", adminLink: "Admin" },
+    footer: { contact: "Contact", address: "Address", directions: "Directions on Waze", follow: "Follow us", rights: "All rights reserved.", adminLink: "Admin" },
     admin: {
       loading: "Loading…",
       viewSite: "View site",
@@ -656,7 +749,8 @@ export const dictionaries: Record<Locale, Dict> = {
       saving: "Saving…",
       refresh: "Refresh",
       actions: { add: "Add", edit: "Edit", delete: "Delete", cancel: "Cancel", search: "Search" },
-      nav: { overview: "Overview", registrations: "Registrations", teams: "Teams", content: "Content", sections: "Sections", settings: "Settings" },
+      nav: { overview: "Overview", registrations: "Registrations", teams: "Teams", players: "Players", content: "Content", sections: "Sections", settings: "Settings" },
+      players: { add: "Add player", none: "No players in the roster yet.", search: "Search players…", name: "Name", addNew: "+ Create new player", pickerPlaceholder: "Search or add a player…" },
       settings: {
         title: "Settings",
         subtitle: "Change the admin password.",
@@ -686,10 +780,14 @@ export const dictionaries: Record<Locale, Dict> = {
         registrationsSub: "See who registered with the club and track signing status.",
         teams: "Teams",
         teamsSub: "Create teams and add players, matches and IBBA links.",
+        players: "Players",
+        playersSub: "The shared roster of all players. Add, edit or delete; used across every team.",
         content: "Content",
         contentSub: "Edit text, fonts and images. The preview updates as you type; changes go live on save.",
       },
-      contentTabs: { hero: "Home", highlights: "Highlights", gallery: "Gallery", blocks: "Blocks", footer: "Footer", backgrounds: "Backgrounds" },
+      contentTabs: { hero: "Home", highlights: "Highlights", gallery: "Gallery", historic: "Historic", staff: "Staff", volunteers: "Volunteers", blocks: "Blocks", footer: "Footer", backgrounds: "Backgrounds" },
+      people: { addStaff: "Add staff member", addVolunteer: "Add volunteer", emptyStaff: "No staff added yet.", emptyVolunteers: "No volunteers added yet.", name: "Name", role: "Role", photo: "Photo" },
+      historicEditor: { title: "Title", body: "Body", image: "Image" },
       preview: { label: "Live preview — updates when you Save" },
       toasts: { saved: "Saved — live on the site", saveError: "Could not save" },
       imageUpload: { upload: "Upload image", replace: "Replace image", remove: "Remove", uploading: "Uploading…", failed: "Upload failed" },

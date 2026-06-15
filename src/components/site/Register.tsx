@@ -10,6 +10,9 @@ import { JERSEY_SIZES } from "@/lib/registrationFields";
 import { SectionBg } from "./SectionBg";
 import { cn } from "@/lib/cn";
 
+// The credit-card option value (matches the PDF/dropdown string).
+const CARD_VALUE = "بطاقة اعتماد";
+
 interface FormValues {
   playerName: string;
   idNumber: string;
@@ -49,11 +52,17 @@ export function Register({ bg }: { bg?: string }) {
   const [consentError, setConsentError] = useState(false);
   const [sigError, setSigError] = useState(false);
 
+  // Credit-card details (card option only). Held locally and never sent to our
+  // server — a real charge goes through the payment provider's secure gateway.
+  const [card, setCard] = useState({ name: "", number: "", expiry: "", cvc: "" });
+  const [cardError, setCardError] = useState(false);
+
   const {
     register,
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     defaultValues: {
@@ -66,6 +75,10 @@ export function Register({ bg }: { bg?: string }) {
 
   // Prefill the date on the client to avoid an SSR/CSR mismatch.
   useEffect(() => setValue("dateSigned", todayISO()), [setValue]);
+
+  const paymentMethod = watch("paymentMethod");
+  const isCard = paymentMethod === CARD_VALUE;
+  const cardComplete = !!(card.name && card.number && card.expiry && card.cvc);
 
   // ---- Signature pad --------------------------------------------------------
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -116,6 +129,8 @@ export function Register({ bg }: { bg?: string }) {
   function registerAnother() {
     setDone(false);
     setConsent(false);
+    setCard({ name: "", number: "", expiry: "", cvc: "" });
+    setCardError(false);
     clearSig();
     reset();
     setValue("dateSigned", todayISO());
@@ -125,9 +140,13 @@ export function Register({ bg }: { bg?: string }) {
     let bad = false;
     if (!consent) { setConsentError(true); bad = true; }
     if (!signed) { setSigError(true); bad = true; }
+    // When paying by card, the card panel must be filled in.
+    if (values.paymentMethod === CARD_VALUE && !cardComplete) { setCardError(true); bad = true; }
     if (bad) return;
 
     const signature = canvasRef.current?.toDataURL("image/png");
+    // Card details are intentionally NOT included — they go to the payment
+    // provider's secure gateway, never to our own backend.
     const payload = { ...values, dateSigned: toDisplayDate(values.dateSigned), signature };
 
     try {
@@ -137,6 +156,34 @@ export function Register({ bg }: { bg?: string }) {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("request failed");
+      const data = await res.json();
+
+      // Paying by card → start the secure checkout and redirect. If the payment
+      // provider isn't configured yet (501), we just complete the registration
+      // and the fee is settled offline (the success screen still shows).
+      if (values.paymentMethod === CARD_VALUE && data?.registration?.id) {
+        try {
+          const pay = await fetch("/api/payments/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              registrationId: data.registration.id,
+              customerName: values.playerName,
+              customerEmail: values.email,
+            }),
+          });
+          if (pay.ok) {
+            const { url } = await pay.json();
+            if (url) {
+              window.location.href = url;
+              return;
+            }
+          }
+        } catch {
+          /* provider not ready — fall through to the success screen */
+        }
+      }
+
       setDone(true);
     } catch {
       toast.error(t.register.errors.generic);
@@ -144,6 +191,8 @@ export function Register({ bg }: { bg?: string }) {
   });
 
   const reqErr = (name: keyof FormValues) => (errors[name] ? t.register.errors.required : undefined);
+  const phoneErr = (name: keyof FormValues) =>
+    errors[name] ? (errors[name]?.type === "required" ? t.register.errors.required : t.register.errors.phone) : undefined;
 
   return (
     <section id="register" className={`relative scroll-mt-20 overflow-hidden bg-surface py-20 md:py-28 ${bg ? "flex min-h-screen flex-col justify-center" : ""}`}>
@@ -230,11 +279,11 @@ export function Register({ bg }: { bg?: string }) {
                   <Field label={f.birthDate} error={reqErr("birthDate")}>
                     <input type="date" dir="ltr" {...register("birthDate", { required: true })} className={inputCls(!!errors.birthDate)} />
                   </Field>
-                  <Field label={f.phonePlayer} optional={f.optional}>
-                    <input type="tel" dir="ltr" {...register("phonePlayer")} className={inputCls(false)} />
+                  <Field label={f.phonePlayer} error={phoneErr("phonePlayer")}>
+                    <input type="tel" dir="ltr" {...register("phonePlayer", { required: true, validate: isValidPhone })} className={inputCls(!!errors.phonePlayer)} />
                   </Field>
-                  <Field label={f.jerseySize} optional={f.optional}>
-                    <select {...register("jerseySize")} className={selectCls}>
+                  <Field label={f.jerseySize} error={reqErr("jerseySize")}>
+                    <select {...register("jerseySize", { required: true })} className={selectCls}>
                       <option value="">{f.jerseyPlaceholder}</option>
                       {JERSEY_SIZES.map((s) => (
                         <option key={s} value={s}>{s}</option>
@@ -245,17 +294,17 @@ export function Register({ bg }: { bg?: string }) {
 
                 {/* Parents */}
                 <FieldSet legend={f.sectionParents}>
-                  <Field label={f.father} optional={f.optional}>
-                    <input {...register("fatherName")} className={inputCls(false)} />
+                  <Field label={f.father} error={reqErr("fatherName")}>
+                    <input {...register("fatherName", { required: true })} className={inputCls(!!errors.fatherName)} />
                   </Field>
-                  <Field label={f.mother} optional={f.optional}>
-                    <input {...register("motherName")} className={inputCls(false)} />
+                  <Field label={f.mother} error={reqErr("motherName")}>
+                    <input {...register("motherName", { required: true })} className={inputCls(!!errors.motherName)} />
                   </Field>
-                  <Field label={f.phoneFather} error={errors.phoneFather && t.register.errors.phone}>
-                    <input type="tel" dir="ltr" {...register("phoneFather", { validate: (v) => !v || isValidPhone(v) })} className={inputCls(!!errors.phoneFather)} />
+                  <Field label={f.phoneFather} error={phoneErr("phoneFather")}>
+                    <input type="tel" dir="ltr" {...register("phoneFather", { required: true, validate: isValidPhone })} className={inputCls(!!errors.phoneFather)} />
                   </Field>
-                  <Field label={f.phoneMother} error={errors.phoneMother && t.register.errors.phone}>
-                    <input type="tel" dir="ltr" {...register("phoneMother", { validate: (v) => !v || isValidPhone(v) })} className={inputCls(!!errors.phoneMother)} />
+                  <Field label={f.phoneMother} error={phoneErr("phoneMother")}>
+                    <input type="tel" dir="ltr" {...register("phoneMother", { required: true, validate: isValidPhone })} className={inputCls(!!errors.phoneMother)} />
                   </Field>
                 </FieldSet>
 
@@ -268,27 +317,67 @@ export function Register({ bg }: { bg?: string }) {
                   >
                     <input type="email" dir="ltr" {...register("email", { required: true, validate: (v) => isValidEmail(v) })} className={inputCls(!!errors.email)} />
                   </Field>
-                  <Field label={f.address} optional={f.optional} className="sm:col-span-2">
-                    <input {...register("address")} className={inputCls(false)} />
+                  <Field label={f.address} error={reqErr("address")} className="sm:col-span-2">
+                    <input {...register("address", { required: true })} className={inputCls(!!errors.address)} />
                   </Field>
-                  <Field label={f.school} optional={f.optional}>
-                    <input {...register("school")} className={inputCls(false)} />
+                  <Field label={f.school} error={reqErr("school")}>
+                    <input {...register("school", { required: true })} className={inputCls(!!errors.school)} />
                   </Field>
-                  <Field label={f.grade} optional={f.optional}>
-                    <input {...register("classGrade")} className={inputCls(false)} />
+                  <Field label={f.grade} error={reqErr("classGrade")}>
+                    <input {...register("classGrade", { required: true })} className={inputCls(!!errors.classGrade)} />
                   </Field>
                 </FieldSet>
 
                 {/* Club */}
                 <FieldSet legend={f.sectionClub}>
-                  <Field label={f.payment} optional={f.optional} className="sm:col-span-2">
-                    <select {...register("paymentMethod")} className={selectCls}>
+                  <Field label={f.payment} error={reqErr("paymentMethod")} className="sm:col-span-2">
+                    <select {...register("paymentMethod", { required: true })} className={selectCls}>
                       <option value="">{f.paymentPlaceholder}</option>
                       <option value="نقدا">{f.paymentCash}</option>
                       <option value="شيكات">{f.paymentCheck}</option>
-                      <option value="بطاقة اعتماد">{f.paymentCard}</option>
+                      <option value={CARD_VALUE}>{f.paymentCard}</option>
                     </select>
                   </Field>
+
+                  {/* Cash / cheque → settle within 7 days. */}
+                  {paymentMethod && !isCard && (
+                    <div className="sm:col-span-2 flex items-start gap-2.5 rounded-xl bg-amber-50 p-3.5 text-sm text-amber-800">
+                      <span aria-hidden className="text-base leading-none">⏳</span>
+                      <span>{f.paymentWithin7Days}</span>
+                    </div>
+                  )}
+
+                  {/* Card → reveal the secure card panel. */}
+                  {isCard && (
+                    <div className={cn("sm:col-span-2 space-y-3 rounded-2xl border p-4", cardError ? "border-rose-400 bg-rose-50/40" : "border-brand/25 bg-brand-50/40")}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-brand-dark">💳 {f.cardTitle}</span>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block sm:col-span-2">
+                          <span className="mb-1.5 block text-sm font-semibold text-ink">{f.cardName}</span>
+                          <input value={card.name} onChange={(e) => { setCard((c) => ({ ...c, name: e.target.value })); setCardError(false); }} className={inputCls(false)} autoComplete="cc-name" />
+                        </label>
+                        <label className="block sm:col-span-2">
+                          <span className="mb-1.5 block text-sm font-semibold text-ink">{f.cardNumber}</span>
+                          <input value={card.number} onChange={(e) => { setCard((c) => ({ ...c, number: e.target.value })); setCardError(false); }} className={inputCls(false)} dir="ltr" inputMode="numeric" autoComplete="cc-number" placeholder="•••• •••• •••• ••••" />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-semibold text-ink">{f.cardExpiry}</span>
+                          <input value={card.expiry} onChange={(e) => { setCard((c) => ({ ...c, expiry: e.target.value })); setCardError(false); }} className={inputCls(false)} dir="ltr" inputMode="numeric" autoComplete="cc-exp" placeholder="MM / YY" />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1.5 block text-sm font-semibold text-ink">{f.cardCvc}</span>
+                          <input value={card.cvc} onChange={(e) => { setCard((c) => ({ ...c, cvc: e.target.value })); setCardError(false); }} className={inputCls(false)} dir="ltr" inputMode="numeric" autoComplete="cc-csc" placeholder="•••" />
+                        </label>
+                      </div>
+                      {cardError && <p className="text-xs font-medium text-rose-600">{t.register.errors.required}</p>}
+                      <p className="flex items-start gap-1.5 text-xs text-muted">
+                        <span aria-hidden>🔒</span>
+                        <span>{f.paySecureNote}</span>
+                      </p>
+                    </div>
+                  )}
                 </FieldSet>
 
                 {/* Declaration & signature */}
@@ -296,8 +385,8 @@ export function Register({ bg }: { bg?: string }) {
                   <Field label={f.guardian} error={reqErr("guardianName")}>
                     <input {...register("guardianName", { required: true })} className={inputCls(!!errors.guardianName)} />
                   </Field>
-                  <Field label={f.date}>
-                    <input type="date" dir="ltr" {...register("dateSigned")} className={inputCls(false)} />
+                  <Field label={f.date} error={reqErr("dateSigned")}>
+                    <input type="date" dir="ltr" {...register("dateSigned", { required: true })} className={inputCls(!!errors.dateSigned)} />
                   </Field>
 
                   <div className="sm:col-span-2">

@@ -72,7 +72,7 @@ export function Hero({
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           src="/logo.png"
           alt="OYC Nazareth"
-          className="h-28 w-auto rounded-2xl bg-white/95 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.35)] md:h-32"
+          className="h-40 w-auto rounded-2xl bg-white/95 p-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.35)] md:h-52"
         />
 
         <motion.span

@@ -7,23 +7,26 @@
 export const JERSEY_SIZES = ["8", "10", "12", "14", "XXS", "XS", "S", "M", "L", "XL"] as const;
 export const PAYMENT_VALUES = ["نقدا", "شيكات", "بطاقة اعتماد"] as const;
 
+// Every field on the official form is now required (the club asked for complete
+// records). dateSigned is auto-filled client-side, so it stays effectively
+// mandatory too. Keep these in sync with validation.ts and Register.tsx.
 export interface RegistrationInput {
   playerName: string;
   idNumber: string;
   birthDate: string;
-  phonePlayer?: string;
-  fatherName?: string;
-  motherName?: string;
-  phoneFather?: string;
-  phoneMother?: string;
+  phonePlayer: string;
+  fatherName: string;
+  motherName: string;
+  phoneFather: string;
+  phoneMother: string;
   email: string;
-  address?: string;
-  school?: string;
-  classGrade?: string;
-  jerseySize?: string;
-  paymentMethod?: string;
+  address: string;
+  school: string;
+  classGrade: string;
+  jerseySize: string;
+  paymentMethod: string;
   guardianName: string;
-  dateSigned?: string;
+  dateSigned: string;
 }
 
 /** data key → AcroForm text/choice field name in the template PDF. */

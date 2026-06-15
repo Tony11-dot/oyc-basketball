@@ -9,8 +9,8 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { SocialIcon } from "./SocialIcon";
 import { cn } from "@/lib/cn";
 
-type SectionId = "home" | "teams" | "highlights" | "gallery" | "register" | "contact";
-const SECTIONS_DEFAULT = ["home", "teams", "highlights", "gallery", "register", "contact"];
+type SectionId = "home" | "teams" | "games" | "highlights" | "gallery" | "historic" | "staff" | "volunteers" | "register" | "contact";
+const SECTIONS_DEFAULT = ["home", "teams", "games", "highlights", "gallery", "historic", "staff", "volunteers", "register", "contact"];
 const INSTAGRAM_URL = "https://instagram.com/oyc.nazareth";
 
 export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] }) {
@@ -43,8 +43,12 @@ export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] })
   const labels: Record<SectionId, string> = {
     home: t.nav.home,
     teams: t.nav.teams,
+    games: t.nav.games,
     highlights: t.nav.highlights,
     gallery: t.nav.gallery,
+    historic: t.nav.historic,
+    staff: t.nav.staff,
+    volunteers: t.nav.volunteers,
     register: t.nav.register,
     contact: t.nav.contact,
   };

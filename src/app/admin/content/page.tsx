@@ -8,17 +8,21 @@ import { ImagePositioner } from "@/components/admin/ImagePositioner";
 import { StyleToolbar } from "@/components/admin/StyleToolbar";
 import { BlockBuilder } from "@/components/admin/BlockBuilder";
 import { GalleryEditor } from "@/components/admin/GalleryEditor";
+import { PeopleEditor } from "@/components/admin/PeopleEditor";
 import { HighlightsEditor } from "@/components/admin/HighlightsEditor";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
-import type { Block, BlocksPosition, GalleryImage, Highlight, Localized, SiteContent, TextStyle } from "@/lib/types";
+import type { Block, BlocksPosition, GalleryImage, HistoricSection, Highlight, Localized, Person, SiteContent, TextStyle } from "@/lib/types";
 import { STYLE_KEYS } from "@/lib/textStyle";
 import { cn } from "@/lib/cn";
 
-type Tab = "hero" | "highlights" | "gallery" | "blocks" | "footer" | "backgrounds";
+type Tab = "hero" | "highlights" | "gallery" | "historic" | "staff" | "volunteers" | "blocks" | "footer" | "backgrounds";
 
-const BG_SECTIONS = ["home", "teams", "highlights", "gallery", "register"] as const;
+const BG_SECTIONS = ["home", "teams", "games", "highlights", "gallery", "historic", "staff", "volunteers", "register"] as const;
+
+const emptyLocalized = (): Localized => ({ ar: "", he: "", en: "" });
+const emptyHistoric = (): HistoricSection => ({ title: emptyLocalized(), body: emptyLocalized(), image: "" });
 
 const plainInput =
   "h-10 w-full rounded-xl border border-line bg-white px-3.5 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
@@ -38,6 +42,9 @@ export default function ContentAdmin() {
     { id: "hero", label: t.admin.contentTabs.hero },
     { id: "highlights", label: t.admin.contentTabs.highlights },
     { id: "gallery", label: t.admin.contentTabs.gallery },
+    { id: "historic", label: t.admin.contentTabs.historic },
+    { id: "staff", label: t.admin.contentTabs.staff },
+    { id: "volunteers", label: t.admin.contentTabs.volunteers },
     { id: "blocks", label: t.admin.contentTabs.blocks },
     { id: "backgrounds", label: t.admin.contentTabs.backgrounds },
     { id: "footer", label: t.admin.contentTabs.footer },
@@ -105,6 +112,10 @@ export default function ContentAdmin() {
     setContent((c) => (c ? { ...c, styles: { ...(c.styles ?? {}), [key]: v } } : c));
   const setBlocks = (blocks: Block[]) => setContent((c) => (c ? { ...c, blocks } : c));
   const setGallery = (gallery: GalleryImage[]) => setContent((c) => (c ? { ...c, gallery } : c));
+  const setStaff = (staff: Person[]) => setContent((c) => (c ? { ...c, staff } : c));
+  const setVolunteers = (volunteers: Person[]) => setContent((c) => (c ? { ...c, volunteers } : c));
+  const setHistoric = (patch: Partial<HistoricSection>) =>
+    setContent((c) => (c ? { ...c, historic: { ...(c.historic ?? emptyHistoric()), ...patch } } : c));
   const setBackground = (id: string, url: string) =>
     setContent((c) => (c ? { ...c, backgrounds: { ...(c.backgrounds ?? {}), [id]: url } } : c));
   const setBlocksPosition = (blocksPosition: BlocksPosition) =>
@@ -178,6 +189,45 @@ export default function ContentAdmin() {
               captionLabel={t.admin.gallery.caption}
               styles={content.styles}
               onStyle={setStyle}
+            />
+          )}
+
+          {tab === "historic" && (
+            <div className="space-y-4">
+              <ImageUpload value={content.historic?.image ?? ""} onChange={(image) => setHistoric({ image })} />
+              {content.historic?.image && (
+                <ImagePositioner
+                  src={content.historic.image}
+                  value={content.historic.imagePosition}
+                  onChange={(imagePosition) => setHistoric({ imagePosition })}
+                  aspectRatio={content.historic.aspectRatio ?? "4 / 3"}
+                  onAspectChange={(aspectRatio) => setHistoric({ aspectRatio })}
+                />
+              )}
+              {styled(t.admin.historicEditor.title, content.historic?.title ?? emptyLocalized(), (title) => setHistoric({ title }), "historic.title")}
+              {styled(t.admin.historicEditor.body, content.historic?.body ?? emptyLocalized(), (body) => setHistoric({ body }), "historic.body", { textarea: true, rows: 6 })}
+            </div>
+          )}
+
+          {tab === "staff" && (
+            <PeopleEditor
+              people={content.staff ?? []}
+              onChange={setStaff}
+              addLabel={t.admin.people.addStaff}
+              emptyLabel={t.admin.people.emptyStaff}
+              nameLabel={t.admin.people.name}
+              roleLabel={t.admin.people.role}
+            />
+          )}
+
+          {tab === "volunteers" && (
+            <PeopleEditor
+              people={content.volunteers ?? []}
+              onChange={setVolunteers}
+              addLabel={t.admin.people.addVolunteer}
+              emptyLabel={t.admin.people.emptyVolunteers}
+              nameLabel={t.admin.people.name}
+              roleLabel={t.admin.people.role}
             />
           )}
 

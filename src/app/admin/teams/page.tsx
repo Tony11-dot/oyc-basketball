@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { LocalizedField } from "@/components/admin/LocalizedField";
 import { ImageUpload } from "@/components/admin/ImageUpload";
@@ -95,9 +95,10 @@ export default function TeamsAdmin() {
   };
   const detachPlayer = (teamId: string, playerId: string) =>
     setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, playerIds: tm.playerIds.filter((pid) => pid !== playerId) } : tm)));
-  const addNewPlayer = (teamId: string) => {
+  const addNewPlayer = (teamId: string, initialName?: string) => {
     const id = `newp-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
-    setPlayers((list) => [...list, { id, name: emptyLoc(), number: "", position: emptyLoc(), image: "" }]);
+    const name = initialName ? { ar: initialName, he: initialName, en: initialName } : emptyLoc();
+    setPlayers((list) => [...list, { id, name, number: "", position: emptyLoc(), image: "" }]);
     attachPlayer(teamId, id);
   };
 
@@ -255,13 +256,14 @@ export default function TeamsAdmin() {
                 <Button size="sm" variant="subtle" onClick={() => addNewPlayer(tm.id)}>{t.admin.team.addNew}</Button>
               </div>
 
-              {/* Attach existing */}
-              <AttachExisting
+              {/* Searchable picker: find an existing player or create one on the spot */}
+              <PlayerPicker
                 players={players.filter((p) => !tm.playerIds.includes(p.id))}
                 pick={pick}
-                placeholder={t.admin.team.selectExisting}
-                addLabel={t.admin.team.addExisting}
+                placeholder={t.admin.players.pickerPlaceholder}
+                addNewLabel={t.admin.players.addNew}
                 onAttach={(pid) => attachPlayer(tm.id, pid)}
+                onAddNew={(name) => addNewPlayer(tm.id, name)}
               />
 
               {tm.playerIds.length === 0 && <p className="text-sm text-muted">{t.admin.team.noPlayers}</p>}
@@ -337,43 +339,84 @@ export default function TeamsAdmin() {
   );
 }
 
-function AttachExisting({
+// Searchable player combobox: type to filter the shared roster, click to attach,
+// or create a brand-new player on the spot (optionally pre-named with what you
+// typed). Closes on outside click; keyboard-friendly via Enter on the add option.
+function PlayerPicker({
   players,
   pick,
   placeholder,
-  addLabel,
+  addNewLabel,
   onAttach,
+  onAddNew,
 }: {
   players: Player[];
   pick: (v: Localized) => string;
   placeholder: string;
-  addLabel: string;
+  addNewLabel: string;
   onAttach: (id: string) => void;
+  onAddNew: (name?: string) => void;
 }) {
-  const [sel, setSel] = useState("");
-  if (players.length === 0) return null;
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", onDown);
+    return () => window.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const needle = q.trim().toLowerCase();
+  const matches = players.filter((p) => {
+    if (!needle) return true;
+    return [p.name.ar, p.name.he, p.name.en, p.number].filter(Boolean).join(" ").toLowerCase().includes(needle);
+  });
+
+  const choose = (id: string) => { onAttach(id); setQ(""); setOpen(false); };
+  const create = () => { onAddNew(q.trim() || undefined); setQ(""); setOpen(false); };
+
   return (
-    <div className="flex items-center gap-2">
-      <select value={sel} onChange={(e) => setSel(e.target.value)} className={`${plainInput} flex-1`}>
-        <option value="">{placeholder}</option>
-        {players.map((p) => (
-          <option key={p.id} value={p.id}>
-            {pick(p.name) || p.id}{p.number ? ` · #${p.number}` : ""}
-          </option>
-        ))}
-      </select>
-      <Button
-        size="sm"
-        variant="secondary"
-        onClick={() => {
-          if (sel) {
-            onAttach(sel);
-            setSel("");
-          }
+    <div ref={wrapRef} className="relative">
+      <input
+        value={q}
+        onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); if (matches.length === 1) choose(matches[0].id); else create(); }
+          if (e.key === "Escape") setOpen(false);
         }}
-      >
-        {addLabel}
-      </Button>
+        placeholder={placeholder}
+        className={plainInput}
+      />
+      {open && (
+        <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-line bg-white py-1 shadow-card">
+          {matches.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => choose(p.id)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-start text-sm text-ink transition hover:bg-surface"
+            >
+              <span className="font-medium">{pick(p.name) || p.id}</span>
+              {p.number && <span className="text-xs text-muted">#{p.number}</span>}
+            </button>
+          ))}
+          {matches.length === 0 && needle === "" && (
+            <p className="px-3 py-2 text-xs text-muted">—</p>
+          )}
+          <button
+            type="button"
+            onClick={create}
+            className="mt-1 flex w-full items-center gap-1.5 border-t border-line px-3 py-2 text-start text-sm font-semibold text-brand-dark transition hover:bg-brand-50"
+          >
+            {addNewLabel}{q.trim() ? `: “${q.trim()}”` : ""}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

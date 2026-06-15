@@ -1,5 +1,5 @@
 // Default seed data used to initialise the JSON "database" on first run.
-import type { GalleryImage, Highlight, Player, Registration, SiteContent, Team } from "./types";
+import type { GalleryImage, Highlight, Person, Player, Registration, SiteContent, Team } from "./types";
 
 export const seedRegistrations: Registration[] = [];
 
@@ -100,6 +100,30 @@ export const seedGallery: GalleryImage[] = [
   { id: "g-2", image: "", caption: { ar: "الجمهور", he: "הקהל", en: "The crowd" }, aspectRatio: "16 / 9" },
 ];
 
+export const seedStaff: Person[] = [
+  {
+    id: "st-1",
+    name: { ar: "أبونا الياس", he: "האב איליאס", en: "Fr. Elias" },
+    role: { ar: "المرشد الروحي", he: "מדריך רוחני", en: "Spiritual guide" },
+    image: "",
+  },
+  {
+    id: "st-2",
+    name: { ar: "سامي خوري", he: "סامי חורי", en: "Sami Khoury" },
+    role: { ar: "المدرّب الرئيسي", he: "מאמן ראשי", en: "Head coach" },
+    image: "",
+  },
+];
+
+export const seedVolunteers: Person[] = [
+  {
+    id: "vo-1",
+    name: { ar: "مارينا حنا", he: "מרינה חנא", en: "Marina Hanna" },
+    role: { ar: "تنسيق الفعاليات", he: "תיאום אירועים", en: "Events coordinator" },
+    image: "",
+  },
+];
+
 export const seedContent: SiteContent = {
   hero: {
     title: {
@@ -123,11 +147,26 @@ export const seedContent: SiteContent = {
     phone: "",
     email: "",
     address: {
-      ar: "الناصرة",
-      he: "נצרת",
-      en: "Nazareth",
+      ar: "شارع الناصرة 6053، رقم 9",
+      he: "רחוב נצרת 6053, מס׳ 9",
+      en: "Nazareth St. 6053, no. 9",
     },
     social: [{ label: "Instagram", url: "https://instagram.com/oyc.nazareth" }],
   },
   gallery: seedGallery,
+  staff: seedStaff,
+  volunteers: seedVolunteers,
+  historic: {
+    title: {
+      ar: "لمحة تاريخية",
+      he: "מבט היסטורי",
+      en: "A historic glance",
+    },
+    body: {
+      ar: "تأسّس نادي الشبيبة الأرثوذكسية في الناصرة ليكون بيتاً للرياضة والروح والأخوّة. منذ سنواته الأولى، رعى النادي أجيالاً من اللاعبين على أرض الملعب وخارجها، وما زال يحمل الرسالة ذاتها حتى اليوم.",
+      he: "מועדון הנוער האורתודוקסי בנצרת נוסד כדי להיות בית לספורט, לרוח ולאחווה. מאז שנותיו הראשונות ליווה המועדון דורות של שחקנים, על המגרש ומחוצה לו, ועודנו נושא את אותה השליחות גם היום.",
+      en: "The Orthodox Youth Club of Nazareth was founded to be a home for sport, spirit and brotherhood. From its earliest years the club has nurtured generations of players on and off the court, and carries the same mission today.",
+    },
+    image: "",
+  },
 };
