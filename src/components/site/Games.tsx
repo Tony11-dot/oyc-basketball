@@ -138,6 +138,14 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                       </div>
                       {formatDate(match) && <p className="mt-1.5 text-sm text-muted">🗓️ {formatDate(match)}</p>}
                       {pick(match.where) && <p className="mt-0.5 text-sm text-muted">📍 {t.games.at} {pick(match.where)}</p>}
+                      {match.contactName && pick(match.contactName) && (
+                        <p className="mt-0.5 text-sm text-muted">🧑‍💼 {t.games.responsible}: {pick(match.contactName)}</p>
+                      )}
+                      {match.contactPhone && (
+                        <p className="mt-0.5 text-sm text-muted">
+                          📞 <a href={`tel:${match.contactPhone}`} dir="ltr" className="font-semibold text-brand-dark hover:underline">{match.contactPhone}</a>
+                        </p>
+                      )}
                       {match.ibbaLink && (
                         <a
                           href={match.ibbaLink}

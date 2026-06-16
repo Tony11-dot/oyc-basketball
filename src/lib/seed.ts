@@ -1,7 +1,29 @@
 // Default seed data used to initialise the JSON "database" on first run.
-import type { GalleryImage, Highlight, Person, Player, Registration, SiteContent, Team } from "./types";
+import type { AttendanceRecord, Coach, GalleryImage, Highlight, Person, Player, Registration, SiteContent, Team } from "./types";
 
 export const seedRegistrations: Registration[] = [];
+
+// Shared coach pool. Like players, coaches attach to teams by id. A coach's
+// idNumber doubles as their login to the attendance portal.
+export const seedCoaches: Coach[] = [
+  {
+    id: "co-1",
+    name: { ar: "سامي خوري", he: "סامי חורי", en: "Sami Khoury" },
+    idNumber: "200000001",
+    phone: "050-0000001",
+    image: "",
+  },
+  {
+    id: "co-2",
+    name: { ar: "نبيل عوّاد", he: "נביל עוואד", en: "Nabil Awad" },
+    idNumber: "200000002",
+    phone: "050-0000002",
+    image: "",
+  },
+];
+
+// Attendance sheets start empty; they're created from the coach portal.
+export const seedAttendance: AttendanceRecord[] = [];
 
 // Shared roster pool. Teams attach players by id; admins can edit, add or remove
 // players, and create new ones inline while editing a team.
@@ -48,12 +70,15 @@ export const seedTeams: Team[] = [
     image: "",
     ibbaLink: "https://www.ibba.co.il/",
     playerIds: ["pl-1", "pl-2", "pl-3"],
+    coachIds: ["co-1"],
     matches: [
       {
         id: "mt-1",
         opponent: { ar: "نادي حيفا", he: "מועדון חיפה", en: "Haifa Club" },
         date: "2026-06-20T19:00:00.000Z",
         where: { ar: "قاعة الناصرة الرياضية", he: "אולם הספורט נצרת", en: "Nazareth Sports Hall" },
+        contactName: { ar: "أبو سامر", he: "אבו סאמר", en: "Abu Samer" },
+        contactPhone: "050-1234567",
         ibbaLink: "https://www.ibba.co.il/",
       },
     ],
@@ -72,6 +97,7 @@ export const seedTeams: Team[] = [
     image: "",
     ibbaLink: "https://www.ibba.co.il/",
     playerIds: ["pl-4"],
+    coachIds: ["co-2"],
     matches: [
       {
         id: "mt-2",

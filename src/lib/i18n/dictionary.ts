@@ -33,11 +33,24 @@ export interface Dict {
     viewIbba: string;
     teamIbba: string;
     open: string;
+    coaches: string;
+    noCoaches: string;
+    responsible: string;
+    phone: string;
   };
   games: {
     eyebrow: string; heading: string; subheading: string; empty: string;
     filterTeam: string; filterPlayer: string; allTeams: string; allPlayers: string;
     upcoming: string; past: string; vs: string; at: string; viewIbba: string;
+    responsible: string; phone: string;
+  };
+  coach: {
+    loginTitle: string; loginSubtitle: string; idLabel: string; idPlaceholder: string;
+    signIn: string; signingIn: string; wrong: string; error: string; signOut: string;
+    myTeamsTitle: string; myTeamsSubtitle: string; noTeams: string; takeAttendance: string;
+    backToTeams: string; dateLabel: string; present: string; absent: string;
+    markAllPresent: string; clearAll: string; submit: string; submitting: string;
+    submitted: string; noPlayers: string; lastTaken: string; loadError: string;
   };
   historic: { eyebrow: string };
   staff: { eyebrow: string; heading: string; subheading: string; empty: string };
@@ -87,8 +100,15 @@ export interface Dict {
     saving: string;
     refresh: string;
     actions: { add: string; edit: string; delete: string; cancel: string; search: string };
-    nav: { overview: string; registrations: string; teams: string; players: string; content: string; sections: string; settings: string };
+    nav: { overview: string; registrations: string; teams: string; players: string; coaches: string; attendance: string; content: string; sections: string; settings: string };
     players: { add: string; none: string; search: string; name: string; addNew: string; pickerPlaceholder: string };
+    coaches: { add: string; none: string; search: string; name: string; idNumber: string; phone: string; addNew: string; pickerPlaceholder: string };
+    attendance: {
+      subtitle: string; pickTeam: string; backToTeams: string; noTeams: string;
+      present: string; absent: string; notMarked: string; player: string; number: string;
+      takenBy: string; noRecords: string; gridHint: string; calendar: string; closeCalendar: string;
+      pickDate: string; dayNoRecords: string; dateColumn: string; rate: string;
+    };
     settings: {
       title: string;
       subtitle: string;
@@ -120,6 +140,10 @@ export interface Dict {
       teamsSub: string;
       players: string;
       playersSub: string;
+      coaches: string;
+      coachesSub: string;
+      attendance: string;
+      attendanceSub: string;
       content: string;
       contentSub: string;
     };
@@ -177,6 +201,12 @@ export interface Dict {
       position: string;
       detach: string;
       noPlayers: string;
+      coaches: string;
+      coachesHint: string;
+      noCoaches: string;
+      addNewCoach: string;
+      coachId: string;
+      coachPhone: string;
       matches: string;
       matchesHint: string;
       addMatch: string;
@@ -184,6 +214,9 @@ export interface Dict {
       opponentLogo: string;
       matchDate: string;
       matchWhere: string;
+      contactName: string;
+      contactNameHint: string;
+      contactPhone: string;
       matchIbba: string;
       removeMatch: string;
       noMatches: string;
@@ -244,6 +277,10 @@ export const dictionaries: Record<Locale, Dict> = {
       viewIbba: "صفحة IBBA",
       teamIbba: "صفحة الفريق على IBBA",
       open: "التفاصيل",
+      coaches: "المدرّبون",
+      noCoaches: "لم تتم إضافة مدرّبين بعد.",
+      responsible: "المسؤول",
+      phone: "الهاتف",
     },
     games: {
       eyebrow: "الجدول",
@@ -259,6 +296,35 @@ export const dictionaries: Record<Locale, Dict> = {
       vs: "ضد",
       at: "في",
       viewIbba: "صفحة IBBA",
+      responsible: "المسؤول",
+      phone: "الهاتف",
+    },
+    coach: {
+      loginTitle: "بوّابة المدرّبين",
+      loginSubtitle: "أدخل رقم هويّتك لتسجيل الحضور.",
+      idLabel: "رقم الهويّة",
+      idPlaceholder: "رقم هويّتك",
+      signIn: "دخول",
+      signingIn: "جارٍ الدخول…",
+      wrong: "رقم هويّة غير معروف. تواصل مع الإدارة.",
+      error: "حدث خطأ ما. حاول مجدداً.",
+      signOut: "خروج",
+      myTeamsTitle: "فرقي",
+      myTeamsSubtitle: "اختر فريقاً لتسجيل الحضور.",
+      noTeams: "لا توجد فرق مرتبطة بك بعد. تواصل مع الإدارة.",
+      takeAttendance: "تسجيل الحضور",
+      backToTeams: "← العودة إلى الفرق",
+      dateLabel: "التاريخ",
+      present: "حاضر",
+      absent: "غائب",
+      markAllPresent: "تحديد الكل حاضر",
+      clearAll: "مسح الكل",
+      submit: "حفظ الحضور",
+      submitting: "جارٍ الحفظ…",
+      submitted: "تم حفظ الحضور",
+      noPlayers: "لا يوجد لاعبون في هذا الفريق.",
+      lastTaken: "آخر تحديث",
+      loadError: "تعذّر التحميل. حاول مجدداً.",
     },
     historic: { eyebrow: "من تاريخنا" },
     staff: { eyebrow: "طاقمنا", heading: "الطاقم", subheading: "المدرّبون والإداريون خلف النادي.", empty: "لم تتم إضافة أعضاء الطاقم بعد." },
@@ -310,8 +376,29 @@ export const dictionaries: Record<Locale, Dict> = {
       saving: "جارٍ الحفظ…",
       refresh: "تحديث",
       actions: { add: "إضافة", edit: "تعديل", delete: "حذف", cancel: "إلغاء", search: "بحث" },
-      nav: { overview: "نظرة عامة", registrations: "التسجيلات", teams: "الفرق", players: "اللاعبون", content: "المحتوى", sections: "الأقسام", settings: "الإعدادات" },
+      nav: { overview: "نظرة عامة", registrations: "التسجيلات", teams: "الفرق", players: "اللاعبون", coaches: "المدرّبون", attendance: "الحضور", content: "المحتوى", sections: "الأقسام", settings: "الإعدادات" },
       players: { add: "إضافة لاعب", none: "لا يوجد لاعبون في القائمة بعد.", search: "ابحث عن لاعب…", name: "الاسم", addNew: "+ إنشاء لاعب جديد", pickerPlaceholder: "ابحث أو أضف لاعباً…" },
+      coaches: { add: "إضافة مدرّب", none: "لا يوجد مدرّبون بعد.", search: "ابحث عن مدرّب…", name: "الاسم", idNumber: "رقم الهويّة", phone: "الهاتف", addNew: "+ إنشاء مدرّب جديد", pickerPlaceholder: "ابحث أو أضف مدرّباً…" },
+      attendance: {
+        subtitle: "اختر فريقاً لعرض حضور لاعبيه عبر التواريخ.",
+        pickTeam: "اختر فريقاً",
+        backToTeams: "← العودة إلى الفرق",
+        noTeams: "لا توجد فرق بعد.",
+        present: "حاضر",
+        absent: "غائب",
+        notMarked: "—",
+        player: "اللاعب",
+        number: "الرقم",
+        takenBy: "سجّله",
+        noRecords: "لا توجد سجلات حضور لهذا الفريق بعد.",
+        gridHint: "كل عمود هو تاريخ تسجيل حضور.",
+        calendar: "📅 تقويم",
+        closeCalendar: "إغلاق التقويم",
+        pickDate: "اختر تاريخاً لعرض حضوره",
+        dayNoRecords: "لا يوجد حضور مسجّل في هذا اليوم.",
+        dateColumn: "التاريخ",
+        rate: "النسبة",
+      },
       settings: {
         title: "الإعدادات",
         subtitle: "تغيير كلمة مرور الإدارة.",
@@ -343,6 +430,10 @@ export const dictionaries: Record<Locale, Dict> = {
         teamsSub: "أنشئ الفرق وأضف اللاعبين والمباريات وروابط IBBA.",
         players: "اللاعبون",
         playersSub: "القائمة العامة لكل اللاعبين. أضف، عدّل أو احذف؛ تُستخدم في كل الفرق.",
+        coaches: "المدرّبون",
+        coachesSub: "القائمة العامة للمدرّبين. أضف رقم الهويّة والهاتف؛ تُستخدم في كل الفرق وللدخول.",
+        attendance: "الحضور",
+        attendanceSub: "تابع حضور اللاعبين حسب الفريق والتاريخ.",
         content: "المحتوى",
         contentSub: "تحرير النصوص والخطوط والصور. تتحدث المعاينة فوراً؛ تُنشر التغييرات عند الحفظ.",
       },
@@ -400,13 +491,22 @@ export const dictionaries: Record<Locale, Dict> = {
         position: "المركز",
         detach: "إزالة من الفريق",
         noPlayers: "لم تتم إضافة لاعبين بعد.",
+        coaches: "المدرّبون",
+        coachesHint: "أضف مدرّباً موجوداً أو أنشئ مدرّباً جديداً فوراً",
+        noCoaches: "لم تتم إضافة مدرّبين بعد.",
+        addNewCoach: "+ مدرّب جديد",
+        coachId: "رقم الهويّة",
+        coachPhone: "الهاتف",
         matches: "المباريات",
-        matchesHint: "ضد من، متى، أين، ورابط IBBA",
+        matchesHint: "ضد من، متى، أين، المسؤول، ورابط IBBA",
         addMatch: "+ إضافة مباراة",
         opponent: "الخصم",
         opponentLogo: "شعار الخصم",
         matchDate: "التاريخ والوقت",
         matchWhere: "المكان",
+        contactName: "المسؤول",
+        contactNameHint: "الشخص الذي يُراجَع لدى الفريق الخصم",
+        contactPhone: "هاتف المسؤول",
         matchIbba: "رابط IBBA للمباراة",
         removeMatch: "إزالة",
         noMatches: "لا مباريات بعد.",
@@ -465,6 +565,10 @@ export const dictionaries: Record<Locale, Dict> = {
       viewIbba: "עמוד IBBA",
       teamIbba: "עמוד הקבוצה ב-IBBA",
       open: "פרטים",
+      coaches: "מאמנים",
+      noCoaches: "עדיין לא נוספו מאמנים.",
+      responsible: "איש קשר",
+      phone: "טלפון",
     },
     games: {
       eyebrow: "לוח משחקים",
@@ -480,6 +584,35 @@ export const dictionaries: Record<Locale, Dict> = {
       vs: "נגד",
       at: "ב־",
       viewIbba: "עמוד IBBA",
+      responsible: "איש קשר",
+      phone: "טלפון",
+    },
+    coach: {
+      loginTitle: "פורטל המאמנים",
+      loginSubtitle: "הזינו את מספר הזהות שלכם כדי לרשום נוכחות.",
+      idLabel: "מספר זהות",
+      idPlaceholder: "מספר הזהות שלך",
+      signIn: "כניסה",
+      signingIn: "מתחבר…",
+      wrong: "מספר זהות לא מוכר. פנו למנהל.",
+      error: "משהו השתבש. נסו שוב.",
+      signOut: "יציאה",
+      myTeamsTitle: "הקבוצות שלי",
+      myTeamsSubtitle: "בחרו קבוצה כדי לרשום נוכחות.",
+      noTeams: "עדיין לא שויכו אליכם קבוצות. פנו למנהל.",
+      takeAttendance: "רישום נוכחות",
+      backToTeams: "← חזרה לקבוצות",
+      dateLabel: "תאריך",
+      present: "נוכח",
+      absent: "נעדר",
+      markAllPresent: "סמן הכל נוכח",
+      clearAll: "ניקוי הכל",
+      submit: "שמירת נוכחות",
+      submitting: "שומר…",
+      submitted: "הנוכחות נשמרה",
+      noPlayers: "אין שחקנים בקבוצה זו.",
+      lastTaken: "עודכן לאחרונה",
+      loadError: "הטעינה נכשלה. נסו שוב.",
     },
     historic: { eyebrow: "מההיסטוריה שלנו" },
     staff: { eyebrow: "הצוות שלנו", heading: "צוות", subheading: "המאמנים והאנשי מנהלה שמאחורי המועדון.", empty: "עדיין לא נוספו אנשי צוות." },
@@ -531,8 +664,29 @@ export const dictionaries: Record<Locale, Dict> = {
       saving: "שומר…",
       refresh: "רענון",
       actions: { add: "הוספה", edit: "עריכה", delete: "מחיקה", cancel: "ביטול", search: "חיפוש" },
-      nav: { overview: "סקירה", registrations: "הרשמות", teams: "קבוצות", players: "שחקנים", content: "תוכן", sections: "מקטעים", settings: "הגדרות" },
+      nav: { overview: "סקירה", registrations: "הרשמות", teams: "קבוצות", players: "שחקנים", coaches: "מאמנים", attendance: "נוכחות", content: "תוכן", sections: "מקטעים", settings: "הגדרות" },
       players: { add: "הוספת שחקן", none: "אין עדיין שחקנים ברשימה.", search: "חיפוש שחקן…", name: "שם", addNew: "+ יצירת שחקן חדש", pickerPlaceholder: "חיפוש או הוספת שחקן…" },
+      coaches: { add: "הוספת מאמן", none: "אין עדיין מאמנים.", search: "חיפוש מאמן…", name: "שם", idNumber: "מספר זהות", phone: "טלפון", addNew: "+ יצירת מאמן חדש", pickerPlaceholder: "חיפוש או הוספת מאמן…" },
+      attendance: {
+        subtitle: "בחרו קבוצה כדי לראות את נוכחות השחקנים לאורך התאריכים.",
+        pickTeam: "בחרו קבוצה",
+        backToTeams: "← חזרה לקבוצות",
+        noTeams: "אין עדיין קבוצות.",
+        present: "נוכח",
+        absent: "נעדר",
+        notMarked: "—",
+        player: "שחקן",
+        number: "מספר",
+        takenBy: "נרשם ע״י",
+        noRecords: "אין עדיין רישומי נוכחות לקבוצה זו.",
+        gridHint: "כל עמודה היא תאריך שבו נרשמה נוכחות.",
+        calendar: "📅 לוח שנה",
+        closeCalendar: "סגירת לוח השנה",
+        pickDate: "בחרו תאריך כדי לראות את הנוכחות בו",
+        dayNoRecords: "אין נוכחות רשומה ביום זה.",
+        dateColumn: "תאריך",
+        rate: "שיעור",
+      },
       settings: {
         title: "הגדרות",
         subtitle: "שינוי סיסמת הניהול.",
@@ -564,6 +718,10 @@ export const dictionaries: Record<Locale, Dict> = {
         teamsSub: "צרו קבוצות והוסיפו שחקנים, משחקים וקישורי IBBA.",
         players: "שחקנים",
         playersSub: "הרשימה הכללית של כל השחקנים. הוסיפו, ערכו או מחקו; משמשת בכל הקבוצות.",
+        coaches: "מאמנים",
+        coachesSub: "הרשימה הכללית של המאמנים. הוסיפו מספר זהות וטלפון; משמשת בכל הקבוצות ולכניסה.",
+        attendance: "נוכחות",
+        attendanceSub: "מעקב אחר נוכחות השחקנים לפי קבוצה ותאריך.",
         content: "תוכן",
         contentSub: "עריכת טקסט, גופנים ותמונות. התצוגה מתעדכנת תוך כדי; השינויים נשמרים בלחיצה.",
       },
@@ -621,13 +779,22 @@ export const dictionaries: Record<Locale, Dict> = {
         position: "תפקיד",
         detach: "הסרה מהקבוצה",
         noPlayers: "עדיין לא נוספו שחקנים.",
+        coaches: "מאמנים",
+        coachesHint: "הוסיפו מאמן קיים או צרו מאמן חדש מיד",
+        noCoaches: "עדיין לא נוספו מאמנים.",
+        addNewCoach: "+ מאמן חדש",
+        coachId: "מספר זהות",
+        coachPhone: "טלפון",
         matches: "משחקים",
-        matchesHint: "נגד מי, מתי, איפה, וקישור IBBA",
+        matchesHint: "נגד מי, מתי, איפה, איש קשר, וקישור IBBA",
         addMatch: "+ הוספת משחק",
         opponent: "יריבה",
         opponentLogo: "סמל היריבה",
         matchDate: "תאריך ושעה",
         matchWhere: "מיקום",
+        contactName: "איש קשר",
+        contactNameHint: "האדם אליו פונים בקבוצה היריבה",
+        contactPhone: "טלפון איש הקשר",
         matchIbba: "קישור IBBA למשחק",
         removeMatch: "הסרה",
         noMatches: "אין משחקים עדיין.",
@@ -686,6 +853,10 @@ export const dictionaries: Record<Locale, Dict> = {
       viewIbba: "IBBA page",
       teamIbba: "Team page on IBBA",
       open: "Details",
+      coaches: "Coaches",
+      noCoaches: "No coaches added yet.",
+      responsible: "Contact",
+      phone: "Phone",
     },
     games: {
       eyebrow: "Schedule",
@@ -701,6 +872,35 @@ export const dictionaries: Record<Locale, Dict> = {
       vs: "vs",
       at: "at",
       viewIbba: "IBBA page",
+      responsible: "Contact",
+      phone: "Phone",
+    },
+    coach: {
+      loginTitle: "Coaches portal",
+      loginSubtitle: "Enter your ID number to take attendance.",
+      idLabel: "ID number",
+      idPlaceholder: "Your ID number",
+      signIn: "Sign in",
+      signingIn: "Signing in…",
+      wrong: "Unknown ID number. Contact the admin.",
+      error: "Something went wrong. Try again.",
+      signOut: "Sign out",
+      myTeamsTitle: "My teams",
+      myTeamsSubtitle: "Pick a team to take attendance.",
+      noTeams: "No teams are linked to you yet. Contact the admin.",
+      takeAttendance: "Take attendance",
+      backToTeams: "← Back to teams",
+      dateLabel: "Date",
+      present: "Present",
+      absent: "Absent",
+      markAllPresent: "Mark all present",
+      clearAll: "Clear all",
+      submit: "Save attendance",
+      submitting: "Saving…",
+      submitted: "Attendance saved",
+      noPlayers: "No players on this team.",
+      lastTaken: "Last updated",
+      loadError: "Could not load. Try again.",
     },
     historic: { eyebrow: "From our history" },
     staff: { eyebrow: "Our staff", heading: "Staff", subheading: "The coaches and administrators behind the club.", empty: "No staff added yet." },
@@ -752,8 +952,29 @@ export const dictionaries: Record<Locale, Dict> = {
       saving: "Saving…",
       refresh: "Refresh",
       actions: { add: "Add", edit: "Edit", delete: "Delete", cancel: "Cancel", search: "Search" },
-      nav: { overview: "Overview", registrations: "Registrations", teams: "Teams", players: "Players", content: "Content", sections: "Sections", settings: "Settings" },
+      nav: { overview: "Overview", registrations: "Registrations", teams: "Teams", players: "Players", coaches: "Coaches", attendance: "Attendance", content: "Content", sections: "Sections", settings: "Settings" },
       players: { add: "Add player", none: "No players in the roster yet.", search: "Search players…", name: "Name", addNew: "+ Create new player", pickerPlaceholder: "Search or add a player…" },
+      coaches: { add: "Add coach", none: "No coaches yet.", search: "Search coaches…", name: "Name", idNumber: "ID number", phone: "Phone", addNew: "+ Create new coach", pickerPlaceholder: "Search or add a coach…" },
+      attendance: {
+        subtitle: "Pick a team to see its players' attendance across dates.",
+        pickTeam: "Pick a team",
+        backToTeams: "← Back to teams",
+        noTeams: "No teams yet.",
+        present: "Present",
+        absent: "Absent",
+        notMarked: "—",
+        player: "Player",
+        number: "Number",
+        takenBy: "Taken by",
+        noRecords: "No attendance records for this team yet.",
+        gridHint: "Each column is a date attendance was taken.",
+        calendar: "📅 Calendar",
+        closeCalendar: "Close calendar",
+        pickDate: "Pick a date to see its attendance",
+        dayNoRecords: "No attendance recorded on this day.",
+        dateColumn: "Date",
+        rate: "Rate",
+      },
       settings: {
         title: "Settings",
         subtitle: "Change the admin password.",
@@ -785,6 +1006,10 @@ export const dictionaries: Record<Locale, Dict> = {
         teamsSub: "Create teams and add players, matches and IBBA links.",
         players: "Players",
         playersSub: "The shared roster of all players. Add, edit or delete; used across every team.",
+        coaches: "Coaches",
+        coachesSub: "The shared roster of coaches. Add ID number and phone; used across teams and for sign-in.",
+        attendance: "Attendance",
+        attendanceSub: "Track player attendance by team and date.",
         content: "Content",
         contentSub: "Edit text, fonts and images. The preview updates as you type; changes go live on save.",
       },
@@ -842,13 +1067,22 @@ export const dictionaries: Record<Locale, Dict> = {
         position: "Position",
         detach: "Remove from team",
         noPlayers: "No players added yet.",
+        coaches: "Coaches",
+        coachesHint: "Attach an existing coach or create a new one instantly",
+        noCoaches: "No coaches added yet.",
+        addNewCoach: "+ New coach",
+        coachId: "ID number",
+        coachPhone: "Phone",
         matches: "Matches",
-        matchesHint: "who, when, where, and an IBBA link",
+        matchesHint: "who, when, where, contact, and an IBBA link",
         addMatch: "+ Add match",
         opponent: "Opponent",
         opponentLogo: "Opponent logo",
         matchDate: "Date & time",
         matchWhere: "Where",
+        contactName: "Contact person",
+        contactNameHint: "the person to go to at the opponent club",
+        contactPhone: "Contact phone",
         matchIbba: "Match IBBA link",
         removeMatch: "Remove",
         noMatches: "No matches yet.",

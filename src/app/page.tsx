@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { promises as fs } from "fs";
 import path from "path";
-import { getContent, getHighlights, getPlayers, getTeams } from "@/lib/db";
+import { getCoaches, getContent, getHighlights, getPlayers, getTeams } from "@/lib/db";
 import { Navbar } from "@/components/site/Navbar";
 import { ScrollProgress } from "@/components/site/ScrollProgress";
 import { Hero } from "@/components/site/Hero";
@@ -34,10 +34,11 @@ async function fileBg(name: string): Promise<string | undefined> {
 }
 
 export default async function HomePage() {
-  const [content, teams, players, highlights] = await Promise.all([
+  const [content, teams, players, coaches, highlights] = await Promise.all([
     getContent(),
     getTeams(),
     getPlayers(),
+    getCoaches(),
     getHighlights(),
   ]);
   const enabledTeams = teams.filter((t) => t.enabled).sort((a, b) => a.order - b.order);
@@ -52,7 +53,7 @@ export default async function HomePage() {
   // Every section can be reordered / hidden from the admin (Sections page).
   const sectionEls: Record<string, React.ReactNode> = {
     home: <Hero key="home" hero={content.hero} styles={content.styles} bg={homeBg} />,
-    teams: <Teams key="teams" teams={enabledTeams} players={players} bg={bg("teams")} />,
+    teams: <Teams key="teams" teams={enabledTeams} players={players} coaches={coaches} bg={bg("teams")} />,
     games: <Games key="games" teams={enabledTeams} players={players} bg={bg("games")} />,
     highlights: <Highlights key="highlights" highlights={highlights} bg={bg("highlights")} />,
     gallery: <Gallery key="gallery" gallery={content.gallery ?? []} bg={bg("gallery")} styles={content.styles} />,

@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
-import type { Locale, Match, Player, Team } from "@/lib/types";
+import type { Coach, Locale, Match, Player, Team } from "@/lib/types";
 import { ImageBlock } from "@/components/ui/ImageBlock";
 import { SectionHeading } from "./SectionHeading";
 import { SectionBg } from "./SectionBg";
@@ -12,13 +12,15 @@ const INTL_LOCALE: Record<Locale, string> = { ar: "ar", he: "he", en: "en-GB" };
 
 // Public "Teams" section. Each card opens a full-screen detail sheet listing the
 // team's players and matches, plus a link to the team's IBBA page.
-export function Teams({ teams, players, bg }: { teams: Team[]; players: Player[]; bg?: string }) {
+export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; players: Player[]; coaches?: Coach[]; bg?: string }) {
   const { t, pick, locale } = useI18n();
   const [openId, setOpenId] = useState<string | null>(null);
   const open = teams.find((tm) => tm.id === openId) ?? null;
 
   const byId = new Map(players.map((p) => [p.id, p]));
   const teamPlayers = (tm: Team): Player[] => tm.playerIds.map((id) => byId.get(id)).filter((p): p is Player => !!p);
+  const coachById = new Map(coaches.map((c) => [c.id, c]));
+  const teamCoaches = (tm: Team): Coach[] => (tm.coachIds ?? []).map((id) => coachById.get(id)).filter((c): c is Coach => !!c);
 
   // Close the detail on Escape.
   useEffect(() => {
@@ -150,6 +152,28 @@ export function Teams({ teams, players, bg }: { teams: Team[]; players: Player[]
                     </a>
                   )}
 
+                  {/* Coaches */}
+                  {teamCoaches(open).length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-bold uppercase tracking-wider text-brand">{t.teams.coaches}</h4>
+                      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+                        {teamCoaches(open).map((co) => (
+                          <div key={co.id} className="overflow-hidden rounded-2xl border border-line">
+                            <div className="relative" style={{ aspectRatio: co.aspectRatio ?? "4 / 5" }}>
+                              <ImageBlock src={co.image} alt={pick(co.name)} icon="user" rounded="rounded-none" objectPosition={co.imagePosition} />
+                            </div>
+                            <div className="p-3">
+                              <p className="truncate text-sm font-bold text-ink">{pick(co.name)}</p>
+                              {co.phone && (
+                                <a href={`tel:${co.phone}`} dir="ltr" className="truncate text-xs font-semibold text-brand-dark hover:underline">📞 {co.phone}</a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Players */}
                   <div>
                     <h4 className="text-sm font-bold uppercase tracking-wider text-brand">{t.teams.players}</h4>
@@ -199,6 +223,14 @@ export function Teams({ teams, players, bg }: { teams: Team[]; players: Player[]
                             </div>
                             {formatMatch(m) && <p className="mt-1.5 text-sm text-muted">🗓️ {formatMatch(m)}</p>}
                             {pick(m.where) && <p className="mt-0.5 text-sm text-muted">📍 {t.teams.at} {pick(m.where)}</p>}
+                            {m.contactName && pick(m.contactName) && (
+                              <p className="mt-0.5 text-sm text-muted">🧑‍💼 {t.teams.responsible}: {pick(m.contactName)}</p>
+                            )}
+                            {m.contactPhone && (
+                              <p className="mt-0.5 text-sm text-muted">
+                                📞 <a href={`tel:${m.contactPhone}`} dir="ltr" className="font-semibold text-brand-dark hover:underline">{m.contactPhone}</a>
+                              </p>
+                            )}
                             {m.ibbaLink && (
                               <a
                                 href={m.ibbaLink}

@@ -40,6 +40,8 @@ export function parseMatches(v: unknown): Match[] {
       opponentLogo: typeof o.opponentLogo === "string" ? o.opponentLogo : undefined,
       date: typeof o.date === "string" ? o.date : "",
       where: localized(o.where),
+      contactName: o.contactName != null ? localized(o.contactName) : undefined,
+      contactPhone: typeof o.contactPhone === "string" ? o.contactPhone : undefined,
       ibbaLink: typeof o.ibbaLink === "string" ? o.ibbaLink : undefined,
     };
   });

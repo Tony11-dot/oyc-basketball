@@ -4,8 +4,8 @@
 import "server-only";
 import { promises as fs } from "fs";
 import path from "path";
-import type { AdminSettings, Highlight, Player, Registration, SiteContent, Team } from "./types";
-import { seedHighlights, seedPlayers, seedRegistrations, seedTeams, seedContent } from "./seed";
+import type { AdminSettings, AttendanceRecord, Coach, Highlight, Player, Registration, SiteContent, Team } from "./types";
+import { seedAttendance, seedCoaches, seedHighlights, seedPlayers, seedRegistrations, seedTeams, seedContent } from "./seed";
 
 const useRedis = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN;
 
@@ -87,6 +87,20 @@ export const getPlayers = () => read<Player[]>("players", seedPlayers);
 
 export const updatePlayers = (fn: (list: Player[]) => Player[]) =>
   mutate<Player[]>("players", fn, seedPlayers);
+
+// ---- Coaches (shared pool) --------------------------------------------------
+
+export const getCoaches = () => read<Coach[]>("coaches", seedCoaches);
+
+export const updateCoaches = (fn: (list: Coach[]) => Coach[]) =>
+  mutate<Coach[]>("coaches", fn, seedCoaches);
+
+// ---- Attendance -------------------------------------------------------------
+
+export const getAttendance = () => read<AttendanceRecord[]>("attendance", seedAttendance);
+
+export const updateAttendance = (fn: (list: AttendanceRecord[]) => AttendanceRecord[]) =>
+  mutate<AttendanceRecord[]>("attendance", fn, seedAttendance);
 
 // ---- Teams ------------------------------------------------------------------
 

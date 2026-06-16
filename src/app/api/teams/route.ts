@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     detailBg: typeof body.detailBg === "string" ? body.detailBg : undefined,
     ibbaLink: typeof body.ibbaLink === "string" ? body.ibbaLink : undefined,
     playerIds: strList(body.playerIds),
+    coachIds: strList(body.coachIds),
     matches: parseMatches(body.matches),
     enabled: body.enabled === undefined ? true : Boolean(body.enabled),
     order: typeof body.order === "number" ? body.order : maxOrder + 1,

@@ -43,8 +43,48 @@ export interface Match {
   /** ISO date-time. The weekday is derived from this for display. */
   date: string;
   where: Localized;
+  /** The person to contact for this opponent / fixture (المسؤول). */
+  contactName?: Localized;
+  /** That contact person's phone number. */
+  contactPhone?: string;
   /** Link to this fixture / standings on the IBBA website. */
   ibbaLink?: string;
+}
+
+/**
+ * A coach in the club. Like {@link Player}, coaches live in a shared pool and are
+ * attached to teams by id, so the same coach can lead several teams. A coach's
+ * ID number doubles as their login for the attendance portal.
+ */
+export interface Coach {
+  id: string;
+  name: Localized;
+  /** National / club ID number — also used to log in to the attendance portal. */
+  idNumber?: string;
+  /** Contact phone number. */
+  phone?: string;
+  image?: string;
+  imagePosition?: string;
+  aspectRatio?: string;
+}
+
+export type AttendanceStatus = "present" | "absent";
+
+/**
+ * One attendance sheet: a single team on a single date. There is at most one
+ * record per (teamId, date); re-submitting from the coach portal updates it.
+ * `statuses` maps a {@link Player.id} to whether they were present or absent.
+ */
+export interface AttendanceRecord {
+  id: string;
+  teamId: string;
+  /** Calendar day, "YYYY-MM-DD". */
+  date: string;
+  /** The coach who took attendance, referencing {@link Coach.id}. */
+  coachId?: string;
+  statuses: Record<string, AttendanceStatus>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -66,6 +106,8 @@ export interface Team {
   ibbaLink?: string;
   /** Players attached to this team, referencing {@link Player.id}. */
   playerIds: string[];
+  /** Coaches attached to this team, referencing {@link Coach.id}. */
+  coachIds: string[];
   /** Fixtures for this team. */
   matches: Match[];
   /** When false the team is hidden from the public site. */

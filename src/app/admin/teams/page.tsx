@@ -8,7 +8,7 @@ import { ImagePositioner } from "@/components/admin/ImagePositioner";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
-import type { Localized, Match, Player, Team } from "@/lib/types";
+import type { Coach, Localized, Match, Player, Team } from "@/lib/types";
 
 const emptyLoc = (): Localized => ({ ar: "", he: "", en: "" });
 const plainInput =
@@ -31,6 +31,8 @@ export default function TeamsAdmin() {
   const [teamsOriginal, setTeamsOriginal] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [playersOriginal, setPlayersOriginal] = useState<Player[]>([]);
+  const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [coachesOriginal, setCoachesOriginal] = useState<Coach[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -38,16 +40,20 @@ export default function TeamsAdmin() {
     Promise.all([
       fetch("/api/teams?all=1").then((r) => r.json()),
       fetch("/api/players").then((r) => r.json()),
-    ]).then(([tm, pl]) => {
+      fetch("/api/coaches").then((r) => r.json()),
+    ]).then(([tm, pl, co]) => {
       setTeams(tm.teams ?? []);
       setTeamsOriginal(tm.teams ?? []);
       setPlayers(pl.players ?? []);
       setPlayersOriginal(pl.players ?? []);
+      setCoaches(co.coaches ?? []);
+      setCoachesOriginal(co.coaches ?? []);
       setLoaded(true);
     });
   }, []);
 
   const playerById = (id: string) => players.find((p) => p.id === id);
+  const coachById = (id: string) => coaches.find((c) => c.id === id);
 
   // ---- Team mutators --------------------------------------------------------
   const updateTeam = (id: string, patch: Partial<Team>) =>
@@ -65,6 +71,7 @@ export default function TeamsAdmin() {
         detailBg: "",
         ibbaLink: "",
         playerIds: [],
+        coachIds: [],
         matches: [],
         enabled: true,
         order: list.length,
@@ -100,6 +107,26 @@ export default function TeamsAdmin() {
     const name = initialName ? { ar: initialName, he: initialName, en: initialName } : emptyLoc();
     setPlayers((list) => [...list, { id, name, number: "", position: emptyLoc(), image: "" }]);
     attachPlayer(teamId, id);
+  };
+
+  // ---- Coach mutators (coaches are a shared pool) ---------------------------
+  const updateCoach = (id: string, patch: Partial<Coach>) =>
+    setCoaches((list) => list.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  const deleteCoach = (id: string) => {
+    setCoaches((list) => list.filter((c) => c.id !== id));
+    setTeams((list) => list.map((tm) => ({ ...tm, coachIds: (tm.coachIds ?? []).filter((cid) => cid !== id) })));
+  };
+  const attachCoach = (teamId: string, coachId: string) => {
+    if (!coachId) return;
+    setTeams((list) => list.map((tm) => (tm.id === teamId && !(tm.coachIds ?? []).includes(coachId) ? { ...tm, coachIds: [...(tm.coachIds ?? []), coachId] } : tm)));
+  };
+  const detachCoach = (teamId: string, coachId: string) =>
+    setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, coachIds: (tm.coachIds ?? []).filter((cid) => cid !== coachId) } : tm)));
+  const addNewCoach = (teamId: string, initialName?: string) => {
+    const id = `newc-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    const name = initialName ? { ar: initialName, he: initialName, en: initialName } : emptyLoc();
+    setCoaches((list) => [...list, { id, name, idNumber: "", phone: "", image: "" }]);
+    attachCoach(teamId, id);
   };
 
   // ---- Match mutators -------------------------------------------------------
@@ -147,7 +174,31 @@ export default function TeamsAdmin() {
       }
       const realId = (id: string) => idMap.get(id) ?? id;
 
-      // 2. Teams. Delete removed, create/update rest (with remapped player ids).
+      // 2. Coaches (teams reference them too). Delete removed, create/update rest.
+      const removedCoaches = coachesOriginal.filter((o) => !coaches.some((c) => c.id === o.id));
+      await Promise.all(removedCoaches.map((c) => fetch(`/api/coaches/${c.id}`, { method: "DELETE" })));
+
+      const coachIdMap = new Map<string, string>();
+      for (const c of coaches) {
+        const body = JSON.stringify({
+          name: c.name,
+          idNumber: c.idNumber ?? "",
+          phone: c.phone ?? "",
+          image: c.image ?? "",
+          imagePosition: c.imagePosition,
+          aspectRatio: c.aspectRatio,
+        });
+        if (c.id.startsWith("newc-")) {
+          const res = await fetch("/api/coaches", { method: "POST", headers, body });
+          const d = await res.json();
+          if (d.coach?.id) coachIdMap.set(c.id, d.coach.id);
+        } else {
+          await fetch(`/api/coaches/${c.id}`, { method: "PATCH", headers, body });
+        }
+      }
+      const realCoachId = (id: string) => coachIdMap.get(id) ?? id;
+
+      // 3. Teams. Delete removed, create/update rest (with remapped player ids).
       const removedTeams = teamsOriginal.filter((o) => !teams.some((tm) => tm.id === o.id));
       await Promise.all(removedTeams.map((tm) => fetch(`/api/teams/${tm.id}`, { method: "DELETE" })));
 
@@ -162,6 +213,7 @@ export default function TeamsAdmin() {
           detailBg: tm.detailBg ?? "",
           ibbaLink: tm.ibbaLink ?? "",
           playerIds: tm.playerIds.map(realId),
+          coachIds: (tm.coachIds ?? []).map(realCoachId),
           matches: tm.matches,
           enabled: tm.enabled,
           order: i,
@@ -170,14 +222,17 @@ export default function TeamsAdmin() {
         await fetch(isNew ? "/api/teams" : `/api/teams/${tm.id}`, { method: isNew ? "POST" : "PATCH", headers, body });
       }
 
-      const [tm, pl] = await Promise.all([
+      const [tm, pl, co] = await Promise.all([
         fetch("/api/teams?all=1").then((r) => r.json()),
         fetch("/api/players").then((r) => r.json()),
+        fetch("/api/coaches").then((r) => r.json()),
       ]);
       setTeams(tm.teams ?? []);
       setTeamsOriginal(tm.teams ?? []);
       setPlayers(pl.players ?? []);
       setPlayersOriginal(pl.players ?? []);
+      setCoaches(co.coaches ?? []);
+      setCoachesOriginal(co.coaches ?? []);
       toast.success(t.admin.toasts.saved);
     } catch {
       toast.error(t.admin.toasts.saveError);
@@ -296,6 +351,57 @@ export default function TeamsAdmin() {
               </div>
             </div>
 
+            {/* Coaches */}
+            <div className="space-y-3 border-t border-line pt-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-bold text-ink">
+                  {t.admin.team.coaches} <span className="font-normal text-muted">— {t.admin.team.coachesHint}</span>
+                </span>
+                <Button size="sm" variant="subtle" onClick={() => addNewCoach(tm.id)}>{t.admin.team.addNewCoach}</Button>
+              </div>
+
+              <CoachPicker
+                coaches={coaches.filter((c) => !(tm.coachIds ?? []).includes(c.id))}
+                pick={pick}
+                placeholder={t.admin.coaches.pickerPlaceholder}
+                addNewLabel={t.admin.coaches.addNew}
+                onAttach={(cid) => attachCoach(tm.id, cid)}
+                onAddNew={(name) => addNewCoach(tm.id, name)}
+              />
+
+              {(tm.coachIds ?? []).length === 0 && <p className="text-sm text-muted">{t.admin.team.noCoaches}</p>}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {(tm.coachIds ?? []).map((cid) => {
+                  const c = coachById(cid);
+                  if (!c) return null;
+                  return (
+                    <div key={cid} className="space-y-2 rounded-xl border border-line p-3">
+                      <ImageUpload value={c.image ?? ""} icon="user" onChange={(image) => updateCoach(cid, { image })} />
+                      {c.image && (
+                        <ImagePositioner src={c.image} value={c.imagePosition} onChange={(imagePosition) => updateCoach(cid, { imagePosition })} aspectRatio={c.aspectRatio ?? "4 / 5"} onAspectChange={(aspectRatio) => updateCoach(cid, { aspectRatio })} />
+                      )}
+                      <LocalizedField label={t.admin.coaches.name} value={c.name} onChange={(name) => updateCoach(cid, { name })} />
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="block">
+                          <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.coachId}</span>
+                          <input dir="ltr" value={c.idNumber ?? ""} onChange={(e) => updateCoach(cid, { idNumber: e.target.value })} className={plainInput} />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.coachPhone}</span>
+                          <input dir="ltr" value={c.phone ?? ""} onChange={(e) => updateCoach(cid, { phone: e.target.value })} className={plainInput} />
+                        </label>
+                      </div>
+                      <div className="flex gap-3">
+                        <button type="button" onClick={() => detachCoach(tm.id, cid)} className="text-xs font-semibold text-muted hover:text-ink">↩ {t.admin.team.detach}</button>
+                        <button type="button" onClick={() => { if (confirm(t.admin.team.deleteWarn)) deleteCoach(cid); }} className="text-xs font-semibold text-rose-600 hover:underline">{t.admin.actions.delete}</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Matches */}
             <div className="space-y-3 border-t border-line pt-4">
               <div className="flex items-center justify-between gap-2">
@@ -318,6 +424,11 @@ export default function TeamsAdmin() {
                     />
                   </label>
                   <LocalizedField label={t.admin.team.matchWhere} value={m.where} onChange={(where) => updateMatch(tm.id, m.id, { where })} />
+                  <LocalizedField label={`${t.admin.team.contactName} (المسؤول)`} value={m.contactName ?? emptyLoc()} onChange={(contactName) => updateMatch(tm.id, m.id, { contactName })} />
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.contactPhone}</span>
+                    <input dir="ltr" value={m.contactPhone ?? ""} onChange={(e) => updateMatch(tm.id, m.id, { contactPhone: e.target.value })} className={plainInput} />
+                  </label>
                   <label className="block">
                     <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.matchIbba}</span>
                     <input dir="ltr" placeholder="https://www.ibba.co.il/…" value={m.ibbaLink ?? ""} onChange={(e) => updateMatch(tm.id, m.id, { ibbaLink: e.target.value })} className={plainInput} />
@@ -408,6 +519,83 @@ function PlayerPicker({
           {matches.length === 0 && needle === "" && (
             <p className="px-3 py-2 text-xs text-muted">—</p>
           )}
+          <button
+            type="button"
+            onClick={create}
+            className="mt-1 flex w-full items-center gap-1.5 border-t border-line px-3 py-2 text-start text-sm font-semibold text-brand-dark transition hover:bg-brand-50"
+          >
+            {addNewLabel}{q.trim() ? `: “${q.trim()}”` : ""}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Searchable coach combobox — mirrors PlayerPicker for the shared coach pool.
+function CoachPicker({
+  coaches,
+  pick,
+  placeholder,
+  addNewLabel,
+  onAttach,
+  onAddNew,
+}: {
+  coaches: Coach[];
+  pick: (v: Localized) => string;
+  placeholder: string;
+  addNewLabel: string;
+  onAttach: (id: string) => void;
+  onAddNew: (name?: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", onDown);
+    return () => window.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const needle = q.trim().toLowerCase();
+  const matches = coaches.filter((c) => {
+    if (!needle) return true;
+    return [c.name.ar, c.name.he, c.name.en, c.idNumber].filter(Boolean).join(" ").toLowerCase().includes(needle);
+  });
+
+  const choose = (id: string) => { onAttach(id); setQ(""); setOpen(false); };
+  const create = () => { onAddNew(q.trim() || undefined); setQ(""); setOpen(false); };
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <input
+        value={q}
+        onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); if (matches.length === 1) choose(matches[0].id); else create(); }
+          if (e.key === "Escape") setOpen(false);
+        }}
+        placeholder={placeholder}
+        className={plainInput}
+      />
+      {open && (
+        <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-line bg-white py-1 shadow-card">
+          {matches.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => choose(c.id)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-start text-sm text-ink transition hover:bg-surface"
+            >
+              <span className="font-medium">{pick(c.name) || c.id}</span>
+              {c.idNumber && <span className="text-xs text-muted" dir="ltr">{c.idNumber}</span>}
+            </button>
+          ))}
           <button
             type="button"
             onClick={create}
