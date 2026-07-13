@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { LocalizedField } from "@/components/admin/LocalizedField";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { ImagePositioner } from "@/components/admin/ImagePositioner";
-import { ViewToggle, Thumb, TapChevron, type ViewMode } from "@/components/admin/EntityList";
+import { ViewToggle, Thumb, TapChevron, AutosaveBar, DetailPanel, type ViewMode } from "@/components/admin/EntityList";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
-import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
+import { useAutosave } from "@/lib/useAutosave";
 import type { Localized, Player } from "@/lib/types";
 
 const emptyLoc = (): Localized => ({ ar: "", he: "", en: "" });
@@ -24,11 +23,8 @@ const initialOf = (name: Localized, fallback = "?") =>
 // editor. Players managed here are then available to every team.
 export default function PlayersAdmin() {
   const { t, pick } = useI18n();
-  const toast = useToast();
   const [players, setPlayers] = useState<Player[]>([]);
-  const [original, setOriginal] = useState<Player[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -36,7 +32,6 @@ export default function PlayersAdmin() {
   useEffect(() => {
     fetch("/api/players").then((r) => r.json()).then((d) => {
       setPlayers(d.players ?? []);
-      setOriginal(d.players ?? []);
       setLoaded(true);
     });
   }, []);
@@ -59,37 +54,39 @@ export default function PlayersAdmin() {
     });
   }, [players, query]);
 
-  const dirty = useMemo(() => JSON.stringify(players) !== JSON.stringify(original), [players, original]);
   const editing = editingId ? players.find((p) => p.id === editingId) ?? null : null;
 
-  async function save() {
-    setSaving(true);
+  // Persist the roster: delete removed, create new (newp-*), patch the rest,
+  // then refetch so new ids settle. Returns the canonical list for autosave.
+  const persist = useCallback(async (list: Player[], prev: Player[]): Promise<Player[]> => {
     const headers = { "Content-Type": "application/json" };
-    try {
-      const removed = original.filter((o) => !players.some((p) => p.id === o.id));
-      await Promise.all(removed.map((p) => fetch(`/api/players/${p.id}`, { method: "DELETE" })));
-      for (const p of players) {
-        const body = JSON.stringify({
-          name: p.name,
-          number: p.number ?? "",
-          position: p.position ?? emptyLoc(),
-          image: p.image ?? "",
-          imagePosition: p.imagePosition,
-          aspectRatio: p.aspectRatio,
-        });
-        if (p.id.startsWith("newp-")) await fetch("/api/players", { method: "POST", headers, body });
-        else await fetch(`/api/players/${p.id}`, { method: "PATCH", headers, body });
-      }
-      const fresh = await fetch("/api/players").then((r) => r.json());
-      setPlayers(fresh.players ?? []);
-      setOriginal(fresh.players ?? []);
-      toast.success(t.admin.toasts.saved);
-    } catch {
-      toast.error(t.admin.toasts.saveError);
-    } finally {
-      setSaving(false);
+    const removed = prev.filter((o) => !list.some((p) => p.id === o.id));
+    await Promise.all(removed.map((p) => fetch(`/api/players/${p.id}`, { method: "DELETE" })));
+    for (const p of list) {
+      const body = JSON.stringify({
+        name: p.name,
+        number: p.number ?? "",
+        position: p.position ?? emptyLoc(),
+        image: p.image ?? "",
+        imagePosition: p.imagePosition,
+        aspectRatio: p.aspectRatio,
+      });
+      if (p.id.startsWith("newp-")) await fetch("/api/players", { method: "POST", headers, body });
+      else await fetch(`/api/players/${p.id}`, { method: "PATCH", headers, body });
     }
-  }
+    const fresh = await fetch("/api/players").then((r) => r.json());
+    const next: Player[] = fresh.players ?? [];
+    setPlayers(next);
+    return next;
+  }, []);
+
+  const { saveState, undo, canUndo } = useAutosave({
+    value: players,
+    setValue: setPlayers,
+    onSave: persist,
+    ready: loaded,
+    paused: !!editingId, // hold saves while a detail sheet is open
+  });
 
   if (!loaded) {
     return (
@@ -111,10 +108,11 @@ export default function PlayersAdmin() {
         <div className="flex items-center gap-2">
           <ViewToggle mode={view} onChange={setView} labels={{ grid: pick({ ar: "بطاقات", he: "כרטיסים", en: "Cards" }), list: pick({ ar: "قائمة", he: "רשימה", en: "List" }) }} />
           <Button variant="subtle" size="sm" onClick={add}>+ {t.admin.players.add}</Button>
-          <Button onClick={save} disabled={saving || !dirty}>{saving ? t.admin.saving : t.admin.save}</Button>
+          <AutosaveBar saveState={saveState} onUndo={undo} canUndo={canUndo} />
         </div>
       </div>
 
+      {!editing && (<>
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <input
           value={query}
@@ -123,12 +121,6 @@ export default function PlayersAdmin() {
           className={`${plainInput} max-w-sm`}
         />
         <span className="text-xs text-muted">{filtered.length} / {players.length}</span>
-        {dirty && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-            <span className="size-1.5 rounded-full bg-amber-500" />
-            {pick({ ar: "تغييرات غير محفوظة", he: "שינויים לא שמורים", en: "Unsaved changes" })}
-          </span>
-        )}
       </div>
 
       {players.length === 0 ? (
@@ -181,12 +173,13 @@ export default function PlayersAdmin() {
         </div>
       )}
 
-      <p className="mt-4 text-xs text-muted">{pick({ ar: "اضغط حفظ لتطبيق التغييرات.", he: "לחצו שמירה כדי להחיל את השינויים.", en: "Press Save to apply your changes." })}</p>
+      <p className="mt-4 text-xs text-muted">{pick({ ar: "تُحفظ التغييرات تلقائياً.", he: "השינויים נשמרים אוטומטית.", en: "Changes save automatically." })}</p>
+      </>)}
 
-      {/* Detail sheet */}
-      <Modal open={!!editing} onClose={() => setEditingId(null)} title={editing ? (pick(editing.name) || t.admin.players.name) : ""} className="max-w-md">
-        {editing && (
-          <div className="space-y-3">
+      {/* Detail — expands inline */}
+      {editing && (
+        <DetailPanel title={pick(editing.name) || t.admin.players.name} onBack={() => setEditingId(null)}>
+          <div className="space-y-4">
             <ImageUpload value={editing.image ?? ""} icon="user" onChange={(image) => update(editing.id, { image })} />
             {editing.image && (
               <ImagePositioner src={editing.image} value={editing.imagePosition} onChange={(imagePosition) => update(editing.id, { imagePosition })} aspectRatio={editing.aspectRatio ?? "4 / 5"} onAspectChange={(aspectRatio) => update(editing.id, { aspectRatio })} />
@@ -208,8 +201,8 @@ export default function PlayersAdmin() {
               <Button size="sm" onClick={() => setEditingId(null)}>{pick({ ar: "تم", he: "סיום", en: "Done" })}</Button>
             </div>
           </div>
-        )}
-      </Modal>
+        </DetailPanel>
+      )}
     </AdminShell>
   );
 }

@@ -143,20 +143,6 @@ export function Hero({
           </a>
         </motion.div>
       </motion.div>
-
-      {/* scroll cue */}
-      <motion.a
-        href="#teams"
-        aria-label={t.hero.secondary}
-        style={{ opacity: fade }}
-        className="absolute bottom-6 start-1/2 -translate-x-1/2 text-white/70 transition hover:text-white"
-        animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 5v14M5 12l7 7 7-7" />
-        </svg>
-      </motion.a>
     </section>
   );
 }

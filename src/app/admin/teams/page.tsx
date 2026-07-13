@@ -1,16 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { LocalizedField } from "@/components/admin/LocalizedField";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { ImagePositioner } from "@/components/admin/ImagePositioner";
-import { ViewToggle, Thumb, TapChevron, type ViewMode } from "@/components/admin/EntityList";
+import { ViewToggle, Thumb, TapChevron, AutosaveBar, DetailPanel, type ViewMode } from "@/components/admin/EntityList";
 import { DateField } from "@/components/ui/Calendar";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
-import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
+import { useAutosave } from "@/lib/useAutosave";
 import type { Coach, Localized, Match, Player, Team } from "@/lib/types";
 
 const emptyLoc = (): Localized => ({ ar: "", he: "", en: "" });
@@ -22,15 +21,10 @@ const initialOf = (name: Localized, fallback = "?") =>
 
 export default function TeamsAdmin() {
   const { t, pick } = useI18n();
-  const toast = useToast();
   const [teams, setTeams] = useState<Team[]>([]);
-  const [teamsOriginal, setTeamsOriginal] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [playersOriginal, setPlayersOriginal] = useState<Player[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
-  const [coachesOriginal, setCoachesOriginal] = useState<Coach[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [view, setView] = useState<ViewMode>("grid");
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -41,11 +35,8 @@ export default function TeamsAdmin() {
       fetch("/api/coaches").then((r) => r.json()),
     ]).then(([tm, pl, co]) => {
       setTeams(tm.teams ?? []);
-      setTeamsOriginal(tm.teams ?? []);
       setPlayers(pl.players ?? []);
-      setPlayersOriginal(pl.players ?? []);
       setCoaches(co.coaches ?? []);
-      setCoachesOriginal(co.coaches ?? []);
       setLoaded(true);
     });
   }, []);
@@ -146,114 +137,81 @@ export default function TeamsAdmin() {
   const removeMatch = (teamId: string, matchId: string) =>
     setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, matches: tm.matches.filter((m) => m.id !== matchId) } : tm)));
 
-  const dirty = useMemo(
-    () =>
-      JSON.stringify(teams) !== JSON.stringify(teamsOriginal) ||
-      JSON.stringify(players) !== JSON.stringify(playersOriginal) ||
-      JSON.stringify(coaches) !== JSON.stringify(coachesOriginal),
-    [teams, teamsOriginal, players, playersOriginal, coaches, coachesOriginal],
-  );
-
   const editingIndex = editingId ? teams.findIndex((tm) => tm.id === editingId) : -1;
   const editing = editingIndex >= 0 ? teams[editingIndex] : null;
 
-  // ---- Persist --------------------------------------------------------------
-  async function save() {
-    setSaving(true);
+  // ---- Persist (autosaved) --------------------------------------------------
+  // Teams reference shared players + coaches, so all three are saved together as
+  // one composite value; new ids are remapped, then everything is refetched.
+  type Composite = { teams: Team[]; players: Player[]; coaches: Coach[] };
+  const composite = useMemo<Composite>(() => ({ teams, players, coaches }), [teams, players, coaches]);
+  const setComposite = useCallback((v: Composite) => {
+    setTeams(v.teams);
+    setPlayers(v.players);
+    setCoaches(v.coaches);
+  }, []);
+
+  const persist = useCallback(async (v: Composite, prev: Composite): Promise<Composite> => {
     const headers = { "Content-Type": "application/json" };
-    try {
-      // 1. Players first (teams reference them). Delete removed, create/update rest.
-      const removedPlayers = playersOriginal.filter((o) => !players.some((p) => p.id === o.id));
-      await Promise.all(removedPlayers.map((p) => fetch(`/api/players/${p.id}`, { method: "DELETE" })));
-
-      const idMap = new Map<string, string>();
-      for (const p of players) {
-        const body = JSON.stringify({
-          name: p.name,
-          number: p.number ?? "",
-          position: p.position ?? emptyLoc(),
-          image: p.image ?? "",
-          imagePosition: p.imagePosition,
-          aspectRatio: p.aspectRatio,
-        });
-        if (p.id.startsWith("newp-")) {
-          const res = await fetch("/api/players", { method: "POST", headers, body });
-          const d = await res.json();
-          if (d.player?.id) idMap.set(p.id, d.player.id);
-        } else {
-          await fetch(`/api/players/${p.id}`, { method: "PATCH", headers, body });
-        }
-      }
-      const realId = (id: string) => idMap.get(id) ?? id;
-
-      // 2. Coaches (teams reference them too). Delete removed, create/update rest.
-      const removedCoaches = coachesOriginal.filter((o) => !coaches.some((c) => c.id === o.id));
-      await Promise.all(removedCoaches.map((c) => fetch(`/api/coaches/${c.id}`, { method: "DELETE" })));
-
-      const coachIdMap = new Map<string, string>();
-      for (const c of coaches) {
-        const body = JSON.stringify({
-          name: c.name,
-          idNumber: c.idNumber ?? "",
-          phone: c.phone ?? "",
-          image: c.image ?? "",
-          imagePosition: c.imagePosition,
-          aspectRatio: c.aspectRatio,
-        });
-        if (c.id.startsWith("newc-")) {
-          const res = await fetch("/api/coaches", { method: "POST", headers, body });
-          const d = await res.json();
-          if (d.coach?.id) coachIdMap.set(c.id, d.coach.id);
-        } else {
-          await fetch(`/api/coaches/${c.id}`, { method: "PATCH", headers, body });
-        }
-      }
-      const realCoachId = (id: string) => coachIdMap.get(id) ?? id;
-
-      // 3. Teams. Delete removed, create/update rest (with remapped player ids).
-      const removedTeams = teamsOriginal.filter((o) => !teams.some((tm) => tm.id === o.id));
-      await Promise.all(removedTeams.map((tm) => fetch(`/api/teams/${tm.id}`, { method: "DELETE" })));
-
-      for (let i = 0; i < teams.length; i++) {
-        const tm = teams[i];
-        const body = JSON.stringify({
-          name: tm.name,
-          description: tm.description,
-          image: tm.image ?? "",
-          imagePosition: tm.imagePosition,
-          aspectRatio: tm.aspectRatio,
-          detailBg: tm.detailBg ?? "",
-          ibbaLink: tm.ibbaLink ?? "",
-          playerIds: tm.playerIds.map(realId),
-          coachIds: (tm.coachIds ?? []).map(realCoachId),
-          matches: tm.matches,
-          enabled: tm.enabled,
-          order: i,
-        });
-        const isNew = tm.id.startsWith("new-");
-        await fetch(isNew ? "/api/teams" : `/api/teams/${tm.id}`, { method: isNew ? "POST" : "PATCH", headers, body });
-      }
-
-      const [tm, pl, co] = await Promise.all([
-        fetch("/api/teams?all=1").then((r) => r.json()),
-        fetch("/api/players").then((r) => r.json()),
-        fetch("/api/coaches").then((r) => r.json()),
-      ]);
-      setTeams(tm.teams ?? []);
-      setTeamsOriginal(tm.teams ?? []);
-      setPlayers(pl.players ?? []);
-      setPlayersOriginal(pl.players ?? []);
-      setCoaches(co.coaches ?? []);
-      setCoachesOriginal(co.coaches ?? []);
-      // The just-created team gets a real id on save; close the sheet to avoid a stale ref.
-      setEditingId(null);
-      toast.success(t.admin.toasts.saved);
-    } catch {
-      toast.error(t.admin.toasts.saveError);
-    } finally {
-      setSaving(false);
+    // 1. Players first (teams reference them).
+    const removedPlayers = prev.players.filter((o) => !v.players.some((p) => p.id === o.id));
+    await Promise.all(removedPlayers.map((p) => fetch(`/api/players/${p.id}`, { method: "DELETE" })));
+    const idMap = new Map<string, string>();
+    for (const p of v.players) {
+      const body = JSON.stringify({ name: p.name, number: p.number ?? "", position: p.position ?? emptyLoc(), image: p.image ?? "", imagePosition: p.imagePosition, aspectRatio: p.aspectRatio });
+      if (p.id.startsWith("newp-")) {
+        const res = await fetch("/api/players", { method: "POST", headers, body });
+        const d = await res.json();
+        if (d.player?.id) idMap.set(p.id, d.player.id);
+      } else await fetch(`/api/players/${p.id}`, { method: "PATCH", headers, body });
     }
-  }
+    const realId = (id: string) => idMap.get(id) ?? id;
+
+    // 2. Coaches.
+    const removedCoaches = prev.coaches.filter((o) => !v.coaches.some((c) => c.id === o.id));
+    await Promise.all(removedCoaches.map((c) => fetch(`/api/coaches/${c.id}`, { method: "DELETE" })));
+    const coachIdMap = new Map<string, string>();
+    for (const c of v.coaches) {
+      const body = JSON.stringify({ name: c.name, idNumber: c.idNumber ?? "", phone: c.phone ?? "", image: c.image ?? "", imagePosition: c.imagePosition, aspectRatio: c.aspectRatio });
+      if (c.id.startsWith("newc-")) {
+        const res = await fetch("/api/coaches", { method: "POST", headers, body });
+        const d = await res.json();
+        if (d.coach?.id) coachIdMap.set(c.id, d.coach.id);
+      } else await fetch(`/api/coaches/${c.id}`, { method: "PATCH", headers, body });
+    }
+    const realCoachId = (id: string) => coachIdMap.get(id) ?? id;
+
+    // 3. Teams (with remapped ids).
+    const removedTeams = prev.teams.filter((o) => !v.teams.some((tm) => tm.id === o.id));
+    await Promise.all(removedTeams.map((tm) => fetch(`/api/teams/${tm.id}`, { method: "DELETE" })));
+    for (let i = 0; i < v.teams.length; i++) {
+      const tm = v.teams[i];
+      const body = JSON.stringify({
+        name: tm.name, description: tm.description, image: tm.image ?? "", imagePosition: tm.imagePosition, aspectRatio: tm.aspectRatio,
+        detailBg: tm.detailBg ?? "", ibbaLink: tm.ibbaLink ?? "",
+        playerIds: tm.playerIds.map(realId), coachIds: (tm.coachIds ?? []).map(realCoachId), matches: tm.matches, enabled: tm.enabled, order: i,
+      });
+      const isNew = tm.id.startsWith("new-");
+      await fetch(isNew ? "/api/teams" : `/api/teams/${tm.id}`, { method: isNew ? "POST" : "PATCH", headers, body });
+    }
+
+    const [tm, pl, co] = await Promise.all([
+      fetch("/api/teams?all=1").then((r) => r.json()),
+      fetch("/api/players").then((r) => r.json()),
+      fetch("/api/coaches").then((r) => r.json()),
+    ]);
+    const next: Composite = { teams: tm.teams ?? [], players: pl.players ?? [], coaches: co.coaches ?? [] };
+    setComposite(next);
+    return next;
+  }, [setComposite]);
+
+  const { saveState, undo, canUndo } = useAutosave({
+    value: composite,
+    setValue: setComposite,
+    onSave: persist,
+    ready: loaded,
+    paused: !!editingId, // hold saves while a team sheet is open
+  });
 
   if (!loaded) {
     return (
@@ -275,25 +233,17 @@ export default function TeamsAdmin() {
         <div className="flex items-center gap-2">
           <ViewToggle mode={view} onChange={setView} labels={{ grid: pick({ ar: "بطاقات", he: "כרטיסים", en: "Cards" }), list: pick({ ar: "قائمة", he: "רשימה", en: "List" }) }} />
           <Button variant="subtle" size="sm" onClick={addTeam}>+ {t.admin.team.addTitle}</Button>
-          <Button onClick={save} disabled={saving || !dirty}>{saving ? t.admin.saving : t.admin.save}</Button>
+          <AutosaveBar saveState={saveState} onUndo={undo} canUndo={canUndo} />
         </div>
       </div>
 
-      {dirty && (
-        <div className="mt-4">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-            <span className="size-1.5 rounded-full bg-amber-500" />
-            {pick({ ar: "تغييرات غير محفوظة", he: "שינויים לא שמורים", en: "Unsaved changes" })}
-          </span>
-        </div>
-      )}
-
+      {!editing && (<>
       {teams.length === 0 && <p className="mt-8 text-sm text-muted">{t.admin.team.none}</p>}
 
       {view === "grid" ? (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((tm, i) => (
-            <div key={tm.id} className="group relative overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-card">
+            <div key={tm.id} className="group overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-card">
               <button type="button" onClick={() => setEditingId(tm.id)} className="block w-full text-start">
                 <div className="relative w-full" style={{ aspectRatio: tm.aspectRatio ?? "16 / 10" }}>
                   <Thumb src={tm.image} position={tm.imagePosition} fallback={initialOf(tm.name, "🏀")} className="h-full w-full" />
@@ -319,9 +269,10 @@ export default function TeamsAdmin() {
                   </p>
                 </div>
               </button>
-              <div className="absolute end-2 bottom-2 flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-                <button type="button" onClick={() => moveTeam(i, -1)} disabled={i === 0} aria-label={t.admin.sections.moveUp} className="grid size-7 place-items-center rounded-md border border-line bg-white text-muted shadow-sm transition hover:border-brand disabled:opacity-30">↑</button>
-                <button type="button" onClick={() => moveTeam(i, 1)} disabled={i === teams.length - 1} aria-label={t.admin.sections.moveDown} className="grid size-7 place-items-center rounded-md border border-line bg-white text-muted shadow-sm transition hover:border-brand disabled:opacity-30">↓</button>
+              {/* reorder bar — its own row so it never overlaps the card text */}
+              <div className="flex items-center justify-end gap-1 border-t border-line px-3 py-1.5">
+                <button type="button" onClick={() => moveTeam(i, -1)} disabled={i === 0} aria-label={t.admin.sections.moveUp} className="grid size-7 place-items-center rounded-md border border-line text-muted transition hover:border-brand disabled:opacity-30">↑</button>
+                <button type="button" onClick={() => moveTeam(i, 1)} disabled={i === teams.length - 1} aria-label={t.admin.sections.moveDown} className="grid size-7 place-items-center rounded-md border border-line text-muted transition hover:border-brand disabled:opacity-30">↓</button>
               </div>
             </div>
           ))}
@@ -347,11 +298,12 @@ export default function TeamsAdmin() {
           ))}
         </div>
       )}
+      </>)}
 
-      {/* Team detail sheet */}
-      <Modal open={!!editing} onClose={() => setEditingId(null)} title={editing ? (pick(editing.name) || t.admin.team.name) : ""} className="max-w-2xl">
-        {editing && (
-          <div className="max-h-[70vh] space-y-4 overflow-y-auto pe-1">
+      {/* Team detail — expands inline */}
+      {editing && (
+        <DetailPanel title={pick(editing.name) || t.admin.team.name} onBack={() => setEditingId(null)}>
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="rounded-md bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-dark">#{editingIndex + 1}</span>
               <button type="button" onClick={() => { if (confirm(t.admin.team.deleteWarn)) { removeTeam(editing.id); setEditingId(null); } }} className="text-sm font-semibold text-rose-600 hover:underline">
@@ -521,8 +473,8 @@ export default function TeamsAdmin() {
               <Button size="sm" onClick={() => setEditingId(null)}>{pick({ ar: "تم", he: "סיום", en: "Done" })}</Button>
             </div>
           </div>
-        )}
-      </Modal>
+        </DetailPanel>
+      )}
     </AdminShell>
   );
 }

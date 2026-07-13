@@ -1,6 +1,9 @@
 import { getCurrentCoach } from "@/lib/coachAuth";
 import { getPlayers, getTeams } from "@/lib/db";
 
+// Always read fresh so admin roster changes show up for coaches immediately.
+export const dynamic = "force-dynamic";
+
 // GET — the signed-in coach plus the teams they coach and the players on them.
 export async function GET() {
   const coach = await getCurrentCoach();

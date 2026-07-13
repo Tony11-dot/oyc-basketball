@@ -44,7 +44,7 @@ export default function CoachPortal() {
 
   const loadSession = useCallback(async () => {
     try {
-      const d = await fetch("/api/coach/session").then((r) => r.json());
+      const d = await fetch("/api/coach/session", { cache: "no-store" }).then((r) => r.json());
       if (d.coach) {
         setCoach(d.coach);
         setTeams(d.teams ?? []);
@@ -93,12 +93,11 @@ export default function CoachPortal() {
 
   // Open a team's attendance sheet for a given date: load any existing record,
   // defaulting every roster player to "present" when none is saved.
-  const openSheet = useCallback(async (tm: Team, forDate: string) => {
-    const roster = tm.playerIds.map((id) => players.find((p) => p.id === id)).filter((p): p is Player => !!p);
+  const openSheet = useCallback(async (tm: Team, forDate: string, roster: Player[]) => {
     let saved: Record<string, AttendanceStatus> = {};
     let updatedAt: string | null = null;
     try {
-      const d = await fetch(`/api/attendance?teamId=${tm.id}&date=${forDate}`).then((r) => r.json());
+      const d = await fetch(`/api/attendance?teamId=${tm.id}&date=${forDate}`, { cache: "no-store" }).then((r) => r.json());
       const rec = (d.records ?? [])[0];
       if (rec) { saved = rec.statuses ?? {}; updatedAt = rec.updatedAt ?? null; }
     } catch { /* ignore — start fresh */ }
@@ -106,19 +105,36 @@ export default function CoachPortal() {
     for (const p of roster) next[p.id] = saved[p.id] ?? "present";
     setStatuses(next);
     setLastTaken(updatedAt);
-  }, [players]);
+  }, []);
 
-  function chooseTeam(tm: Team) {
+  const rosterOf = (tm: Team, list: Player[]) =>
+    tm.playerIds.map((id) => list.find((p) => p.id === id)).filter((p): p is Player => !!p);
+
+  async function chooseTeam(tm: Team) {
     const d = todayISO();
     setTeam(tm);
     setDate(d);
     setView("attendance");
-    openSheet(tm, d);
+    // Pull the latest roster so it always matches the admin (players a coach was
+    // just given / removed show up without needing a full reload).
+    let freshPlayers = players;
+    let freshTm = tm;
+    try {
+      const s = await fetch("/api/coach/session", { cache: "no-store" }).then((r) => r.json());
+      if (s?.coach) {
+        setTeams(s.teams ?? []);
+        setPlayers(s.players ?? []);
+        freshPlayers = s.players ?? [];
+        freshTm = (s.teams ?? []).find((x: Team) => x.id === tm.id) ?? tm;
+        setTeam(freshTm);
+      }
+    } catch { /* offline → use what we have */ }
+    openSheet(freshTm, d, rosterOf(freshTm, freshPlayers));
   }
 
   function changeDate(d: string) {
     setDate(d);
-    if (team && d) openSheet(team, d);
+    if (team && d) openSheet(team, d, rosterOf(team, players));
   }
 
   const setAll = (status: AttendanceStatus) => {

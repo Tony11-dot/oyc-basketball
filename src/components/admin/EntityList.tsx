@@ -1,8 +1,42 @@
 "use client";
 
 import { cn } from "@/lib/cn";
+import { useI18n } from "@/lib/i18n/LanguageProvider";
+import type { SaveState } from "@/lib/useAutosave";
 
 export type ViewMode = "grid" | "list";
+
+/** Autosave status + Undo — replaces the old Save button on admin pages. */
+export function AutosaveBar({ saveState, onUndo, canUndo }: { saveState: SaveState; onUndo: () => void; canUndo: boolean }) {
+  const { pick } = useI18n();
+  const label =
+    saveState === "saving" ? pick({ ar: "جارٍ الحفظ…", he: "שומר…", en: "Saving…" })
+    : saveState === "saved" ? pick({ ar: "تم الحفظ", he: "נשמר", en: "Saved" })
+    : saveState === "error" ? pick({ ar: "فشل الحفظ", he: "השמירה נכשלה", en: "Save failed" })
+    : pick({ ar: "حفظ تلقائي", he: "שמירה אוטומטית", en: "Auto-saves" });
+  const tone =
+    saveState === "error" ? "bg-rose-50 text-rose-600"
+    : saveState === "saved" ? "bg-emerald-50 text-emerald-700"
+    : "bg-surface text-muted";
+  return (
+    <div className="flex items-center gap-2">
+      {canUndo && (
+        <button
+          type="button"
+          onClick={onUndo}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-bold text-ink transition hover:border-brand hover:text-brand"
+        >
+          <span aria-hidden className="rtl:-scale-x-100">↶</span> {pick({ ar: "تراجع", he: "ביטול", en: "Undo" })}
+        </button>
+      )}
+      <span className={cn("inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold", tone)}>
+        {saveState === "saving" && <span className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent" />}
+        {saveState === "saved" && <span aria-hidden>✓</span>}
+        {label}
+      </span>
+    </div>
+  );
+}
 
 /** Segmented grid/list switch used at the top of the roster pages. */
 export function ViewToggle({
@@ -31,6 +65,28 @@ export function ViewToggle({
           {labels[m]}
         </button>
       ))}
+    </div>
+  );
+}
+
+/** Inline detail editor — expands in place instead of a floating modal, so
+ * nothing overlaps and there's room to breathe. Shows a back button + title,
+ * then the fields (already spaced by `space-y-4`). */
+export function DetailPanel({ title, onBack, children }: { title: string; onBack: () => void; children: React.ReactNode }) {
+  const { pick } = useI18n();
+  return (
+    <div className="mt-5 rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-6">
+      <div className="mb-4 flex items-center gap-3 border-b border-line pb-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-bold text-ink transition hover:border-brand hover:text-brand"
+        >
+          <span aria-hidden className="rtl:-scale-x-100">←</span> {pick({ ar: "رجوع", he: "חזרה", en: "Back" })}
+        </button>
+        <h2 className="min-w-0 flex-1 truncate text-lg font-bold text-ink">{title}</h2>
+      </div>
+      <div className="space-y-4">{children}</div>
     </div>
   );
 }

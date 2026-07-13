@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { LocalizedField } from "@/components/admin/LocalizedField";
 import { ImageUpload } from "@/components/admin/ImageUpload";
@@ -10,9 +10,10 @@ import { BlockBuilder } from "@/components/admin/BlockBuilder";
 import { GalleryEditor } from "@/components/admin/GalleryEditor";
 import { PeopleEditor } from "@/components/admin/PeopleEditor";
 import { HighlightsEditor } from "@/components/admin/HighlightsEditor";
+import { AutosaveBar } from "@/components/admin/EntityList";
 import { Button } from "@/components/ui/Button";
-import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
+import { useAutosave } from "@/lib/useAutosave";
 import { dictText, editableTextKeys } from "@/lib/i18n/dictionary";
 import type { Block, BlocksPosition, GalleryImage, HistoricSection, Highlight, Localized, Person, RegisterContent, SiteContent, TextStyle } from "@/lib/types";
 import { STYLE_KEYS } from "@/lib/textStyle";
@@ -33,15 +34,15 @@ const plainInput =
   "h-10 w-full rounded-xl border border-line bg-white px-3.5 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
 
 export default function ContentAdmin() {
-  const toast = useToast();
   const { t, pick } = useI18n();
   const [tab, setTab] = useState<Tab>("hero");
   const [content, setContent] = useState<SiteContent | null>(null);
-  const [saving, setSaving] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   // Highlights live in their own store; edited inline here and synced on save.
   const [highlights, setHighlights] = useState<Highlight[]>([]);
-  const [highlightsOriginal, setHighlightsOriginal] = useState<Highlight[]>([]);
+  // True while a media editor's detail sheet is open — pauses autosave so a new
+  // reel's id isn't remapped out from under the open sheet.
+  const [editorBusy, setEditorBusy] = useState(false);
 
   const TABS: { id: Tab; label: string }[] = [
     { id: "hero", label: t.admin.contentTabs.hero },
@@ -61,56 +62,40 @@ export default function ContentAdmin() {
 
   useEffect(() => {
     fetch("/api/content").then((r) => r.json()).then((d) => setContent(d.content));
-    fetch("/api/highlights").then((r) => r.json()).then((d) => {
-      setHighlights(d.highlights ?? []);
-      setHighlightsOriginal(d.highlights ?? []);
-    });
+    fetch("/api/highlights").then((r) => r.json()).then((d) => setHighlights(d.highlights ?? []));
   }, []);
 
-  async function syncHighlights() {
-    const removed = highlightsOriginal.filter((o) => !highlights.some((h) => h.id === o.id));
-    await Promise.all(removed.map((h) => fetch(`/api/highlights/${h.id}`, { method: "DELETE" })));
-    await Promise.all(
-      highlights.map((h) => {
-        const body = JSON.stringify({
-          videoUrl: h.videoUrl ?? "",
-          embedUrl: h.embedUrl ?? "",
-          poster: h.poster ?? "",
-          caption: h.caption,
-          aspectRatio: h.aspectRatio ?? "",
-        });
-        const isNew = h.id.startsWith("new-");
-        return fetch(isNew ? "/api/highlights" : `/api/highlights/${h.id}`, {
-          method: isNew ? "POST" : "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body,
-        });
-      }),
-    );
-  }
+  // ---- Autosave (content + the separately-stored highlights, together) ------
+  type CV = { content: SiteContent | null; highlights: Highlight[] };
+  const value = useMemo<CV>(() => ({ content, highlights }), [content, highlights]);
+  const setValue = useCallback((v: CV) => { setContent(v.content); setHighlights(v.highlights); }, []);
 
-  async function save() {
-    if (!content) return;
-    setSaving(true);
-    try {
-      const res = await fetch("/api/content", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(content),
-      });
-      if (!res.ok) throw new Error();
-      await syncHighlights();
-      const fresh = await fetch("/api/highlights").then((r) => r.json());
-      setHighlights(fresh.highlights ?? []);
-      setHighlightsOriginal(fresh.highlights ?? []);
-      setPreviewKey((k) => k + 1);
-      toast.success(t.admin.toasts.saved);
-    } catch {
-      toast.error(t.admin.toasts.saveError);
-    } finally {
-      setSaving(false);
-    }
-  }
+  const persist = useCallback(async (v: CV, prev: CV): Promise<CV> => {
+    if (!v.content) return v;
+    const res = await fetch("/api/content", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(v.content) });
+    if (!res.ok) throw new Error();
+    // Sync highlights (own store): delete removed, create new, patch the rest.
+    const removed = prev.highlights.filter((o) => !v.highlights.some((h) => h.id === o.id));
+    await Promise.all(removed.map((h) => fetch(`/api/highlights/${h.id}`, { method: "DELETE" })));
+    await Promise.all(v.highlights.map((h) => {
+      const body = JSON.stringify({ videoUrl: h.videoUrl ?? "", embedUrl: h.embedUrl ?? "", poster: h.poster ?? "", caption: h.caption, aspectRatio: h.aspectRatio ?? "" });
+      const isNew = h.id.startsWith("new-");
+      return fetch(isNew ? "/api/highlights" : `/api/highlights/${h.id}`, { method: isNew ? "POST" : "PATCH", headers: { "Content-Type": "application/json" }, body });
+    }));
+    const fresh = await fetch("/api/highlights").then((r) => r.json());
+    const nextHl: Highlight[] = fresh.highlights ?? [];
+    setHighlights(nextHl);
+    setPreviewKey((k) => k + 1);
+    return { content: v.content, highlights: nextHl };
+  }, []);
+
+  const { saveState, undo, canUndo } = useAutosave({
+    value,
+    setValue,
+    onSave: persist,
+    ready: !!content,
+    paused: editorBusy,
+  });
 
   // Section updaters keep edits immutable.
   const setHero = (patch: Partial<SiteContent["hero"]>) =>
@@ -185,7 +170,7 @@ export default function ContentAdmin() {
           <h1 className="text-2xl font-extrabold text-ink">{t.admin.titles.content}</h1>
           <p className="mt-1 text-sm text-muted">{t.admin.titles.contentSub}</p>
         </div>
-        <Button onClick={save} disabled={saving}>{saving ? t.admin.saving : t.admin.save}</Button>
+        <AutosaveBar saveState={saveState} onUndo={undo} canUndo={canUndo} />
       </div>
 
       {/* Tabs */}
@@ -255,7 +240,7 @@ export default function ContentAdmin() {
                 {ovField("highlights.empty", pick({ ar: "نص الفراغ", he: "טקסט ריק", en: "Empty message" }))}
               </div>
               <div className="border-t border-line pt-4">
-                <HighlightsEditor highlights={highlights} onChange={setHighlights} />
+                <HighlightsEditor highlights={highlights} onChange={setHighlights} onEditingChange={setEditorBusy} />
               </div>
             </div>
           )}
@@ -276,6 +261,7 @@ export default function ContentAdmin() {
                   captionLabel={t.admin.gallery.caption}
                   styles={content.styles}
                   onStyle={setStyle}
+                  onEditingChange={setEditorBusy}
                 />
               </div>
             </div>
@@ -315,6 +301,7 @@ export default function ContentAdmin() {
                   emptyLabel={t.admin.people.emptyStaff}
                   nameLabel={t.admin.people.name}
                   roleLabel={t.admin.people.role}
+                  onEditingChange={setEditorBusy}
                 />
               </div>
             </div>
@@ -336,6 +323,7 @@ export default function ContentAdmin() {
                   emptyLabel={t.admin.people.emptyVolunteers}
                   nameLabel={t.admin.people.name}
                   roleLabel={t.admin.people.role}
+                  onEditingChange={setEditorBusy}
                 />
               </div>
             </div>
