@@ -13,11 +13,12 @@ import { HighlightsEditor } from "@/components/admin/HighlightsEditor";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
+import { dictText, editableTextKeys } from "@/lib/i18n/dictionary";
 import type { Block, BlocksPosition, GalleryImage, HistoricSection, Highlight, Localized, Person, RegisterContent, SiteContent, TextStyle } from "@/lib/types";
 import { STYLE_KEYS } from "@/lib/textStyle";
 import { cn } from "@/lib/cn";
 
-type Tab = "hero" | "highlights" | "gallery" | "historic" | "staff" | "volunteers" | "register" | "blocks" | "footer" | "backgrounds";
+type Tab = "hero" | "menu" | "teams" | "games" | "highlights" | "gallery" | "historic" | "staff" | "volunteers" | "register" | "blocks" | "footer" | "backgrounds";
 
 const BG_SECTIONS = ["home", "teams", "games", "highlights", "gallery", "historic", "staff", "volunteers", "register"] as const;
 
@@ -33,7 +34,7 @@ const plainInput =
 
 export default function ContentAdmin() {
   const toast = useToast();
-  const { t } = useI18n();
+  const { t, pick } = useI18n();
   const [tab, setTab] = useState<Tab>("hero");
   const [content, setContent] = useState<SiteContent | null>(null);
   const [saving, setSaving] = useState(false);
@@ -44,6 +45,9 @@ export default function ContentAdmin() {
 
   const TABS: { id: Tab; label: string }[] = [
     { id: "hero", label: t.admin.contentTabs.hero },
+    { id: "menu", label: pick({ ar: "القائمة", he: "תפריט", en: "Menu" }) },
+    { id: "teams", label: pick({ ar: "الفرق", he: "קבוצות", en: "Teams" }) },
+    { id: "games", label: pick({ ar: "المباريات", he: "משחקים", en: "Games" }) },
     { id: "highlights", label: t.admin.contentTabs.highlights },
     { id: "gallery", label: t.admin.contentTabs.gallery },
     { id: "historic", label: t.admin.contentTabs.historic },
@@ -144,6 +148,36 @@ export default function ContentAdmin() {
     </div>
   );
 
+  // ---- Fixed-string overrides (dictionary text made editable) ---------------
+  // Each editable UI string is keyed by a dictionary dot-path (e.g. "nav.home").
+  // We show the built-in default and store an override only when it differs.
+  const ov = (key: string): Localized => {
+    const o = content.overrides?.[key];
+    const d = dictText(key);
+    return { ar: o?.ar || d.ar, he: o?.he || d.he, en: o?.en || d.en };
+  };
+  const setOv = (key: string, v: Localized) =>
+    setContent((c) => {
+      if (!c) return c;
+      const d = dictText(key);
+      const overrides = { ...(c.overrides ?? {}) };
+      if (v.ar === d.ar && v.he === d.he && v.en === d.en) delete overrides[key];
+      else overrides[key] = v;
+      return { ...c, overrides };
+    });
+  const humanize = (seg: string) =>
+    seg.replace(/\./g, " › ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/(^|\s)([a-z])/g, (_, s, c) => s + c.toUpperCase());
+  const ovField = (key: string, label?: string, opts?: { textarea?: boolean }) => (
+    <LocalizedField key={key} label={label ?? humanize(key.split(".").slice(1).join("."))} value={ov(key)} onChange={(v) => setOv(key, v)} textarea={opts?.textarea} />
+  );
+  // Render an editable field for every string under a dictionary section.
+  const ovGroup = (prefix: string, skip?: (key: string) => boolean) => {
+    const grp = editableTextKeys().find((g) => g.group === prefix);
+    if (!grp) return null;
+    return grp.keys.filter((k) => !skip?.(k)).map((k) => ovField(k));
+  };
+  const groupHint = (v: Localized) => <p className="text-sm text-muted">{pick(v)}</p>;
+
   return (
     <AdminShell>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -182,21 +216,69 @@ export default function ContentAdmin() {
               {styled(t.admin.fields.headline, content.hero.title, (title) => setHero({ title }), STYLE_KEYS.heroTitle)}
               {styled(t.admin.fields.subtitle, content.hero.subtitle, (subtitle) => setHero({ subtitle }), STYLE_KEYS.heroSubtitle)}
               {styled(t.admin.fields.body, content.hero.body, (body) => setHero({ body }), STYLE_KEYS.heroBody, { textarea: true, rows: 4 })}
+              <div className="space-y-4 border-t border-line pt-4">
+                <p className="text-sm font-bold text-ink">{pick({ ar: "الشارة والأزرار", he: "תגית וכפתורים", en: "Badge & buttons" })}</p>
+                {ovField("hero.badge", pick({ ar: "الشارة", he: "תגית", en: "Badge" }))}
+                {ovField("hero.cta", pick({ ar: "زر رئيسي", he: "כפתור ראשי", en: "Primary button" }))}
+                {ovField("hero.secondary", pick({ ar: "زر ثانوي", he: "כפתור משני", en: "Secondary button" }))}
+              </div>
             </>
           )}
 
-          {tab === "highlights" && <HighlightsEditor highlights={highlights} onChange={setHighlights} />}
+          {tab === "menu" && (
+            <div className="space-y-4">
+              {groupHint({ ar: "أسماء عناصر القائمة العلوية.", he: "שמות פריטי התפריט העליון.", en: "The names of the top navigation items." })}
+              {ovGroup("nav")}
+            </div>
+          )}
+
+          {tab === "teams" && (
+            <div className="space-y-4">
+              {groupHint({ ar: "عناوين قسم الفرق وكل النصوص الظاهرة فيه.", he: "כותרות מקטע הקבוצות וכל הטקסטים בו.", en: "The Teams section headings and every label shown in it." })}
+              {ovGroup("teams")}
+            </div>
+          )}
+
+          {tab === "games" && (
+            <div className="space-y-4">
+              {groupHint({ ar: "عناوين قسم المباريات وكل النصوص الظاهرة فيه.", he: "כותרות מקטע המשחקים וכל הטקסטים בו.", en: "The Games section headings and every label shown in it." })}
+              {ovGroup("games")}
+            </div>
+          )}
+
+          {tab === "highlights" && (
+            <div className="space-y-4">
+              <div className="space-y-4">
+                {ovField("highlights.eyebrow", pick({ ar: "الشارة", he: "תגית", en: "Eyebrow" }))}
+                {ovField("highlights.heading", pick({ ar: "العنوان", he: "כותרת", en: "Heading" }))}
+                {ovField("highlights.subheading", pick({ ar: "العنوان الفرعي", he: "כותרת משנה", en: "Subheading" }))}
+                {ovField("highlights.empty", pick({ ar: "نص الفراغ", he: "טקסט ריק", en: "Empty message" }))}
+              </div>
+              <div className="border-t border-line pt-4">
+                <HighlightsEditor highlights={highlights} onChange={setHighlights} />
+              </div>
+            </div>
+          )}
 
           {tab === "gallery" && (
-            <GalleryEditor
-              gallery={content.gallery ?? []}
-              onChange={setGallery}
-              addLabel={t.admin.gallery.add}
-              emptyLabel={t.admin.gallery.empty}
-              captionLabel={t.admin.gallery.caption}
-              styles={content.styles}
-              onStyle={setStyle}
-            />
+            <div className="space-y-4">
+              <div className="space-y-4">
+                {ovField("gallery.eyebrow", pick({ ar: "الشارة", he: "תגית", en: "Eyebrow" }))}
+                {ovField("gallery.heading", pick({ ar: "العنوان", he: "כותרת", en: "Heading" }))}
+                {ovField("gallery.subheading", pick({ ar: "العنوان الفرعي", he: "כותרת משנה", en: "Subheading" }))}
+              </div>
+              <div className="border-t border-line pt-4">
+                <GalleryEditor
+                  gallery={content.gallery ?? []}
+                  onChange={setGallery}
+                  addLabel={t.admin.gallery.add}
+                  emptyLabel={t.admin.gallery.empty}
+                  captionLabel={t.admin.gallery.caption}
+                  styles={content.styles}
+                  onStyle={setStyle}
+                />
+              </div>
+            </div>
           )}
 
           {tab === "historic" && (
@@ -211,31 +293,52 @@ export default function ContentAdmin() {
                   onAspectChange={(aspectRatio) => setHistoric({ aspectRatio })}
                 />
               )}
+              {ovField("historic.eyebrow", pick({ ar: "الشارة", he: "תגית", en: "Eyebrow" }))}
               {styled(t.admin.historicEditor.title, content.historic?.title ?? emptyLocalized(), (title) => setHistoric({ title }), "historic.title")}
               {styled(t.admin.historicEditor.body, content.historic?.body ?? emptyLocalized(), (body) => setHistoric({ body }), "historic.body", { textarea: true, rows: 6 })}
             </div>
           )}
 
           {tab === "staff" && (
-            <PeopleEditor
-              people={content.staff ?? []}
-              onChange={setStaff}
-              addLabel={t.admin.people.addStaff}
-              emptyLabel={t.admin.people.emptyStaff}
-              nameLabel={t.admin.people.name}
-              roleLabel={t.admin.people.role}
-            />
+            <div className="space-y-4">
+              <div className="space-y-4">
+                {ovField("staff.eyebrow", pick({ ar: "الشارة", he: "תגית", en: "Eyebrow" }))}
+                {ovField("staff.heading", pick({ ar: "العنوان", he: "כותרת", en: "Heading" }))}
+                {ovField("staff.subheading", pick({ ar: "العنوان الفرعي", he: "כותרת משנה", en: "Subheading" }))}
+                {ovField("staff.empty", pick({ ar: "نص الفراغ", he: "טקסט ריק", en: "Empty message" }))}
+              </div>
+              <div className="border-t border-line pt-4">
+                <PeopleEditor
+                  people={content.staff ?? []}
+                  onChange={setStaff}
+                  addLabel={t.admin.people.addStaff}
+                  emptyLabel={t.admin.people.emptyStaff}
+                  nameLabel={t.admin.people.name}
+                  roleLabel={t.admin.people.role}
+                />
+              </div>
+            </div>
           )}
 
           {tab === "volunteers" && (
-            <PeopleEditor
-              people={content.volunteers ?? []}
-              onChange={setVolunteers}
-              addLabel={t.admin.people.addVolunteer}
-              emptyLabel={t.admin.people.emptyVolunteers}
-              nameLabel={t.admin.people.name}
-              roleLabel={t.admin.people.role}
-            />
+            <div className="space-y-4">
+              <div className="space-y-4">
+                {ovField("volunteers.eyebrow", pick({ ar: "الشارة", he: "תגית", en: "Eyebrow" }))}
+                {ovField("volunteers.heading", pick({ ar: "العنوان", he: "כותרת", en: "Heading" }))}
+                {ovField("volunteers.subheading", pick({ ar: "العنوان الفرعي", he: "כותרת משנה", en: "Subheading" }))}
+                {ovField("volunteers.empty", pick({ ar: "نص الفراغ", he: "טקסט ריק", en: "Empty message" }))}
+              </div>
+              <div className="border-t border-line pt-4">
+                <PeopleEditor
+                  people={content.volunteers ?? []}
+                  onChange={setVolunteers}
+                  addLabel={t.admin.people.addVolunteer}
+                  emptyLabel={t.admin.people.emptyVolunteers}
+                  nameLabel={t.admin.people.name}
+                  roleLabel={t.admin.people.role}
+                />
+              </div>
+            </div>
           )}
 
           {tab === "register" && (() => {
@@ -275,6 +378,12 @@ export default function ContentAdmin() {
                     </div>
                   ))}
                 </div>
+                <details className="border-t border-line pt-4">
+                  <summary className="cursor-pointer text-sm font-bold text-ink">{pick({ ar: "نصوص النموذج والأزرار", he: "טקסטים של הטופס והכפתורים", en: "Form & button labels" })}</summary>
+                  <div className="mt-3 space-y-4">
+                    {ovGroup("register", (k) => k === "register.eyebrow" || k === "register.heading" || k === "register.subheading" || k.startsWith("register.perks"))}
+                  </div>
+                </details>
               </div>
             );
           })()}
@@ -333,6 +442,11 @@ export default function ContentAdmin() {
                     </button>
                   </div>
                 ))}
+              </div>
+
+              <div className="space-y-4 border-t border-line pt-4">
+                <p className="text-sm font-bold text-ink">{pick({ ar: "عناوين التذييل", he: "כותרות הכותרת התחתונה", en: "Footer labels" })}</p>
+                {ovGroup("footer")}
               </div>
             </>
           )}

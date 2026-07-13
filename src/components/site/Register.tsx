@@ -2,11 +2,12 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { useToast } from "@/components/ui/Toast";
+import { DateField } from "@/components/ui/Calendar";
 import { isValidEmail, isValidPhone } from "@/lib/validation";
 import { JERSEY_SIZES, FEE_AGOROT } from "@/lib/registrationFields";
 import type { RegisterContent } from "@/lib/types";
@@ -104,6 +105,7 @@ function RegisterForm({ bg, content, stripeReady }: { bg?: string; content?: Reg
     reset,
     setValue,
     watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     defaultValues: {
@@ -321,7 +323,14 @@ function RegisterForm({ bg, content, stripeReady }: { bg?: string; content?: Reg
                     <input dir="ltr" {...register("idNumber", { required: true })} className={inputCls(!!errors.idNumber)} />
                   </Field>
                   <Field label={f.birthDate} error={reqErr("birthDate")}>
-                    <input type="date" dir="ltr" {...register("birthDate", { required: true })} className={inputCls(!!errors.birthDate)} />
+                    <Controller
+                      name="birthDate"
+                      control={control}
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <DateField value={field.value} onChange={field.onChange} max={todayISO()} placeholder={f.birthDate} />
+                      )}
+                    />
                   </Field>
                   <Field label={f.phonePlayer} error={phoneErr("phonePlayer")}>
                     <input type="tel" dir="ltr" {...register("phonePlayer", { required: true, validate: isValidPhone })} className={inputCls(!!errors.phonePlayer)} />
@@ -415,7 +424,14 @@ function RegisterForm({ bg, content, stripeReady }: { bg?: string; content?: Reg
                     <input {...register("guardianName", { required: true })} className={inputCls(!!errors.guardianName)} />
                   </Field>
                   <Field label={f.date} error={reqErr("dateSigned")}>
-                    <input type="date" dir="ltr" {...register("dateSigned", { required: true })} className={inputCls(!!errors.dateSigned)} />
+                    <Controller
+                      name="dateSigned"
+                      control={control}
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <DateField value={field.value} onChange={field.onChange} placeholder={f.date} />
+                      )}
+                    />
                   </Field>
 
                   <div className="sm:col-span-2">

@@ -138,3 +138,59 @@ body {
     animation: none;
   }
 }
+
+/* ---- Seamless infinite "train" marquee (reels + photos) -------------------
+   The track holds N identical copies of the content and shifts left by exactly
+   one copy's width, so the last item sits flush against the first — no gaps.
+   Hovering anywhere on the track pauses it so items can be inspected/downloaded. */
+.mq {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  /* Keep the (wider-than-container) track left-aligned so it overflows to the
+     right, where the scrolling copies fill in — even on RTL pages. */
+  direction: ltr;
+}
+.mq-fade {
+  -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+.mq-track {
+  display: flex;
+  width: max-content;
+  direction: ltr;
+  animation-name: mq-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+.mq:hover .mq-track,
+.mq:focus-within .mq-track {
+  animation-play-state: paused !important;
+}
+.mq-group {
+  display: flex;
+  gap: 1.25rem;
+  padding-inline-end: 1.25rem; /* seam gap === item gap */
+  flex: none;
+}
+@keyframes mq-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-1 * var(--mq-w)));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mq {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .mq-track {
+    animation: none;
+  }
+  .mq-group:not(:first-child) {
+    display: none;
+  }
+}

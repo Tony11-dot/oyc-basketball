@@ -11,6 +11,8 @@ interface I18nValue {
   /** Resolve a localized value to the active language (falls back to Hebrew). */
   pick: (value: Localized) => string;
   locales: Locale[];
+  /** Re-fetch the admin text overrides (call after saving them in the admin). */
+  refreshOverrides: () => void;
 }
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -20,14 +22,51 @@ function isLocale(v: string | null): v is Locale {
   return v === "ar" || v === "he" || v === "en";
 }
 
+// Deep-merge admin text overrides (a flat map of "a.b.c" → Localized) onto the
+// built-in dictionary for one language. Only paths that already exist in the
+// dictionary are replaced, so overrides can never inject stray keys.
+function applyOverrides(base: Dict, overrides: Record<string, Localized>, locale: Locale): Dict {
+  const keys = Object.keys(overrides);
+  if (keys.length === 0) return base;
+  const clone = JSON.parse(JSON.stringify(base)) as Dict;
+  for (const path of keys) {
+    const val = overrides[path]?.[locale];
+    if (!val) continue;
+    const parts = path.split(".");
+    let node: Record<string, unknown> | null = clone as unknown as Record<string, unknown>;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const next = node[parts[i]];
+      if (!next || typeof next !== "object") {
+        node = null;
+        break;
+      }
+      node = next as Record<string, unknown>;
+    }
+    if (node && parts[parts.length - 1] in node) node[parts[parts.length - 1]] = val;
+  }
+  return clone;
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
+  const [overrides, setOverrides] = useState<Record<string, Localized>>({});
 
   // Restore saved preference after mount (avoids SSR/CSR mismatch).
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (isLocale(saved)) setLocaleState(saved);
   }, []);
+
+  // Load admin text overrides so every dictionary string reflects admin edits.
+  const refreshOverrides = useCallback(() => {
+    fetch("/api/content")
+      .then((r) => r.json())
+      .then((d) => setOverrides(d.content?.overrides ?? {}))
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    refreshOverrides();
+  }, [refreshOverrides]);
 
   // Keep <html lang/dir> in sync with the active language.
   useEffect(() => {
@@ -46,15 +85,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<I18nValue>(() => {
-    const t = dictionaries[locale];
+    const t = applyOverrides(dictionaries[locale], overrides, locale);
     return {
       locale,
       setLocale,
       t,
       pick: (v) => v?.[locale] ?? v?.ar ?? "",
       locales: LOCALES,
+      refreshOverrides,
     };
-  }, [locale, setLocale]);
+  }, [locale, setLocale, overrides, refreshOverrides]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

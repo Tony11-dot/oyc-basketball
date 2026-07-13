@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { LocalizedField } from "@/components/admin/LocalizedField";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { ImagePositioner } from "@/components/admin/ImagePositioner";
+import { ViewToggle, Thumb, TapChevron, type ViewMode } from "@/components/admin/EntityList";
+import { DateField } from "@/components/ui/Calendar";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { Coach, Localized, Match, Player, Team } from "@/lib/types";
@@ -14,15 +17,8 @@ const emptyLoc = (): Localized => ({ ar: "", he: "", en: "" });
 const plainInput =
   "h-10 w-full rounded-xl border border-line bg-white px-3.5 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
 
-// Convert an ISO/date string into a value for <input type="datetime-local"> in
-// local time, and keep the naive local string when the admin edits it.
-function toLocalInput(v?: string): string {
-  if (!v) return "";
-  const d = new Date(v);
-  if (isNaN(+d)) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+const initialOf = (name: Localized, fallback = "?") =>
+  (name.ar || name.he || name.en || "").trim().charAt(0) || fallback;
 
 export default function TeamsAdmin() {
   const { t, pick } = useI18n();
@@ -35,6 +31,8 @@ export default function TeamsAdmin() {
   const [coachesOriginal, setCoachesOriginal] = useState<Coach[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [view, setView] = useState<ViewMode>("grid");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -59,11 +57,12 @@ export default function TeamsAdmin() {
   const updateTeam = (id: string, patch: Partial<Team>) =>
     setTeams((list) => list.map((tm) => (tm.id === id ? { ...tm, ...patch } : tm)));
   const removeTeam = (id: string) => setTeams((list) => list.filter((tm) => tm.id !== id));
-  const addTeam = () =>
+  const addTeam = () => {
+    const id = `new-${Date.now()}`;
     setTeams((list) => [
       ...list,
       {
-        id: `new-${Date.now()}`,
+        id,
         name: emptyLoc(),
         description: emptyLoc(),
         image: "",
@@ -78,6 +77,8 @@ export default function TeamsAdmin() {
         createdAt: new Date().toISOString(),
       },
     ]);
+    setEditingId(id);
+  };
   const moveTeam = (index: number, dir: -1 | 1) => {
     const target = index + dir;
     if (target < 0 || target >= teams.length) return;
@@ -144,6 +145,17 @@ export default function TeamsAdmin() {
     );
   const removeMatch = (teamId: string, matchId: string) =>
     setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, matches: tm.matches.filter((m) => m.id !== matchId) } : tm)));
+
+  const dirty = useMemo(
+    () =>
+      JSON.stringify(teams) !== JSON.stringify(teamsOriginal) ||
+      JSON.stringify(players) !== JSON.stringify(playersOriginal) ||
+      JSON.stringify(coaches) !== JSON.stringify(coachesOriginal),
+    [teams, teamsOriginal, players, playersOriginal, coaches, coachesOriginal],
+  );
+
+  const editingIndex = editingId ? teams.findIndex((tm) => tm.id === editingId) : -1;
+  const editing = editingIndex >= 0 ? teams[editingIndex] : null;
 
   // ---- Persist --------------------------------------------------------------
   async function save() {
@@ -233,6 +245,8 @@ export default function TeamsAdmin() {
       setPlayersOriginal(pl.players ?? []);
       setCoaches(co.coaches ?? []);
       setCoachesOriginal(co.coaches ?? []);
+      // The just-created team gets a real id on save; close the sheet to avoid a stale ref.
+      setEditingId(null);
       toast.success(t.admin.toasts.saved);
     } catch {
       toast.error(t.admin.toasts.saveError);
@@ -249,6 +263,8 @@ export default function TeamsAdmin() {
     );
   }
 
+  const tapToEdit = pick({ ar: "اضغط للتعديل", he: "לחצו לעריכה", en: "Tap to edit" });
+
   return (
     <AdminShell>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -256,50 +272,116 @@ export default function TeamsAdmin() {
           <h1 className="text-2xl font-extrabold text-ink">{t.admin.titles.teams}</h1>
           <p className="mt-1 text-sm text-muted">{t.admin.titles.teamsSub}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <ViewToggle mode={view} onChange={setView} labels={{ grid: pick({ ar: "بطاقات", he: "כרטיסים", en: "Cards" }), list: pick({ ar: "قائمة", he: "רשימה", en: "List" }) }} />
           <Button variant="subtle" size="sm" onClick={addTeam}>+ {t.admin.team.addTitle}</Button>
-          <Button onClick={save} disabled={saving}>{saving ? t.admin.saving : t.admin.save}</Button>
+          <Button onClick={save} disabled={saving || !dirty}>{saving ? t.admin.saving : t.admin.save}</Button>
         </div>
       </div>
 
+      {dirty && (
+        <div className="mt-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+            <span className="size-1.5 rounded-full bg-amber-500" />
+            {pick({ ar: "تغييرات غير محفوظة", he: "שינויים לא שמורים", en: "Unsaved changes" })}
+          </span>
+        </div>
+      )}
+
       {teams.length === 0 && <p className="mt-8 text-sm text-muted">{t.admin.team.none}</p>}
 
-      <div className="mt-6 space-y-6">
-        {teams.map((tm, i) => (
-          <div key={tm.id} className="space-y-4 rounded-2xl border border-line bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2">
-              <span className="rounded-md bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-dark">#{i + 1}</span>
-              <span className="text-base font-bold text-ink">{pick(tm.name) || t.admin.team.name}</span>
-              <div className="ms-auto flex items-center gap-1">
+      {view === "grid" ? (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {teams.map((tm, i) => (
+            <div key={tm.id} className="group relative overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-card">
+              <button type="button" onClick={() => setEditingId(tm.id)} className="block w-full text-start">
+                <div className="relative w-full" style={{ aspectRatio: tm.aspectRatio ?? "16 / 10" }}>
+                  <Thumb src={tm.image} position={tm.imagePosition} fallback={initialOf(tm.name, "🏀")} className="h-full w-full" />
+                  {!tm.enabled && (
+                    <span className="absolute start-2 top-2 rounded-full bg-ink/70 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur">
+                      {pick({ ar: "مخفي", he: "מוסתר", en: "Hidden" })}
+                    </span>
+                  )}
+                  {tm.id.startsWith("new-") && (
+                    <span className="absolute end-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">NEW</span>
+                  )}
+                </div>
+                <div className="p-4">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-md bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-dark">#{i + 1}</span>
+                    <p className="truncate font-bold text-ink">{pick(tm.name) || tapToEdit}</p>
+                    <TapChevron className="ms-auto text-lg" />
+                  </div>
+                  <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
+                    <span>👤 {tm.playerIds.length} {t.teams.players}</span>
+                    <span>🧑‍🏫 {(tm.coachIds ?? []).length}</span>
+                    <span>🏀 {tm.matches.length}</span>
+                  </p>
+                </div>
+              </button>
+              <div className="absolute end-2 bottom-2 flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                <button type="button" onClick={() => moveTeam(i, -1)} disabled={i === 0} aria-label={t.admin.sections.moveUp} className="grid size-7 place-items-center rounded-md border border-line bg-white text-muted shadow-sm transition hover:border-brand disabled:opacity-30">↑</button>
+                <button type="button" onClick={() => moveTeam(i, 1)} disabled={i === teams.length - 1} aria-label={t.admin.sections.moveDown} className="grid size-7 place-items-center rounded-md border border-line bg-white text-muted shadow-sm transition hover:border-brand disabled:opacity-30">↓</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+          {teams.map((tm, i) => (
+            <div key={tm.id} className={`group flex items-center gap-3 px-3 py-2.5 transition hover:bg-surface ${i > 0 ? "border-t border-line" : ""}`}>
+              <span className="w-6 shrink-0 text-center text-xs font-bold text-muted">{i + 1}</span>
+              <button type="button" onClick={() => setEditingId(tm.id)} className="flex min-w-0 flex-1 items-center gap-3 text-start">
+                <Thumb src={tm.image} position={tm.imagePosition} fallback={initialOf(tm.name, "🏀")} className="size-11 shrink-0 rounded-xl" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-ink">{pick(tm.name) || tapToEdit}</p>
+                  <p className="truncate text-xs text-muted">👤 {tm.playerIds.length} · 🧑‍🏫 {(tm.coachIds ?? []).length} · 🏀 {tm.matches.length}{!tm.enabled ? ` · ${pick({ ar: "مخفي", he: "מוסתר", en: "Hidden" })}` : ""}</p>
+                </div>
+                <TapChevron className="text-lg" />
+              </button>
+              <div className="flex shrink-0 items-center gap-1">
                 <button type="button" onClick={() => moveTeam(i, -1)} disabled={i === 0} aria-label={t.admin.sections.moveUp} className="grid size-7 place-items-center rounded-md border border-line text-muted transition hover:border-brand disabled:opacity-30">↑</button>
                 <button type="button" onClick={() => moveTeam(i, 1)} disabled={i === teams.length - 1} aria-label={t.admin.sections.moveDown} className="grid size-7 place-items-center rounded-md border border-line text-muted transition hover:border-brand disabled:opacity-30">↓</button>
-                <button type="button" onClick={() => { if (confirm(t.admin.team.deleteWarn)) removeTeam(tm.id); }} aria-label={t.admin.actions.delete} className="grid size-7 place-items-center rounded-md bg-rose-50 text-rose-600 transition hover:bg-rose-100">✕</button>
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Team detail sheet */}
+      <Modal open={!!editing} onClose={() => setEditingId(null)} title={editing ? (pick(editing.name) || t.admin.team.name) : ""} className="max-w-2xl">
+        {editing && (
+          <div className="max-h-[70vh] space-y-4 overflow-y-auto pe-1">
+            <div className="flex items-center justify-between">
+              <span className="rounded-md bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-dark">#{editingIndex + 1}</span>
+              <button type="button" onClick={() => { if (confirm(t.admin.team.deleteWarn)) { removeTeam(editing.id); setEditingId(null); } }} className="text-sm font-semibold text-rose-600 hover:underline">
+                {t.admin.actions.delete}
+              </button>
             </div>
 
             {/* Team identity */}
             <span className="block text-sm font-semibold text-ink">
               {t.admin.team.cover} <span className="font-normal text-muted">— {t.admin.team.coverHint}</span>
             </span>
-            <ImageUpload value={tm.image ?? ""} onChange={(image) => updateTeam(tm.id, { image })} />
-            {tm.image && (
-              <ImagePositioner src={tm.image} value={tm.imagePosition} onChange={(imagePosition) => updateTeam(tm.id, { imagePosition })} aspectRatio={tm.aspectRatio ?? "16 / 10"} onAspectChange={(aspectRatio) => updateTeam(tm.id, { aspectRatio })} />
+            <ImageUpload value={editing.image ?? ""} onChange={(image) => updateTeam(editing.id, { image })} />
+            {editing.image && (
+              <ImagePositioner src={editing.image} value={editing.imagePosition} onChange={(imagePosition) => updateTeam(editing.id, { imagePosition })} aspectRatio={editing.aspectRatio ?? "16 / 10"} onAspectChange={(aspectRatio) => updateTeam(editing.id, { aspectRatio })} />
             )}
-            <LocalizedField label={t.admin.team.name} value={tm.name} onChange={(name) => updateTeam(tm.id, { name })} />
-            <LocalizedField label={t.admin.team.description} textarea value={tm.description} onChange={(description) => updateTeam(tm.id, { description })} />
+            <LocalizedField label={t.admin.team.name} value={editing.name} onChange={(name) => updateTeam(editing.id, { name })} />
+            <LocalizedField label={t.admin.team.description} textarea value={editing.description} onChange={(description) => updateTeam(editing.id, { description })} />
 
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-ink">
                 {t.admin.team.ibbaLink} <span className="font-normal text-muted">— {t.admin.team.ibbaLinkHint}</span>
               </span>
-              <input dir="ltr" placeholder="https://www.ibba.co.il/…" value={tm.ibbaLink ?? ""} onChange={(e) => updateTeam(tm.id, { ibbaLink: e.target.value })} className={plainInput} />
+              <input dir="ltr" placeholder="https://www.ibba.co.il/…" value={editing.ibbaLink ?? ""} onChange={(e) => updateTeam(editing.id, { ibbaLink: e.target.value })} className={plainInput} />
             </label>
 
             <div>
               <span className="mb-1.5 block text-sm font-semibold text-ink">
                 {t.admin.team.detailBg} <span className="font-normal text-muted">— {t.admin.team.detailBgHint}</span>
               </span>
-              <ImageUpload value={tm.detailBg ?? ""} onChange={(detailBg) => updateTeam(tm.id, { detailBg })} />
+              <ImageUpload value={editing.detailBg ?? ""} onChange={(detailBg) => updateTeam(editing.id, { detailBg })} />
             </div>
 
             {/* Players */}
@@ -308,23 +390,22 @@ export default function TeamsAdmin() {
                 <span className="text-sm font-bold text-ink">
                   {t.admin.team.players} <span className="font-normal text-muted">— {t.admin.team.playersHint}</span>
                 </span>
-                <Button size="sm" variant="subtle" onClick={() => addNewPlayer(tm.id)}>{t.admin.team.addNew}</Button>
+                <Button size="sm" variant="subtle" onClick={() => addNewPlayer(editing.id)}>{t.admin.team.addNew}</Button>
               </div>
 
-              {/* Searchable picker: find an existing player or create one on the spot */}
               <PlayerPicker
-                players={players.filter((p) => !tm.playerIds.includes(p.id))}
+                players={players.filter((p) => !editing.playerIds.includes(p.id))}
                 pick={pick}
                 placeholder={t.admin.players.pickerPlaceholder}
                 addNewLabel={t.admin.players.addNew}
-                onAttach={(pid) => attachPlayer(tm.id, pid)}
-                onAddNew={(name) => addNewPlayer(tm.id, name)}
+                onAttach={(pid) => attachPlayer(editing.id, pid)}
+                onAddNew={(name) => addNewPlayer(editing.id, name)}
               />
 
-              {tm.playerIds.length === 0 && <p className="text-sm text-muted">{t.admin.team.noPlayers}</p>}
+              {editing.playerIds.length === 0 && <p className="text-sm text-muted">{t.admin.team.noPlayers}</p>}
 
               <div className="grid gap-3 sm:grid-cols-2">
-                {tm.playerIds.map((pid) => {
+                {editing.playerIds.map((pid) => {
                   const p = playerById(pid);
                   if (!p) return null;
                   return (
@@ -342,7 +423,7 @@ export default function TeamsAdmin() {
                       </div>
                       <LocalizedField label={t.admin.team.position} value={p.position ?? emptyLoc()} onChange={(position) => updatePlayer(pid, { position })} />
                       <div className="flex gap-3">
-                        <button type="button" onClick={() => detachPlayer(tm.id, pid)} className="text-xs font-semibold text-muted hover:text-ink">↩ {t.admin.team.detach}</button>
+                        <button type="button" onClick={() => detachPlayer(editing.id, pid)} className="text-xs font-semibold text-muted hover:text-ink">↩ {t.admin.team.detach}</button>
                         <button type="button" onClick={() => { if (confirm(t.admin.team.deleteWarn)) deletePlayer(pid); }} className="text-xs font-semibold text-rose-600 hover:underline">{t.admin.actions.delete}</button>
                       </div>
                     </div>
@@ -357,22 +438,22 @@ export default function TeamsAdmin() {
                 <span className="text-sm font-bold text-ink">
                   {t.admin.team.coaches} <span className="font-normal text-muted">— {t.admin.team.coachesHint}</span>
                 </span>
-                <Button size="sm" variant="subtle" onClick={() => addNewCoach(tm.id)}>{t.admin.team.addNewCoach}</Button>
+                <Button size="sm" variant="subtle" onClick={() => addNewCoach(editing.id)}>{t.admin.team.addNewCoach}</Button>
               </div>
 
               <CoachPicker
-                coaches={coaches.filter((c) => !(tm.coachIds ?? []).includes(c.id))}
+                coaches={coaches.filter((c) => !(editing.coachIds ?? []).includes(c.id))}
                 pick={pick}
                 placeholder={t.admin.coaches.pickerPlaceholder}
                 addNewLabel={t.admin.coaches.addNew}
-                onAttach={(cid) => attachCoach(tm.id, cid)}
-                onAddNew={(name) => addNewCoach(tm.id, name)}
+                onAttach={(cid) => attachCoach(editing.id, cid)}
+                onAddNew={(name) => addNewCoach(editing.id, name)}
               />
 
-              {(tm.coachIds ?? []).length === 0 && <p className="text-sm text-muted">{t.admin.team.noCoaches}</p>}
+              {(editing.coachIds ?? []).length === 0 && <p className="text-sm text-muted">{t.admin.team.noCoaches}</p>}
 
               <div className="grid gap-3 sm:grid-cols-2">
-                {(tm.coachIds ?? []).map((cid) => {
+                {(editing.coachIds ?? []).map((cid) => {
                   const c = coachById(cid);
                   if (!c) return null;
                   return (
@@ -393,7 +474,7 @@ export default function TeamsAdmin() {
                         </label>
                       </div>
                       <div className="flex gap-3">
-                        <button type="button" onClick={() => detachCoach(tm.id, cid)} className="text-xs font-semibold text-muted hover:text-ink">↩ {t.admin.team.detach}</button>
+                        <button type="button" onClick={() => detachCoach(editing.id, cid)} className="text-xs font-semibold text-muted hover:text-ink">↩ {t.admin.team.detach}</button>
                         <button type="button" onClick={() => { if (confirm(t.admin.team.deleteWarn)) deleteCoach(cid); }} className="text-xs font-semibold text-rose-600 hover:underline">{t.admin.actions.delete}</button>
                       </div>
                     </div>
@@ -408,44 +489,40 @@ export default function TeamsAdmin() {
                 <span className="text-sm font-bold text-ink">
                   {t.admin.team.matches} <span className="font-normal text-muted">— {t.admin.team.matchesHint}</span>
                 </span>
-                <Button size="sm" variant="subtle" onClick={() => addMatch(tm.id)}>{t.admin.team.addMatch}</Button>
+                <Button size="sm" variant="subtle" onClick={() => addMatch(editing.id)}>{t.admin.team.addMatch}</Button>
               </div>
-              {tm.matches.length === 0 && <p className="text-sm text-muted">{t.admin.team.noMatches}</p>}
-              {tm.matches.map((m) => (
+              {editing.matches.length === 0 && <p className="text-sm text-muted">{t.admin.team.noMatches}</p>}
+              {editing.matches.map((m) => (
                 <div key={m.id} className="space-y-2 rounded-xl border border-line p-3">
-                  <LocalizedField label={t.admin.team.opponent} value={m.opponent} onChange={(opponent) => updateMatch(tm.id, m.id, { opponent })} />
-                  <label className="block">
-                    <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.matchDate}</span>
-                    <input
-                      type="datetime-local"
-                      value={toLocalInput(m.date)}
-                      onChange={(e) => updateMatch(tm.id, m.id, { date: e.target.value })}
-                      className={plainInput}
-                    />
-                  </label>
-                  <LocalizedField label={t.admin.team.matchWhere} value={m.where} onChange={(where) => updateMatch(tm.id, m.id, { where })} />
-                  <LocalizedField label={`${t.admin.team.contactName} (المسؤول)`} value={m.contactName ?? emptyLoc()} onChange={(contactName) => updateMatch(tm.id, m.id, { contactName })} />
+                  <LocalizedField label={t.admin.team.opponent} value={m.opponent} onChange={(opponent) => updateMatch(editing.id, m.id, { opponent })} />
+                  <DateField label={t.admin.team.matchDate} value={m.date} withTime onChange={(date) => updateMatch(editing.id, m.id, { date })} />
+                  <LocalizedField label={t.admin.team.matchWhere} value={m.where} onChange={(where) => updateMatch(editing.id, m.id, { where })} />
+                  <LocalizedField label={`${t.admin.team.contactName} (المسؤول)`} value={m.contactName ?? emptyLoc()} onChange={(contactName) => updateMatch(editing.id, m.id, { contactName })} />
                   <label className="block">
                     <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.contactPhone}</span>
-                    <input dir="ltr" value={m.contactPhone ?? ""} onChange={(e) => updateMatch(tm.id, m.id, { contactPhone: e.target.value })} className={plainInput} />
+                    <input dir="ltr" value={m.contactPhone ?? ""} onChange={(e) => updateMatch(editing.id, m.id, { contactPhone: e.target.value })} className={plainInput} />
                   </label>
                   <label className="block">
                     <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.matchIbba}</span>
-                    <input dir="ltr" placeholder="https://www.ibba.co.il/…" value={m.ibbaLink ?? ""} onChange={(e) => updateMatch(tm.id, m.id, { ibbaLink: e.target.value })} className={plainInput} />
+                    <input dir="ltr" placeholder="https://www.ibba.co.il/…" value={m.ibbaLink ?? ""} onChange={(e) => updateMatch(editing.id, m.id, { ibbaLink: e.target.value })} className={plainInput} />
                   </label>
-                  <button type="button" onClick={() => removeMatch(tm.id, m.id)} className="text-xs font-semibold text-rose-600 hover:underline">{t.admin.team.removeMatch}</button>
+                  <button type="button" onClick={() => removeMatch(editing.id, m.id)} className="text-xs font-semibold text-rose-600 hover:underline">{t.admin.team.removeMatch}</button>
                 </div>
               ))}
             </div>
 
             {/* Visibility */}
             <label className="flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-2.5">
-              <input type="checkbox" checked={tm.enabled} onChange={(e) => updateTeam(tm.id, { enabled: e.target.checked })} className="size-4" />
+              <input type="checkbox" checked={editing.enabled} onChange={(e) => updateTeam(editing.id, { enabled: e.target.checked })} className="size-4" />
               <span className="text-sm font-semibold text-ink">{t.admin.team.show}</span>
             </label>
+
+            <div className="flex justify-end border-t border-line pt-3">
+              <Button size="sm" onClick={() => setEditingId(null)}>{pick({ ar: "تم", he: "סיום", en: "Done" })}</Button>
+            </div>
           </div>
-        ))}
-      </div>
+        )}
+      </Modal>
     </AdminShell>
   );
 }

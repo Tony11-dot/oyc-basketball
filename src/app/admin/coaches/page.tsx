@@ -5,7 +5,9 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { LocalizedField } from "@/components/admin/LocalizedField";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { ImagePositioner } from "@/components/admin/ImagePositioner";
+import { ViewToggle, Thumb, TapChevron, type ViewMode } from "@/components/admin/EntityList";
 import { Button } from "@/components/ui/Button";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { Coach, Localized } from "@/lib/types";
@@ -14,9 +16,12 @@ const emptyLoc = (): Localized => ({ ar: "", he: "", en: "" });
 const plainInput =
   "h-10 w-full rounded-xl border border-line bg-white px-3.5 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
 
-// Dedicated admin view of the shared coach pool — independent of teams. Add,
-// edit, search and delete coaches; they're then attachable to every team, and
-// their ID number is their login to the attendance portal.
+const initialOf = (name: Localized, fallback = "?") =>
+  (name.ar || name.he || name.en || "").trim().charAt(0) || fallback;
+
+// Dedicated admin view of the shared coach pool — independent of teams. Browse
+// coaches as blocks or a list; tap one to open a detail sheet with the full
+// editor. A coach's ID number is their login to the attendance portal.
 export default function CoachesAdmin() {
   const { t, pick } = useI18n();
   const toast = useToast();
@@ -25,6 +30,8 @@ export default function CoachesAdmin() {
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
+  const [view, setView] = useState<ViewMode>("grid");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/coaches").then((r) => r.json()).then((d) => {
@@ -37,11 +44,11 @@ export default function CoachesAdmin() {
   const update = (id: string, patch: Partial<Coach>) =>
     setCoaches((list) => list.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   const remove = (id: string) => setCoaches((list) => list.filter((c) => c.id !== id));
-  const add = () =>
-    setCoaches((list) => [
-      { id: `newc-${Date.now()}-${Math.round(Math.random() * 1e6)}`, name: emptyLoc(), idNumber: "", phone: "", image: "" },
-      ...list,
-    ]);
+  const add = () => {
+    const id = `newc-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    setCoaches((list) => [{ id, name: emptyLoc(), idNumber: "", phone: "", image: "" }, ...list]);
+    setEditingId(id);
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -51,6 +58,9 @@ export default function CoachesAdmin() {
       return hay.includes(q);
     });
   }, [coaches, query]);
+
+  const dirty = useMemo(() => JSON.stringify(coaches) !== JSON.stringify(original), [coaches, original]);
+  const editing = editingId ? coaches.find((c) => c.id === editingId) ?? null : null;
 
   async function save() {
     setSaving(true);
@@ -89,6 +99,8 @@ export default function CoachesAdmin() {
     );
   }
 
+  const tapToEdit = pick({ ar: "اضغط للتعديل", he: "לחצו לעריכה", en: "Tap to edit" });
+
   return (
     <AdminShell>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -96,48 +108,106 @@ export default function CoachesAdmin() {
           <h1 className="text-2xl font-extrabold text-ink">{t.admin.titles.coaches}</h1>
           <p className="mt-1 text-sm text-muted">{t.admin.titles.coachesSub}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <ViewToggle mode={view} onChange={setView} labels={{ grid: pick({ ar: "بطاقات", he: "כרטיסים", en: "Cards" }), list: pick({ ar: "قائمة", he: "רשימה", en: "List" }) }} />
           <Button variant="subtle" size="sm" onClick={add}>+ {t.admin.coaches.add}</Button>
-          <Button onClick={save} disabled={saving}>{saving ? t.admin.saving : t.admin.save}</Button>
+          <Button onClick={save} disabled={saving || !dirty}>{saving ? t.admin.saving : t.admin.save}</Button>
         </div>
       </div>
 
-      <input
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={t.admin.coaches.search}
-        className={`${plainInput} mt-6 max-w-sm`}
-      />
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t.admin.coaches.search}
+          className={`${plainInput} max-w-sm`}
+        />
+        <span className="text-xs text-muted">{filtered.length} / {coaches.length}</span>
+        {dirty && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+            <span className="size-1.5 rounded-full bg-amber-500" />
+            {pick({ ar: "تغييرات غير محفوظة", he: "שינויים לא שמורים", en: "Unsaved changes" })}
+          </span>
+        )}
+      </div>
 
       {coaches.length === 0 ? (
         <p className="mt-8 text-sm text-muted">{t.admin.coaches.none}</p>
-      ) : (
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      ) : view === "grid" ? (
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {filtered.map((c) => (
-            <div key={c.id} className="space-y-2 rounded-xl border border-line bg-white p-3 shadow-sm">
-              <ImageUpload value={c.image ?? ""} icon="user" onChange={(image) => update(c.id, { image })} />
-              {c.image && (
-                <ImagePositioner src={c.image} value={c.imagePosition} onChange={(imagePosition) => update(c.id, { imagePosition })} aspectRatio={c.aspectRatio ?? "4 / 5"} onAspectChange={(aspectRatio) => update(c.id, { aspectRatio })} />
-              )}
-              <LocalizedField label={t.admin.coaches.name} value={c.name} onChange={(name) => update(c.id, { name })} />
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.coaches.idNumber}</span>
-                <input dir="ltr" value={c.idNumber ?? ""} onChange={(e) => update(c.id, { idNumber: e.target.value })} className={plainInput} />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.coaches.phone}</span>
-                <input dir="ltr" value={c.phone ?? ""} onChange={(e) => update(c.id, { phone: e.target.value })} className={plainInput} />
-              </label>
-              <div className="flex justify-end pt-1">
-                <button type="button" onClick={() => { if (confirm(t.admin.reg.deleteConfirm)) remove(c.id); }} className="text-xs font-semibold text-rose-600 hover:underline">
-                  {t.admin.actions.delete}
-                </button>
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setEditingId(c.id)}
+              className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white text-start shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-card"
+            >
+              <div className="relative aspect-[4/5] w-full">
+                <Thumb src={c.image} position={c.imagePosition} fallback={initialOf(c.name)} className="h-full w-full" />
+                {c.id.startsWith("newc-") && (
+                  <span className="absolute start-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">NEW</span>
+                )}
               </div>
-            </div>
+              <div className="min-w-0 px-3 py-2.5">
+                <p className="truncate text-sm font-bold text-ink">{pick(c.name) || tapToEdit}</p>
+                <p className="truncate text-xs text-muted" dir="ltr">{c.phone || c.idNumber || "—"}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+          {filtered.map((c, i) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setEditingId(c.id)}
+              className={`group flex w-full items-center gap-3 px-3 py-2.5 text-start transition hover:bg-surface ${i > 0 ? "border-t border-line" : ""}`}
+            >
+              <Thumb src={c.image} position={c.imagePosition} fallback={initialOf(c.name)} className="size-11 shrink-0 rounded-xl" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-ink">{pick(c.name) || tapToEdit}</p>
+                <p className="truncate text-xs text-muted" dir="ltr">{c.idNumber || "—"}</p>
+              </div>
+              {c.phone ? <span className="hidden text-xs text-muted sm:inline" dir="ltr">{c.phone}</span> : null}
+              <TapChevron className="text-lg" />
+            </button>
           ))}
         </div>
       )}
+
       <p className="mt-4 text-xs text-muted">{pick({ ar: "اضغط حفظ لتطبيق التغييرات.", he: "לחצו שמירה כדי להחיל את השינויים.", en: "Press Save to apply your changes." })}</p>
+
+      {/* Detail sheet */}
+      <Modal open={!!editing} onClose={() => setEditingId(null)} title={editing ? (pick(editing.name) || t.admin.coaches.name) : ""} className="max-w-md">
+        {editing && (
+          <div className="space-y-3">
+            <ImageUpload value={editing.image ?? ""} icon="user" onChange={(image) => update(editing.id, { image })} />
+            {editing.image && (
+              <ImagePositioner src={editing.image} value={editing.imagePosition} onChange={(imagePosition) => update(editing.id, { imagePosition })} aspectRatio={editing.aspectRatio ?? "4 / 5"} onAspectChange={(aspectRatio) => update(editing.id, { aspectRatio })} />
+            )}
+            <LocalizedField label={t.admin.coaches.name} value={editing.name} onChange={(name) => update(editing.id, { name })} />
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.coaches.idNumber}</span>
+              <input dir="ltr" value={editing.idNumber ?? ""} onChange={(e) => update(editing.id, { idNumber: e.target.value })} className={plainInput} />
+            </label>
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.coaches.phone}</span>
+              <input dir="ltr" value={editing.phone ?? ""} onChange={(e) => update(editing.id, { phone: e.target.value })} className={plainInput} />
+            </label>
+            <div className="flex items-center justify-between border-t border-line pt-3">
+              <button
+                type="button"
+                onClick={() => { if (confirm(t.admin.reg.deleteConfirm)) { remove(editing.id); setEditingId(null); } }}
+                className="text-sm font-semibold text-rose-600 hover:underline"
+              >
+                {t.admin.actions.delete}
+              </button>
+              <Button size="sm" onClick={() => setEditingId(null)}>{pick({ ar: "تم", he: "סיום", en: "Done" })}</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </AdminShell>
   );
 }

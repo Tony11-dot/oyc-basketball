@@ -25,6 +25,7 @@ export async function PATCH(request: Request) {
     hero: { ...c.hero, ...(body.hero ?? {}) },
     footer: { ...c.footer, ...(body.footer ?? {}) },
     styles: body.styles ?? c.styles,
+    overrides: body.overrides ?? c.overrides,
     blocks: body.blocks ?? c.blocks,
     blocksPosition: body.blocksPosition ?? c.blocksPosition,
     gallery: body.gallery ?? c.gallery,

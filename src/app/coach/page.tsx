@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { ImageBlock } from "@/components/ui/ImageBlock";
+import { DateField } from "@/components/ui/Calendar";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { LanguageSwitcher } from "@/components/site/LanguageSwitcher";
@@ -260,15 +261,9 @@ export default function CoachPortal() {
         <h1 className="mt-1 text-2xl font-extrabold text-ink">{team && pick(team.name)}</h1>
 
         <div className="mt-4 flex flex-wrap items-end gap-3">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-ink">{c.dateLabel}</span>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => changeDate(e.target.value)}
-              className="h-11 rounded-xl border border-line bg-white px-3.5 text-sm outline-none focus:border-brand focus:ring-4 focus:ring-brand/10"
-            />
-          </label>
+          <div className="w-56">
+            <DateField label={c.dateLabel} value={date} onChange={(v) => v && changeDate(v)} />
+          </div>
           <div className="flex gap-2">
             <Button variant="subtle" size="sm" onClick={() => setAll("present")}>{c.markAllPresent}</Button>
             <Button variant="secondary" size="sm" onClick={() => setAll("absent")}>{c.clearAll}</Button>

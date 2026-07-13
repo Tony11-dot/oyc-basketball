@@ -67,6 +67,21 @@ function toVisual(text: string): string {
 
 interface Rect { x: number; y: number; width: number; height: number }
 
+type Rgb = ReturnType<typeof rgb>;
+
+// Draw an already-visual-ordered string one glyph at a time at explicit x
+// positions. This is essential for Arabic: drawing it as a single text run lets
+// the viewer (Apple Preview / Quick Look / pdfium) re-apply its own bidi and
+// mangle our pre-shaped text. Positioning each glyph individually locks the
+// visual order in every viewer.
+function drawGlyphs(page: PDFPage, font: PDFFont, visual: string, x: number, y: number, size: number, color: Rgb) {
+  let cx = x;
+  for (const ch of visual) {
+    page.drawText(ch, { x: cx, y, size, font, color });
+    cx += font.widthOfTextAtSize(ch, size);
+  }
+}
+
 function drawValue(page: PDFPage, font: PDFFont, rect: Rect, value: string) {
   const rtl = hasArabic(value);
   const text = rtl ? toVisual(value) : value;
@@ -76,7 +91,9 @@ function drawValue(page: PDFPage, font: PDFFont, rect: Rect, value: string) {
   const w = Math.min(font.widthOfTextAtSize(text, size), maxW);
   const x = rtl ? rect.x + rect.width - 3 - w : rect.x + 3;
   const y = rect.y + (rect.height - size) / 2 + size * 0.2;
-  page.drawText(text, { x, y, size, font, color: rgb(0.05, 0.07, 0.12) });
+  const color = rgb(0.05, 0.07, 0.12);
+  if (rtl) drawGlyphs(page, font, text, x, y, size, color);
+  else page.drawText(text, { x, y, size, font, color });
 }
 
 /**
@@ -91,34 +108,37 @@ function drawChoiceBoxes(
   rect: Rect,
   options: readonly string[],
   selected: string,
-  opts?: { clearLeft?: number; fontSize?: number },
+  opts?: { clearLeft?: number; clearRight?: number; fontSize?: number },
 ) {
-  const fontSize = opts?.fontSize ?? 8;
+  const fontSize = opts?.fontSize ?? 9;
   const clearLeft = opts?.clearLeft ?? 0;
-  const boxSize = fontSize + 1;
-  const gap = 3; // box → label
-  const itemGap = 14; // between options
+  const clearRight = opts?.clearRight ?? 0;
+  const boxSize = fontSize + 2;
+  const gap = 4; // box → label
+  const itemGap = 16; // between options
   const pad = 4;
   const rtl = options.some(hasArabic);
-  const ink = rgb(0.05, 0.07, 0.12);
-  const line = rgb(0.25, 0.27, 0.32);
+  const ink = rgb(0.08, 0.09, 0.13);
+  const line = rgb(0.55, 0.58, 0.63);
+  const brand = rgb(0.07, 0.19, 0.43); // navy — matches the club colour
   const white = rgb(1, 1, 1);
 
-  // The layout/clear area: the field rectangle, optionally extended to the left
-  // so we can erase leftover template text (e.g. a stray "بطاقة اعتماد").
+  // The layout/clear area: the field rectangle, optionally extended left/right so
+  // we can erase leftover template text (e.g. a stray separator or old label).
   const area = { x: rect.x - clearLeft, y: rect.y, width: rect.width + clearLeft, height: rect.height };
 
-  // White-out the whole area first — removes the old dropdown box and any static
-  // text underneath, so our option row is the only thing showing.
-  page.drawRectangle({ x: area.x, y: area.y - 4, width: area.width + 4, height: area.height + 8, color: white });
+  // White-out first — removes the old dropdown box and any static text under it,
+  // so our clean option row is the only thing showing.
+  page.drawRectangle({ x: area.x - 4, y: area.y - 9, width: area.width + clearRight + 8, height: area.height + 18, color: white });
 
   const items = options.map((opt) => {
-    const label = hasArabic(opt) ? toVisual(opt) : opt;
+    const isAr = hasArabic(opt);
+    const label = isAr ? toVisual(opt) : opt;
     const labelW = font.widthOfTextAtSize(label, fontSize);
-    return { opt, label, width: boxSize + gap + labelW };
+    return { opt, label, isAr, width: boxSize + gap + labelW };
   });
 
-  const rowH = boxSize + 7;
+  const rowH = boxSize + 9;
   // Logical left-to-right placement with wrapping; mirrored horizontally for RTL.
   let cx = pad;
   let row = 0;
@@ -132,18 +152,23 @@ function drawChoiceBoxes(
     return { ...it, lx, row };
   });
 
-  const topY = area.y + area.height - pad;
+  const topY = area.y + area.height - pad + 1;
   for (const p of placed) {
     const x = rtl ? area.x + area.width - p.lx - p.width : area.x + p.lx;
     const boxX = rtl ? x + p.width - boxSize : x;
     const labelX = rtl ? x : x + boxSize + gap;
     const yTop = topY - p.row * rowH;
     const boxY = yTop - boxSize;
-    page.drawRectangle({ x: boxX, y: boxY, width: boxSize, height: boxSize, borderWidth: 0.9, borderColor: line });
-    if (p.opt === selected) {
-      page.drawText("X", { x: boxX + 1.6, y: boxY + 1.4, size: boxSize - 1, font, color: ink });
+    const on = p.opt === selected;
+    // Selected → filled navy box with a white check; else a light hollow box.
+    page.drawRectangle({ x: boxX, y: boxY, width: boxSize, height: boxSize, borderWidth: 1, borderColor: on ? brand : line, color: on ? brand : white });
+    if (on) {
+      page.drawLine({ start: { x: boxX + boxSize * 0.22, y: boxY + boxSize * 0.52 }, end: { x: boxX + boxSize * 0.42, y: boxY + boxSize * 0.3 }, thickness: 1.3, color: white });
+      page.drawLine({ start: { x: boxX + boxSize * 0.42, y: boxY + boxSize * 0.3 }, end: { x: boxX + boxSize * 0.78, y: boxY + boxSize * 0.72 }, thickness: 1.3, color: white });
     }
-    page.drawText(p.label, { x: labelX, y: boxY + 1.4, size: fontSize, font, color: ink });
+    const ly = boxY + (boxSize - fontSize) / 2 + 1.5;
+    if (p.isAr) drawGlyphs(page, font, p.label, labelX, ly, fontSize, ink);
+    else page.drawText(p.label, { x: labelX, y: ly, size: fontSize, font, color: ink });
   }
 }
 
@@ -196,7 +221,7 @@ export async function fillRegistrationPdf(
         // label and give the three Arabic options room on one tidy RTL line.
         const choiceOpts =
           fieldName === "payment_method"
-            ? { clearLeft: rect.x - 46, fontSize: 9 }
+            ? { clearLeft: rect.x - 46, clearRight: 30, fontSize: 9 }
             : undefined;
         drawChoiceBoxes(page, font, rect, options, value != null ? String(value) : "", choiceOpts);
       } else if (value != null && value !== "") {
@@ -218,10 +243,15 @@ export async function fillRegistrationPdf(
     if (signatureDataUrl?.startsWith("data:image/png")) {
       const { x, y, width, height } = sig.acroField.getWidgets()[0].getRectangle();
       const png = await pdfDoc.embedPng(Buffer.from(signatureDataUrl.split(",")[1] ?? "", "base64"));
-      const fit = png.scaleToFit(width - 4, height - 4);
+      // Draw the signature bigger: allow it to fill the full field width and grow
+      // well above the line (signatures sit above the baseline), then sit it on
+      // the line rather than centering it in the thin field box.
+      const boxW = width + 8;
+      const boxH = height * 2.6;
+      const fit = png.scaleToFit(boxW, boxH);
       page.drawImage(png, {
         x: x + (width - fit.width) / 2,
-        y: y + (height - fit.height) / 2,
+        y: y + 2, // rest on the signature line and extend upward
         width: fit.width,
         height: fit.height,
       });

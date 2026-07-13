@@ -1,4 +1,4 @@
-import type { Locale } from "../types";
+import type { Locale, Localized } from "../types";
 
 // UI string dictionary. Page *content* (hero copy, teams, players) lives in the
 // data layer and is localised there; this covers chrome, labels and buttons.
@@ -1126,3 +1126,40 @@ export const dictionaries: Record<Locale, Dict> = {
 
 export const LOCALES: Locale[] = ["ar", "he", "en"];
 export const DEFAULT_LOCALE: Locale = "ar";
+
+/** Every editable string in the dictionary, as dot-paths (e.g. "nav.home",
+ * "register.perks.0"), grouped by their top-level section in dictionary order.
+ * Skips structural keys (dir/langName). Powers the admin "Texts" editor. */
+export function editableTextKeys(): { group: string; keys: string[] }[] {
+  const skipTop = new Set(["dir", "langName"]);
+  const groups: { group: string; keys: string[] }[] = [];
+  const ref = dictionaries.ar as unknown as Record<string, unknown>;
+  const walk = (obj: Record<string, unknown>, prefix: string, bucket: string[]) => {
+    for (const [k, v] of Object.entries(obj)) {
+      const p = prefix ? `${prefix}.${k}` : k;
+      if (typeof v === "string") bucket.push(p);
+      else if (Array.isArray(v)) v.forEach((item, i) => typeof item === "string" && bucket.push(`${p}.${i}`));
+      else if (v && typeof v === "object") walk(v as Record<string, unknown>, p, bucket);
+    }
+  };
+  for (const [top, v] of Object.entries(ref)) {
+    if (skipTop.has(top) || typeof v !== "object" || v === null) continue;
+    const bucket: string[] = [];
+    walk(v as Record<string, unknown>, top, bucket);
+    if (bucket.length) groups.push({ group: top, keys: bucket });
+  }
+  return groups;
+}
+
+/** Read a dictionary dot-path (e.g. "highlights.heading") across all three
+ * languages and return it as a {@link Localized} value. Used as the built-in
+ * default for inline-editable UI strings, so callers never hand-write fallbacks. */
+export function dictText(path: string): Localized {
+  const walk = (obj: unknown) =>
+    path.split(".").reduce<unknown>((o, k) => (o && typeof o === "object" ? (o as Record<string, unknown>)[k] : undefined), obj);
+  const at = (l: Locale) => {
+    const v = walk(dictionaries[l]);
+    return typeof v === "string" ? v : "";
+  };
+  return { ar: at("ar"), he: at("he"), en: at("en") };
+}

@@ -283,6 +283,10 @@ export interface SiteContent {
   };
   /** Optional per-field text styles, keyed by STYLE_KEYS (e.g. "hero.title"). */
   styles?: Record<string, TextStyle>;
+  /** Inline text overrides for otherwise-fixed UI strings, keyed by a dictionary
+   * dot-path (e.g. "highlights.heading"). Each holds all three languages; when
+   * set it replaces the built-in dictionary default on the public site. */
+  overrides?: Record<string, Localized>;
   /** Admin-built custom blocks and where they render on the page. */
   blocks?: Block[];
   blocksPosition?: BlocksPosition;

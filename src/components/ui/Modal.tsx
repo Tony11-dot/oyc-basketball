@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 
 interface ModalProps {
@@ -13,6 +14,12 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, className }: ModalProps) {
+  // Render into <body> via a portal so a transformed ancestor (e.g. a
+  // framer-motion section) can never become the containing block for our
+  // position:fixed overlay and squish it.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -24,7 +31,9 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
     };
   }, [open, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal((
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
@@ -64,5 +73,5 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         </div>
       )}
     </AnimatePresence>
-  );
+  ), document.body);
 }
