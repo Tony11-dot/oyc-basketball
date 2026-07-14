@@ -8,25 +8,31 @@ import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { LanguageSwitcher } from "@/components/site/LanguageSwitcher";
 import { cn } from "@/lib/cn";
 
-const NAV = [
+import type { Localized } from "@/lib/types";
+
+const NAV: { href: string; key: string; icon: string; label?: Localized }[] = [
   { href: "/admin", key: "overview", icon: "▦" },
   { href: "/admin/registrations", key: "registrations", icon: "📝" },
   { href: "/admin/teams", key: "teams", icon: "🏀" },
+  { href: "/admin/games", key: "games", icon: "🗓️", label: { ar: "المباريات", he: "משחקים", en: "Games" } },
   { href: "/admin/players", key: "players", icon: "👤" },
   { href: "/admin/coaches", key: "coaches", icon: "🧑‍🏫" },
   { href: "/admin/attendance", key: "attendance", icon: "✅" },
+  { href: "/admin/receipts", key: "receipts", icon: "🧾", label: { ar: "السندات", he: "קבלות", en: "Receipts" } },
   { href: "/admin/content", key: "content", icon: "✎" },
   { href: "/admin/sections", key: "sections", icon: "≣" },
   { href: "/admin/settings", key: "settings", icon: "⚙" },
-] as const;
+];
 
 type AuthState = "loading" | "authed" | "denied";
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, pick } = useI18n();
   const [auth, setAuth] = useState<AuthState>("loading");
+  const navLabel = (item: (typeof NAV)[number]) =>
+    item.label ? pick(item.label) : t.admin.nav[item.key as keyof typeof t.admin.nav];
 
   useEffect(() => {
     let active = true;
@@ -83,7 +89,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               )}
             >
               <span aria-hidden className="text-base">{item.icon}</span>
-              {t.admin.nav[item.key]}
+              {navLabel(item)}
             </Link>
           ))}
         </nav>
@@ -125,7 +131,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 isActive(item.href) ? "bg-brand text-white" : "text-ink/70",
               )}
             >
-              {t.admin.nav[item.key]}
+              {navLabel(item)}
             </Link>
           ))}
         </nav>

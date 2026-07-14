@@ -71,7 +71,7 @@ export function Hero({
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           src="/logo.png"
-          alt="OYC Nazareth"
+          alt="OBA Nazareth"
           className="h-40 w-auto rounded-2xl bg-white/95 p-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.35)] md:h-52"
         />
 

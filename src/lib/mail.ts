@@ -8,7 +8,7 @@ import type { Registration } from "./types";
 //   SMTP_PORT   default 587 (STARTTLS)
 //   SMTP_USER   the mailbox we authenticate + send as (said_abu_a@hotmail.com)
 //   SMTP_PASS   an *app password* for that mailbox (required to actually send)
-//   MAIL_FROM   display From, default `OYC Nazareth <SMTP_USER>`
+//   MAIL_FROM   display From, default `OBA Nazareth <SMTP_USER>`
 //   MAIL_TO     where club notifications go, default SMTP_USER
 //
 // If SMTP_PASS is missing we no-op (log a warning) so local dev and the
@@ -18,7 +18,7 @@ const HOST = process.env.SMTP_HOST || "smtp-mail.outlook.com";
 const PORT = Number(process.env.SMTP_PORT || 587);
 const USER = process.env.SMTP_USER || "said_abu_a@hotmail.com";
 const PASS = process.env.SMTP_PASS;
-const FROM = process.env.MAIL_FROM || `OYC Nazareth <${USER}>`;
+const FROM = process.env.MAIL_FROM || `OBA Nazareth <${USER}>`;
 const ADMIN_TO = process.env.MAIL_TO || USER;
 
 export const mailEnabled = () => Boolean(PASS);
@@ -44,7 +44,7 @@ const shell = (title: string, inner: string) => `
   <div style="margin:0;background:#f5f8fd;padding:24px;font-family:Segoe UI,Arial,sans-serif">
     <table role="presentation" width="100%" style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e4ebf3">
       <tr><td style="background:linear-gradient(135deg,#0c2150,#12306e);padding:22px 28px">
-        <span style="color:#fff;font-size:18px;font-weight:800">OYC Nazareth</span>
+        <span style="color:#fff;font-size:18px;font-weight:800">OBA Nazareth</span>
         <span style="color:#ec6b73;font-size:13px;font-weight:700;display:block;margin-top:2px">Orthodox Basketball Club</span>
       </td></tr>
       <tr><td style="padding:28px">
@@ -52,7 +52,7 @@ const shell = (title: string, inner: string) => `
         ${inner}
       </td></tr>
       <tr><td style="padding:16px 28px;border-top:1px solid #e4ebf3;color:#5a6b82;font-size:12px">
-        © ${new Date().getFullYear()} OYC Nazareth. All rights reserved.
+        © ${new Date().getFullYear()} OBA Nazareth. All rights reserved.
       </td></tr>
     </table>
   </div>`;
@@ -97,12 +97,12 @@ export async function sendRegistrationEmails(reg: Registration, pdf?: Uint8Array
   const confirmation = t.sendMail({
     from: FROM,
     to: reg.email,
-    subject: "We received your registration — OYC Nazareth",
-    text: `Hi ${greet},\n\nThank you for registering ${player} with OYC Nazareth Orthodox Basketball Club. Your completed form is attached, and a club member will be in touch soon.\n\n— OYC Nazareth`,
+    subject: "We received your registration — OBA Nazareth",
+    text: `Hi ${greet},\n\nThank you for registering ${player} with OBA Nazareth Orthodox Basketball Club. Your completed form is attached, and a club member will be in touch soon.\n\n— OBA Nazareth`,
     html: shell(
       `Thank you, ${esc(greet)}! 🏀`,
       `<p style="color:#5a6b82;font-size:14px;line-height:1.6">
-         Thank you for registering <b>${esc(player)}</b> with <b>OYC Nazareth Orthodox Basketball Club</b>.
+         Thank you for registering <b>${esc(player)}</b> with <b>OBA Nazareth Orthodox Basketball Club</b>.
          Your completed registration form is attached, and a club member will be in touch soon.
        </p>${details}`,
     ),

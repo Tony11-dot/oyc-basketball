@@ -17,7 +17,7 @@ function Photo({ g, styles }: { g: GalleryImage; styles?: SiteContent["styles"] 
   return (
     <div className="relative w-[300px] shrink-0 sm:w-[360px]">
       <div className="relative overflow-hidden rounded-3xl shadow-card" style={{ aspectRatio: g.aspectRatio ?? "4 / 3" }}>
-        <ImageBlock src={g.image} alt={caption || "OYC Nazareth"} rounded="rounded-3xl" objectPosition={g.imagePosition} />
+        <ImageBlock src={g.image} alt={caption || "OBA Nazareth"} rounded="rounded-3xl" objectPosition={g.imagePosition} />
 
         <button
           type="button"

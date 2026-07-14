@@ -60,7 +60,7 @@ export async function createPaymentIntent(
     amount,
     currency: CURRENCY.toLowerCase(),
     automatic_payment_methods: { enabled: true },
-    description: "OYC Nazareth registration fee",
+    description: "OBA Nazareth registration fee",
     receipt_email: customerEmail,
   });
   if (!intent.client_secret) throw new Error("Stripe returned no client secret");
@@ -114,7 +114,7 @@ export async function createCheckout(req: CheckoutRequest): Promise<CheckoutResu
           {
             price_data: {
               currency: CURRENCY.toLowerCase(),
-              product_data: { name: "OYC Nazareth registration fee" },
+              product_data: { name: "OBA Nazareth registration fee" },
               unit_amount: amount,
             },
             quantity: 1,

@@ -103,7 +103,7 @@ export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] })
       )}
     >
       <nav className="container-x flex items-center justify-between gap-2">
-        <a href="#home" aria-label="OYC Nazareth home" className="group relative transition hover:opacity-90">
+        <a href="#home" aria-label="OBA Nazareth home" className="group relative transition hover:opacity-90">
           <span
             aria-hidden
             className="pointer-events-none absolute -inset-x-4 -inset-y-3 -z-10 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(18,48,110,0.18),transparent_70%)] blur-md"

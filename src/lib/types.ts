@@ -1,4 +1,4 @@
-// Shared domain types for the OYC Nazareth basketball site + admin platform.
+// Shared domain types for the OBA Nazareth basketball site + admin platform.
 
 export type Locale = "ar" | "he" | "en";
 
@@ -29,6 +29,12 @@ export interface Player {
   imagePosition?: string;
   /** CSS aspect-ratio for the photo frame, e.g. "4 / 5". */
   aspectRatio?: string;
+  /** Total registration fee owed by this player, in whole shekels (₪). Defaults
+   * to the club registration fee when unset. */
+  feeAmount?: number;
+  /** How much of {@link feeAmount} the player has paid so far, in ₪. The balance
+   * still owed is `feeAmount - paidAmount`. */
+  paidAmount?: number;
 }
 
 /**
@@ -180,7 +186,7 @@ export interface RegisterContent {
   feeAmount?: number;
 }
 
-/** A registration submitted from the public site. Mirrors the official OYC
+/** A registration submitted from the public site. Mirrors the official OBA
  * Nazareth registration form (استمارة التسجيل) — every field below maps to a
  * field in /public/forms/registration-template.pdf (see lib/registrationPdf). */
 export interface Registration {
@@ -231,6 +237,28 @@ export interface Registration {
   lastName?: string;
   phone?: string;
   notes?: string;
+}
+
+/** Payment method options for a manually-issued receipt. Mirrors the three
+ * methods on the registration form (cash / cheque / credit card). */
+export type ReceiptMethod = "نقدا" | "شيكات" | "بطاقة اعتماد";
+
+/** A payment receipt issued from the admin. The admin fills a name, an amount
+ * and a payment method; the system renders a formal Arabic PDF from it. */
+export interface Receipt {
+  id: string;
+  /** Sequential human-friendly number shown on the PDF (e.g. 1, 2, 3…). */
+  number: number;
+  /** Who paid (free text, any language). */
+  name: string;
+  /** Amount paid, in whole shekels (₪). */
+  amount: number;
+  /** How the payment was made. */
+  method: ReceiptMethod;
+  /** Optional free-text note / what the payment was for. */
+  note?: string;
+  /** ISO timestamp the receipt was created. */
+  createdAt: string;
 }
 
 /** Per-field text styling chosen in the admin Content editor. All optional —

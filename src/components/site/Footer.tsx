@@ -87,7 +87,7 @@ export function Footer({ footer, styles }: { footer: SiteContent["footer"]; styl
         </div>
 
         <div className="mt-6 border-t border-white/15 pt-4 text-center text-sm text-white/70">
-          <p>© {new Date().getFullYear()} OYC Nazareth. {t.footer.rights}</p>
+          <p>© {new Date().getFullYear()} OBA Nazareth. {t.footer.rights}</p>
         </div>
       </div>
     </footer>

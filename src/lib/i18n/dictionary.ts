@@ -262,7 +262,7 @@ export const dictionaries: Record<Locale, Dict> = {
     dir: "rtl",
     langName: "العربية",
     nav: { home: "الرئيسية", teams: "الفرق", games: "المباريات", highlights: "أبرز اللقطات", gallery: "الصور", historic: "لمحة تاريخية", staff: "الطاقم", volunteers: "المتطوّعون", register: "التسجيل", contact: "تواصل" },
-    hero: { badge: "نادي الشبيبة الأرثوذكسية — الناصرة", cta: "سجّل الآن", secondary: "شاهد الفرق" },
+    hero: { badge: "النادي الأرثوذكسي لكرة السلة — الناصرة", cta: "سجّل الآن", secondary: "شاهد الفرق" },
     teams: {
       eyebrow: "فرقنا",
       heading: "الفرق",
@@ -550,7 +550,7 @@ export const dictionaries: Record<Locale, Dict> = {
     dir: "rtl",
     langName: "עברית",
     nav: { home: "בית", teams: "קבוצות", games: "משחקים", highlights: "שיאים", gallery: "גלריה", historic: "מבט היסטורי", staff: "צוות", volunteers: "מתנדבים", register: "הרשמה", contact: "צור קשר" },
-    hero: { badge: "מועדון הנוער האורתודוקסי — נצרת", cta: "להרשמה", secondary: "לקבוצות" },
+    hero: { badge: "אגודת הכדורסל האורתודוקסית — נצרת", cta: "להרשמה", secondary: "לקבוצות" },
     teams: {
       eyebrow: "הקבוצות שלנו",
       heading: "קבוצות",
@@ -838,7 +838,7 @@ export const dictionaries: Record<Locale, Dict> = {
     dir: "ltr",
     langName: "English",
     nav: { home: "Home", teams: "Teams", games: "Games", highlights: "Highlights", gallery: "Gallery", historic: "Historic glance", staff: "Staff", volunteers: "Volunteers", register: "Register", contact: "Contact" },
-    hero: { badge: "Orthodox Youth Club — Nazareth", cta: "Register now", secondary: "See teams" },
+    hero: { badge: "Orthodox Basketball Association — Nazareth", cta: "Register now", secondary: "See teams" },
     teams: {
       eyebrow: "Our teams",
       heading: "Teams",

@@ -98,7 +98,7 @@ export default function LinksHub() {
           ))}
         </div>
 
-        <p className="mt-6 text-center text-[11px] text-muted">OYC Nazareth</p>
+        <p className="mt-6 text-center text-[11px] text-muted">OBA Nazareth</p>
       </div>
     </main>
   );

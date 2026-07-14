@@ -35,6 +35,8 @@ export async function POST(request: Request) {
     image: typeof body.image === "string" ? body.image : "",
     imagePosition: typeof body.imagePosition === "string" ? body.imagePosition : undefined,
     aspectRatio: typeof body.aspectRatio === "string" ? body.aspectRatio : undefined,
+    feeAmount: typeof body.feeAmount === "number" ? body.feeAmount : undefined,
+    paidAmount: typeof body.paidAmount === "number" ? body.paidAmount : undefined,
   };
 
   await updatePlayers((list) => [...list, player]);

@@ -1,4 +1,4 @@
-// Server-only: fills the official OYC registration PDF from a Registration and a
+// Server-only: fills the official OBA registration PDF from a Registration and a
 // drawn signature, then stores/loads the filled file.
 //
 // We DRAW each value onto the page (rather than setting interactive field values)

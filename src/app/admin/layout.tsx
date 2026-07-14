@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 // Admin browser-tab title + favicon (the crest logo), distinct from the public
-// site's "OYC Basketball".
+// site's "OBA Basketball".
 export const metadata: Metadata = {
-  title: "OYC Basketball Admin",
+  title: "OBA Basketball Admin",
   icons: {
     icon: [{ url: "/icon.png", type: "image/png" }],
     shortcut: "/favicon.ico",

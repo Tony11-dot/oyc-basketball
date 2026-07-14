@@ -1,7 +1,10 @@
 // Default seed data used to initialise the JSON "database" on first run.
-import type { AttendanceRecord, Coach, GalleryImage, Highlight, Person, Player, Registration, SiteContent, Team } from "./types";
+import type { AttendanceRecord, Coach, GalleryImage, Highlight, Person, Player, Receipt, Registration, SiteContent, Team } from "./types";
 
 export const seedRegistrations: Registration[] = [];
+
+// Receipts start empty; the admin issues them from the Receipts page.
+export const seedReceipts: Receipt[] = [];
 
 // Shared coach pool. Like players, coaches attach to teams by id. A coach's
 // idNumber doubles as their login to the attendance portal.
@@ -90,9 +93,9 @@ export const seedTeams: Team[] = [
     id: "tm-youth",
     name: { ar: "فريق الشباب", he: "קבוצת הנוער", en: "Youth Team" },
     description: {
-      ar: "جيل المستقبل من لاعبي نادي الشبيبة الأرثوذكسية.",
-      he: "דור העתיד של שחקני מועדון הנוער האורתודוקסי.",
-      en: "The next generation of Orthodox Youth Club players.",
+      ar: "جيل المستقبل من لاعبي النادي الأرثوذكسي لكرة السلة.",
+      he: "דור העתיד של שחקני אגודת הכדורסל האורתודוקסית.",
+      en: "The next generation of Orthodox Basketball Association players.",
     },
     image: "",
     ibbaLink: "https://www.ibba.co.il/",
@@ -153,9 +156,9 @@ export const seedVolunteers: Person[] = [
 export const seedContent: SiteContent = {
   hero: {
     title: {
-      ar: "نادي الشبيبة الأرثوذكسية — كرة السلة",
-      he: "מועדון הנוער האורתודוקסי — כדורסל",
-      en: "Orthodox Youth Club — Basketball",
+      ar: "النادي الأرثوذكسي لكرة السلة",
+      he: "אגודת הכדורסל האורתודוקסית",
+      en: "Orthodox Basketball Association",
     },
     subtitle: {
       ar: "الناصرة",
@@ -189,9 +192,9 @@ export const seedContent: SiteContent = {
       en: "A historic glance",
     },
     body: {
-      ar: "تأسّس نادي الشبيبة الأرثوذكسية في الناصرة ليكون بيتاً للرياضة والروح والأخوّة. منذ سنواته الأولى، رعى النادي أجيالاً من اللاعبين على أرض الملعب وخارجها، وما زال يحمل الرسالة ذاتها حتى اليوم.",
-      he: "מועדון הנוער האורתודוקסי בנצרת נוסד כדי להיות בית לספורט, לרוח ולאחווה. מאז שנותיו הראשונות ליווה המועדון דורות של שחקנים, על המגרש ומחוצה לו, ועודנו נושא את אותה השליחות גם היום.",
-      en: "The Orthodox Youth Club of Nazareth was founded to be a home for sport, spirit and brotherhood. From its earliest years the club has nurtured generations of players on and off the court, and carries the same mission today.",
+      ar: "تأسّس النادي الأرثوذكسي لكرة السلة في الناصرة ليكون بيتاً للرياضة والروح والأخوّة. منذ سنواته الأولى، رعى النادي أجيالاً من اللاعبين على أرض الملعب وخارجها، وما زال يحمل الرسالة ذاتها حتى اليوم.",
+      he: "אגודת הכדורסל האורתודוקסית בנצרת נוסדה כדי להיות בית לספורט, לרוח ולאחווה. מאז שנותיה הראשונות ליוותה האגודה דורות של שחקנים, על המגרש ומחוצה לו, ועודנה נושאת את אותה השליחות גם היום.",
+      en: "The Orthodox Basketball Association of Nazareth was founded to be a home for sport, spirit and brotherhood. From its earliest years the club has nurtured generations of players on and off the court, and carries the same mission today.",
     },
     image: "",
   },

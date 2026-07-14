@@ -4,8 +4,8 @@
 import "server-only";
 import { promises as fs } from "fs";
 import path from "path";
-import type { AdminSettings, AttendanceRecord, Coach, Highlight, Player, Registration, SiteContent, Team } from "./types";
-import { seedAttendance, seedCoaches, seedHighlights, seedPlayers, seedRegistrations, seedTeams, seedContent } from "./seed";
+import type { AdminSettings, AttendanceRecord, Coach, Highlight, Player, Receipt, Registration, SiteContent, Team } from "./types";
+import { seedAttendance, seedCoaches, seedHighlights, seedPlayers, seedReceipts, seedRegistrations, seedTeams, seedContent } from "./seed";
 
 const useRedis = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN;
 
@@ -122,6 +122,13 @@ export const getContent = () => read<SiteContent>("content", seedContent);
 
 export const updateContent = (fn: (c: SiteContent) => SiteContent) =>
   mutate<SiteContent>("content", fn, seedContent);
+
+// ---- Receipts ---------------------------------------------------------------
+
+export const getReceipts = () => read<Receipt[]>("receipts", seedReceipts);
+
+export const updateReceipts = (fn: (list: Receipt[]) => Receipt[]) =>
+  mutate<Receipt[]>("receipts", fn, seedReceipts);
 
 // ---- Admin settings ---------------------------------------------------------
 
