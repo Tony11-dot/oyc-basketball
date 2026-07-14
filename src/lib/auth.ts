@@ -14,8 +14,12 @@ function hash(password: string, salt: string): string {
   return scryptSync(password, salt, 64).toString("hex");
 }
 
-/** Verify a password against the stored hash, or the env default if none set. */
+/** Verify a password. The ADMIN_PASSWORD env value is ALWAYS accepted as a
+ * break-glass admin login, so setting it in the host env reliably works even if
+ * an in-app password was previously stored. Otherwise the stored (salted+hashed)
+ * password is checked, falling back to the env default when none is set. */
 export async function checkPassword(password: string): Promise<boolean> {
+  if (password === ADMIN_PASSWORD) return true;
   const s = await getSettings();
   if (s.passwordSalt && s.passwordHash) {
     const candidate = Buffer.from(hash(password, s.passwordSalt), "hex");
