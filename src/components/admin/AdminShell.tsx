@@ -18,7 +18,7 @@ const NAV: { href: string; key: string; icon: string; label?: Localized }[] = [
   { href: "/admin/players", key: "players", icon: "👤" },
   { href: "/admin/coaches", key: "coaches", icon: "🧑‍🏫" },
   { href: "/admin/attendance", key: "attendance", icon: "✅" },
-  { href: "/admin/receipts", key: "receipts", icon: "🧾", label: { ar: "السندات", he: "קבלות", en: "Receipts" } },
+  { href: "/admin/receipts", key: "receipts", icon: "🧾", label: { ar: "الوصول", he: "קבלות", en: "Receipts" } },
   { href: "/admin/content", key: "content", icon: "✎" },
   { href: "/admin/sections", key: "sections", icon: "≣" },
   { href: "/admin/settings", key: "settings", icon: "⚙" },

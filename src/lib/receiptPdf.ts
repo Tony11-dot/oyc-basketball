@@ -1,4 +1,4 @@
-// Server-only: renders a formal Arabic payment receipt (سند قبض) as a PDF from a
+// Server-only: renders a formal Arabic payment receipt (وصل) as a PDF from a
 // {@link Receipt}. Fetches the club logo + Amiri Arabic font from /public once
 // and caches them in module scope. All Arabic is shaped + glyph-drawn via
 // ./pdfArabic so it renders correctly in every viewer.
@@ -92,8 +92,8 @@ export async function buildReceiptPdf(baseUrl: string, receipt: Receipt): Promis
   drawLine(page, font, CLUB_AR, { x: left, y: logoBottom - 30, size: nameSize, color: WHITE, boxWidth: contentW, align: "center" });
   drawLine(page, font, CITY_AR, { x: left, y: logoBottom - 50, size: 12, color: rgb(0.72, 0.8, 0.95), boxWidth: contentW, align: "center" });
 
-  // ---- Title pill: سند قبض --------------------------------------------------
-  const titleAr = "سند قبض";
+  // ---- Title pill: وصل ------------------------------------------------------
+  const titleAr = "وصل";
   const titleSize = 15;
   const titleW = measure(font, titleAr, titleSize);
   const pillW = titleW + 44;
@@ -105,7 +105,7 @@ export async function buildReceiptPdf(baseUrl: string, receipt: Receipt): Promis
 
   // ---- Receipt no + date row ------------------------------------------------
   let y = pillY - 34;
-  const numAr = `رقم السند: ${receipt.number}`;
+  const numAr = `رقم الوصل: ${receipt.number}`;
   const dateAr = `التاريخ: ${formatDate(receipt.createdAt)}`;
   drawLine(page, font, numAr, { x: left, y, size: 11, color: MUTED, boxWidth: contentW, align: "end" });
   drawLine(page, font, dateAr, { x: left, y, size: 11, color: MUTED, boxWidth: contentW, align: "start" });

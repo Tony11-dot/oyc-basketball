@@ -53,20 +53,20 @@ export default function ReceiptsAdmin() {
       setReceipts((list) => [d.receipt, ...list]);
       setName(""); setAmount(""); setNote(""); setMethod("نقدا");
     } catch {
-      setError(pick({ ar: "تعذّر إنشاء السند. حاول مجددًا.", he: "יצירת הקבלה נכשלה. נסו שוב.", en: "Could not create the receipt. Try again." }));
+      setError(pick({ ar: "تعذّر إنشاء الوصل. حاول مجددًا.", he: "יצירת הקבלה נכשלה. נסו שוב.", en: "Could not create the receipt. Try again." }));
     } finally {
       setSaving(false);
     }
   }
 
   async function remove(id: string) {
-    if (!confirm(pick({ ar: "حذف هذا السند؟", he: "למחוק את הקבלה?", en: "Delete this receipt?" }))) return;
+    if (!confirm(pick({ ar: "حذف هذا الوصل؟", he: "למחוק את הקבלה?", en: "Delete this receipt?" }))) return;
     setReceipts((list) => list.filter((r) => r.id !== id));
     await fetch(`/api/receipts/${id}`, { method: "DELETE" });
   }
 
-  const title = pick({ ar: "السندات", he: "קבלות", en: "Receipts" });
-  const subtitle = pick({ ar: "أنشئ سند قبض رسميًّا بالعربية بضغطة زر.", he: "הפקת קבלה רשמית בערבית בלחיצה אחת.", en: "Issue a formal Arabic payment receipt in one click." });
+  const title = pick({ ar: "الوصول", he: "קבלות", en: "Receipts" });
+  const subtitle = pick({ ar: "أنشئ وصلًا رسميًّا بالعربية بضغطة زر.", he: "הפקת קבלה רשמית בערבית בלחיצה אחת.", en: "Issue a formal Arabic payment receipt in one click." });
   const money = (n: number) => `${n.toLocaleString("en-US")} ₪`;
 
   return (
@@ -79,7 +79,7 @@ export default function ReceiptsAdmin() {
       <div className="mt-6 grid gap-6 lg:grid-cols-[360px_1fr]">
         {/* Create form */}
         <div className="h-fit space-y-3 rounded-2xl border border-line bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-bold text-ink">🧾 {pick({ ar: "سند جديد", he: "קבלה חדשה", en: "New receipt" })}</h2>
+          <h2 className="text-sm font-bold text-ink">🧾 {pick({ ar: "وصل جديد", he: "קבלה חדשה", en: "New receipt" })}</h2>
 
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "استلمنا من", he: "התקבל מ", en: "Received from" })}</span>
@@ -115,7 +115,7 @@ export default function ReceiptsAdmin() {
           {error && <p className="text-xs font-semibold text-rose-600">{error}</p>}
 
           <Button onClick={create} disabled={!canSubmit} className="w-full">
-            {saving ? pick({ ar: "جارٍ الإنشاء…", he: "יוצר…", en: "Creating…" }) : pick({ ar: "إنشاء السند", he: "הפקת קבלה", en: "Create receipt" })}
+            {saving ? pick({ ar: "جارٍ الإنشاء…", he: "יוצר…", en: "Creating…" }) : pick({ ar: "إنشاء الوصل", he: "הפקת קבלה", en: "Create receipt" })}
           </Button>
           <p className="text-center text-[11px] text-muted">{pick({ ar: "يتم توليد PDF رسمي فور الإنشاء.", he: "PDF רשמי נוצר מיד עם ההפקה.", en: "A formal PDF is generated on create." })}</p>
         </div>
@@ -127,8 +127,8 @@ export default function ReceiptsAdmin() {
           ) : receipts.length === 0 ? (
             <div className="grid place-items-center rounded-2xl border border-dashed border-line bg-surface/50 p-12 text-center">
               <p className="text-3xl">🧾</p>
-              <p className="mt-2 text-sm font-semibold text-ink">{pick({ ar: "لا سندات بعد", he: "אין קבלות עדיין", en: "No receipts yet" })}</p>
-              <p className="mt-1 text-xs text-muted">{pick({ ar: "أنشئ أول سند من النموذج.", he: "צרו את הקבלה הראשונה מהטופס.", en: "Create your first one from the form." })}</p>
+              <p className="mt-2 text-sm font-semibold text-ink">{pick({ ar: "لا وصول بعد", he: "אין קבלות עדיין", en: "No receipts yet" })}</p>
+              <p className="mt-1 text-xs text-muted">{pick({ ar: "أنشئ أول وصل من النموذج.", he: "צרו את הקבלה הראשונה מהטופס.", en: "Create your first one from the form." })}</p>
             </div>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
