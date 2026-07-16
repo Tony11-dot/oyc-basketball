@@ -35,28 +35,24 @@ export const seedPlayers: Player[] = [
     id: "pl-1",
     name: { ar: "جورج حداد", he: "ג'ורג' חדאד", en: "George Haddad" },
     number: "7",
-    position: { ar: "صانع ألعاب", he: "רכז", en: "Point Guard" },
     image: "",
   },
   {
     id: "pl-2",
     name: { ar: "إيلي خوري", he: "אלי חורי", en: "Elie Khoury" },
     number: "10",
-    position: { ar: "جناح", he: "קלע", en: "Shooting Guard" },
     image: "",
   },
   {
     id: "pl-3",
     name: { ar: "رامي عسّاف", he: "ראמי עסّאף", en: "Rami Assaf" },
     number: "23",
-    position: { ar: "ارتكاز", he: "סנטר", en: "Center" },
     image: "",
   },
   {
     id: "pl-4",
     name: { ar: "نديم سمعان", he: "נדים סמעאן", en: "Nadim Samaan" },
     number: "4",
-    position: { ar: "جناح صغير", he: "פורוורד קטן", en: "Small Forward" },
     image: "",
   },
 ];

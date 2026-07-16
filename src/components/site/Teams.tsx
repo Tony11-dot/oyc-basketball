@@ -193,9 +193,6 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                             </div>
                             <div className="p-3">
                               <p className="truncate text-sm font-bold text-ink">{pick(p.name)}</p>
-                              {p.position && pick(p.position) && (
-                                <p className="truncate text-xs font-semibold text-muted">{pick(p.position)}</p>
-                              )}
                             </div>
                           </div>
                         ))}

@@ -22,8 +22,12 @@ export interface Player {
   name: Localized;
   /** Jersey number (free text so "00" etc. work). */
   number?: string;
-  /** Playing position, localized (e.g. Guard / Forward / Center). */
-  position?: Localized;
+  /** Player's own phone number (optional). */
+  phone?: string;
+  /** Father's phone number (optional). */
+  fatherPhone?: string;
+  /** Mother's phone number (optional). */
+  motherPhone?: string;
   image?: string;
   /** CSS object-position for the cropped photo, e.g. "center top". */
   imagePosition?: string;

@@ -104,7 +104,7 @@ export default function TeamsAdmin() {
   const addNewPlayer = (teamId: string, initialName?: string) => {
     const id = crypto.randomUUID();
     const name = initialName ? { ar: initialName, he: initialName, en: initialName } : emptyLoc();
-    setPlayers((list) => [...list, { id, name, number: "", position: emptyLoc(), image: "" }]);
+    setPlayers((list) => [...list, { id, name, number: "", image: "" }]);
     attachPlayer(teamId, id);
   };
 
@@ -409,8 +409,19 @@ export default function TeamsAdmin() {
                             <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.number}</span>
                             <input value={p.number ?? ""} onChange={(e) => updatePlayer(pid, { number: e.target.value })} className={plainInput} />
                           </label>
+                          <label className="block">
+                            <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف اللاعب", he: "טלפון השחקן", en: "Player phone" })}</span>
+                            <input dir="ltr" type="tel" value={p.phone ?? ""} onChange={(e) => updatePlayer(pid, { phone: e.target.value })} className={plainInput} />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف الأب", he: "טלפון האב", en: "Father's phone" })}</span>
+                            <input dir="ltr" type="tel" value={p.fatherPhone ?? ""} onChange={(e) => updatePlayer(pid, { fatherPhone: e.target.value })} className={plainInput} />
+                          </label>
+                          <label className="block">
+                            <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف الأم", he: "טלפון האם", en: "Mother's phone" })}</span>
+                            <input dir="ltr" type="tel" value={p.motherPhone ?? ""} onChange={(e) => updatePlayer(pid, { motherPhone: e.target.value })} className={plainInput} />
+                          </label>
                         </div>
-                        <LocalizedField label={t.admin.team.position} value={p.position ?? emptyLoc()} onChange={(position) => updatePlayer(pid, { position })} />
                         <PaymentEditor player={p} onChange={(patch) => updatePlayer(pid, patch)} />
                         <div className="flex gap-3">
                           <button type="button" onClick={() => detachPlayer(editing.id, pid)} className="text-xs font-semibold text-muted hover:text-ink">↩ {t.admin.team.detach}</button>

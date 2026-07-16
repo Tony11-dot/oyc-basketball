@@ -41,7 +41,7 @@ export default function PlayersAdmin() {
   const remove = (id: string) => setPlayers((list) => list.filter((p) => p.id !== id));
   const add = () => {
     const id = crypto.randomUUID();
-    setPlayers((list) => [{ id, name: emptyLoc(), number: "", position: emptyLoc(), image: "" }, ...list]);
+    setPlayers((list) => [{ id, name: emptyLoc(), number: "", image: "" }, ...list]);
     setEditingId(id);
   };
 
@@ -49,7 +49,7 @@ export default function PlayersAdmin() {
     const q = query.trim().toLowerCase();
     if (!q) return players;
     return players.filter((p) => {
-      const hay = [p.name.ar, p.name.he, p.name.en, p.number].filter(Boolean).join(" ").toLowerCase();
+      const hay = [p.name.ar, p.name.he, p.name.en, p.number, p.phone, p.fatherPhone, p.motherPhone].filter(Boolean).join(" ").toLowerCase();
       return hay.includes(q);
     });
   }, [players, query]);
@@ -139,7 +139,7 @@ export default function PlayersAdmin() {
               </div>
               <div className="min-w-0 px-3 py-2.5">
                 <p className="truncate text-sm font-bold text-ink">{pick(p.name) || tapToEdit}</p>
-                <p className="truncate text-xs text-muted">{pick(p.position ?? emptyLoc()) || "—"}</p>
+                <p className="truncate text-xs text-muted" dir="ltr">{p.phone || p.fatherPhone || p.motherPhone || "—"}</p>
               </div>
             </button>
           ))}
@@ -156,7 +156,7 @@ export default function PlayersAdmin() {
               <Thumb src={p.image} position={p.imagePosition} fallback={initialOf(p.name)} className="size-11 shrink-0 rounded-xl" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-ink">{pick(p.name) || tapToEdit}</p>
-                <p className="truncate text-xs text-muted">{pick(p.position ?? emptyLoc()) || "—"}</p>
+                <p className="truncate text-xs text-muted" dir="ltr">{p.phone || p.fatherPhone || p.motherPhone || "—"}</p>
               </div>
               {p.number ? <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-dark">#{p.number}</span> : null}
               <TapChevron className="text-lg" />
@@ -181,7 +181,20 @@ export default function PlayersAdmin() {
               <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.number}</span>
               <input value={editing.number ?? ""} onChange={(e) => update(editing.id, { number: e.target.value })} className={plainInput} />
             </label>
-            <LocalizedField label={t.admin.team.position} value={editing.position ?? emptyLoc()} onChange={(position) => update(editing.id, { position })} />
+            <div className="grid gap-2 sm:grid-cols-3">
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف اللاعب (اختياري)", he: "טלפון השחקן (רשות)", en: "Player phone (optional)" })}</span>
+                <input dir="ltr" type="tel" value={editing.phone ?? ""} onChange={(e) => update(editing.id, { phone: e.target.value })} className={plainInput} />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف الأب (اختياري)", he: "טלפון האב (רשות)", en: "Father's phone (optional)" })}</span>
+                <input dir="ltr" type="tel" value={editing.fatherPhone ?? ""} onChange={(e) => update(editing.id, { fatherPhone: e.target.value })} className={plainInput} />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف الأم (اختياري)", he: "טלפון האם (רשות)", en: "Mother's phone (optional)" })}</span>
+                <input dir="ltr" type="tel" value={editing.motherPhone ?? ""} onChange={(e) => update(editing.id, { motherPhone: e.target.value })} className={plainInput} />
+              </label>
+            </div>
             <div className="flex items-center justify-between border-t border-line pt-3">
               <button
                 type="button"
