@@ -46,6 +46,7 @@ export async function POST(request: Request) {
       playerIds: strList(body.playerIds),
       coachIds: strList(body.coachIds),
       matches: parseMatches(body.matches),
+      paymentsEnabled: body.paymentsEnabled === undefined ? true : Boolean(body.paymentsEnabled),
       enabled: body.enabled === undefined ? true : Boolean(body.enabled),
       order: typeof body.order === "number" ? body.order : i >= 0 ? list[i].order : maxOrder + 1,
       createdAt: i >= 0 ? list[i].createdAt : new Date().toISOString(),

@@ -120,6 +120,9 @@ export interface Team {
   coachIds: string[];
   /** Fixtures for this team. */
   matches: Match[];
+  /** When false, players on this team don't pay — every payment UI (fees,
+   * balances, totals) is hidden for this team. Defaults to true when unset. */
+  paymentsEnabled?: boolean;
   /** When false the team is hidden from the public site. */
   enabled: boolean;
   /** Sort order on the public site and admin list (ascending). */

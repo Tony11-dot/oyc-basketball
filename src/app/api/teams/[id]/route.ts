@@ -39,6 +39,7 @@ export async function PATCH(
           ? body.coachIds.filter((x): x is string => typeof x === "string")
           : t.coachIds ?? [],
         matches: body.matches != null ? parseMatches(body.matches) : t.matches,
+        paymentsEnabled: body.paymentsEnabled != null ? Boolean(body.paymentsEnabled) : t.paymentsEnabled,
         enabled: body.enabled != null ? Boolean(body.enabled) : t.enabled,
         order: typeof body.order === "number" ? body.order : t.order,
       };

@@ -83,6 +83,7 @@ export default function TeamsAdmin() {
         playerIds: [],
         coachIds: [],
         matches: [],
+        paymentsEnabled: true,
         enabled: true,
         order: list.length,
         createdAt: new Date().toISOString(),
@@ -268,6 +269,7 @@ export default function TeamsAdmin() {
                     <span>🏀 {tm.matches.length}</span>
                   </p>
                   {(() => {
+                    if (tm.paymentsEnabled === false) return null;
                     const tt = totalsOf(tm);
                     if (tt.fee <= 0) return null;
                     return (
@@ -300,6 +302,7 @@ export default function TeamsAdmin() {
                   <p className="truncate text-sm font-bold text-ink">{pick(tm.name) || tapToEdit}</p>
                   <p className="truncate text-xs text-muted">👤 {rosterOf(tm).length} · 🧑‍🏫 {(tm.coachIds ?? []).length} · 🏀 {tm.matches.length}{!tm.enabled ? ` · ${pick({ ar: "مخفي", he: "מוסתר", en: "Hidden" })}` : ""}</p>
                   {(() => {
+                    if (tm.paymentsEnabled === false) return null;
                     const tt = totalsOf(tm);
                     if (tt.fee <= 0) return null;
                     return (
@@ -327,6 +330,7 @@ export default function TeamsAdmin() {
       {/* Team detail — expands inline, organised into tabs */}
       {editing && (() => {
         const teamPlayers = rosterOf(editing);
+        const payEnabled = editing.paymentsEnabled !== false;
         const { fee: totalFee, paid: totalPaid, left: outstanding } = totalsOf(editing);
         const TABS: { key: TeamTab; icon: string; label: Localized; count?: number }[] = [
           { key: "settings", icon: "⚙", label: { ar: "الإعدادات", he: "הגדרות", en: "Settings" } },
@@ -393,6 +397,23 @@ export default function TeamsAdmin() {
                   <input type="checkbox" checked={editing.enabled} onChange={(e) => updateTeam(editing.id, { enabled: e.target.checked })} className="size-4" />
                   <span className="text-sm font-semibold text-ink">{t.admin.team.show}</span>
                 </label>
+
+                {/* Payments switch — off for teams whose players don't pay */}
+                <label className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-2.5">
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-ink">💳 {pick({ ar: "الدفعات لهذا الفريق", he: "תשלומים לקבוצה זו", en: "Payments for this team" })}</span>
+                    <span className="block text-xs text-muted">{pick({ ar: "أطفئه إذا كان لاعبو هذا الفريق لا يدفعون — تختفي كل واجهات المال.", he: "כבו אם שחקני הקבוצה לא משלמים — כל ממשקי הכסף יוסתרו.", en: "Turn off if this team's players don't pay — all money UI disappears." })}</span>
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={payEnabled}
+                    onClick={() => updateTeam(editing.id, { paymentsEnabled: !payEnabled })}
+                    className={`relative h-6 w-11 shrink-0 rounded-full transition ${payEnabled ? "bg-brand" : "bg-line"}`}
+                  >
+                    <span className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition-all ${payEnabled ? "start-[calc(100%-1.375rem)]" : "start-0.5"}`} />
+                  </button>
+                </label>
               </div>
             )}
 
@@ -400,7 +421,7 @@ export default function TeamsAdmin() {
             {tab === "players" && (
               <div className="space-y-3">
                 {/* Payment summary */}
-                {teamPlayers.length > 0 && (
+                {payEnabled && teamPlayers.length > 0 && (
                   <div className="grid grid-cols-3 gap-2">
                     <div className="rounded-xl border border-line bg-white p-3 text-center">
                       <p className="text-[11px] font-semibold text-muted">{pick({ ar: "المطلوب", he: "לתשלום", en: "Total due" })}</p>
@@ -477,7 +498,7 @@ export default function TeamsAdmin() {
                           <input dir="ltr" type="tel" value={p.motherPhone ?? ""} onChange={(e) => updatePlayer(p.id, { motherPhone: e.target.value })} className={plainInput} />
                         </label>
                       </div>
-                      <PaymentEditor player={p} onChange={(patch) => updatePlayer(p.id, patch)} />
+                      {payEnabled && <PaymentEditor player={p} onChange={(patch) => updatePlayer(p.id, patch)} />}
                       <div className="flex items-center justify-between border-t border-line pt-2">
                         <div className="flex gap-3">
                           <button type="button" onClick={() => { detachPlayer(editing.id, p.id); setOpenPlayerId(null); }} className="text-xs font-semibold text-muted hover:text-ink">↩ {t.admin.team.detach}</button>
@@ -510,9 +531,13 @@ export default function TeamsAdmin() {
                           </div>
                           <div className="min-w-0 px-3 py-2.5">
                             <p className="truncate text-sm font-bold text-ink">{pick(p.name) || tapToEdit}</p>
-                            <p className={`truncate text-[11px] font-semibold ${left > 0 ? "text-amber-700" : "text-emerald-700"}`}>
-                              {left > 0 ? `${pick({ ar: "متبقّي", he: "נותר", en: "Left" })} ${money(left)}` : pick({ ar: "مدفوع بالكامل ✓", he: "שולם ✓", en: "Paid ✓" })}
-                            </p>
+                            {payEnabled ? (
+                              <p className={`truncate text-[11px] font-semibold ${left > 0 ? "text-amber-700" : "text-emerald-700"}`}>
+                                {left > 0 ? `${pick({ ar: "متبقّي", he: "נותר", en: "Left" })} ${money(left)}` : pick({ ar: "مدفوع بالكامل ✓", he: "שולם ✓", en: "Paid ✓" })}
+                              </p>
+                            ) : (
+                              <p className="truncate text-[11px] text-muted" dir="ltr">{p.phone || p.fatherPhone || p.motherPhone || "—"}</p>
+                            )}
                           </div>
                         </button>
                       );
@@ -537,9 +562,11 @@ export default function TeamsAdmin() {
                             <p className="truncate text-xs text-muted" dir="ltr">{p.phone || p.fatherPhone || p.motherPhone || "—"}</p>
                           </div>
                           {p.number ? <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-dark">#{p.number}</span> : null}
-                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${left > 0 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
-                            {left > 0 ? `${pick({ ar: "متبقّي", he: "נותר", en: "Left" })} ${money(left)}` : pick({ ar: "مدفوع ✓", he: "שולם ✓", en: "Paid ✓" })}
-                          </span>
+                          {payEnabled && (
+                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${left > 0 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                              {left > 0 ? `${pick({ ar: "متبقّي", he: "נותר", en: "Left" })} ${money(left)}` : pick({ ar: "مدفوع ✓", he: "שולם ✓", en: "Paid ✓" })}
+                            </span>
+                          )}
                           <TapChevron className="text-lg" />
                         </button>
                       );
