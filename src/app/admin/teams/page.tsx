@@ -31,7 +31,11 @@ export default function TeamsAdmin() {
   const [view, setView] = useState<ViewMode>("grid");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tab, setTab] = useState<TeamTab>("settings");
-  const openTeam = (id: string) => { setEditingId(id); setTab("settings"); };
+  // Players tab: compact card/list browsing, tap a player to expand the editor.
+  const [playersView, setPlayersView] = useState<ViewMode>("list");
+  const [openPlayerId, setOpenPlayerId] = useState<string | null>(null);
+  const switchTab = (next: TeamTab) => { setTab(next); setOpenPlayerId(null); };
+  const openTeam = (id: string) => { setEditingId(id); setTab("settings"); setOpenPlayerId(null); };
 
   useEffect(() => {
     Promise.all([
@@ -112,11 +116,12 @@ export default function TeamsAdmin() {
   };
   const detachPlayer = (teamId: string, playerId: string) =>
     setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, playerIds: tm.playerIds.filter((pid) => pid !== playerId) } : tm)));
-  const addNewPlayer = (teamId: string, initialName?: string) => {
+  const addNewPlayer = (teamId: string, initialName?: string): string => {
     const id = crypto.randomUUID();
     const name = initialName ? { ar: initialName, he: initialName, en: initialName } : emptyLoc();
     setPlayers((list) => [...list, { id, name, number: "", image: "" }]);
     attachPlayer(teamId, id);
+    return id;
   };
 
   // ---- Coach mutators (coaches are a shared pool) ---------------------------
@@ -345,7 +350,7 @@ export default function TeamsAdmin() {
                 <button
                   key={tb.key}
                   type="button"
-                  onClick={() => setTab(tb.key)}
+                  onClick={() => switchTab(tb.key)}
                   className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold transition ${tab === tb.key ? "bg-brand text-white shadow-sm" : "text-ink/70 hover:bg-white"}`}
                 >
                   <span aria-hidden>{tb.icon}</span>
@@ -412,62 +417,135 @@ export default function TeamsAdmin() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-bold text-ink">
                     {t.admin.team.players} <span className="font-normal text-muted">— {t.admin.team.playersHint}</span>
                   </span>
-                  <Button size="sm" variant="subtle" onClick={() => addNewPlayer(editing.id)}>{t.admin.team.addNew}</Button>
+                  <div className="flex items-center gap-2">
+                    {!openPlayerId && (
+                      <ViewToggle mode={playersView} onChange={setPlayersView} labels={{ grid: pick({ ar: "بطاقات", he: "כרטיסים", en: "Cards" }), list: pick({ ar: "قائمة", he: "רשימה", en: "List" }) }} />
+                    )}
+                    <Button size="sm" variant="subtle" onClick={() => setOpenPlayerId(addNewPlayer(editing.id))}>{t.admin.team.addNew}</Button>
+                  </div>
                 </div>
 
-                <PlayerPicker
-                  players={players.filter((p) => !editing.playerIds.includes(p.id))}
-                  pick={pick}
-                  placeholder={t.admin.players.pickerPlaceholder}
-                  addNewLabel={t.admin.players.addNew}
-                  onAttach={(pid) => attachPlayer(editing.id, pid)}
-                  onAddNew={(name) => addNewPlayer(editing.id, name)}
-                />
+                {!openPlayerId && (
+                  <PlayerPicker
+                    players={players.filter((p) => !editing.playerIds.includes(p.id))}
+                    pick={pick}
+                    placeholder={t.admin.players.pickerPlaceholder}
+                    addNewLabel={t.admin.players.addNew}
+                    onAttach={(pid) => attachPlayer(editing.id, pid)}
+                    onAddNew={(name) => setOpenPlayerId(addNewPlayer(editing.id, name))}
+                  />
+                )}
 
                 {teamPlayers.length === 0 && <p className="text-sm text-muted">{t.admin.team.noPlayers}</p>}
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {editing.playerIds.map((pid) => {
-                    const p = playerById(pid);
-                    if (!p) return null;
-                    return (
-                      <div key={pid} className="space-y-2 rounded-xl border border-line p-3">
-                        <ImageUpload value={p.image ?? ""} icon="user" onChange={(image) => updatePlayer(pid, { image })} />
-                        {p.image && (
-                          <ImagePositioner src={p.image} value={p.imagePosition} onChange={(imagePosition) => updatePlayer(pid, { imagePosition })} aspectRatio={p.aspectRatio ?? "4 / 5"} onAspectChange={(aspectRatio) => updatePlayer(pid, { aspectRatio })} />
-                        )}
-                        <LocalizedField label={t.admin.team.newPlayerName} value={p.name} onChange={(name) => updatePlayer(pid, { name })} />
-                        <div className="grid grid-cols-2 gap-2">
-                          <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.number}</span>
-                            <input value={p.number ?? ""} onChange={(e) => updatePlayer(pid, { number: e.target.value })} className={plainInput} />
-                          </label>
-                          <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف اللاعب", he: "טלפון השחקן", en: "Player phone" })}</span>
-                            <input dir="ltr" type="tel" value={p.phone ?? ""} onChange={(e) => updatePlayer(pid, { phone: e.target.value })} className={plainInput} />
-                          </label>
-                          <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف الأب", he: "טלפון האב", en: "Father's phone" })}</span>
-                            <input dir="ltr" type="tel" value={p.fatherPhone ?? ""} onChange={(e) => updatePlayer(pid, { fatherPhone: e.target.value })} className={plainInput} />
-                          </label>
-                          <label className="block">
-                            <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف الأم", he: "טלפון האם", en: "Mother's phone" })}</span>
-                            <input dir="ltr" type="tel" value={p.motherPhone ?? ""} onChange={(e) => updatePlayer(pid, { motherPhone: e.target.value })} className={plainInput} />
-                          </label>
-                        </div>
-                        <PaymentEditor player={p} onChange={(patch) => updatePlayer(pid, patch)} />
-                        <div className="flex gap-3">
-                          <button type="button" onClick={() => detachPlayer(editing.id, pid)} className="text-xs font-semibold text-muted hover:text-ink">↩ {t.admin.team.detach}</button>
-                          <button type="button" onClick={() => { if (confirm(t.admin.team.deleteWarn)) deletePlayer(pid); }} className="text-xs font-semibold text-rose-600 hover:underline">{t.admin.actions.delete}</button>
-                        </div>
+                {/* Expanded editor for the tapped player */}
+                {openPlayerId && (() => {
+                  const p = playerById(openPlayerId);
+                  if (!p) return null;
+                  return (
+                    <div className="space-y-2 rounded-xl border border-brand/40 bg-white p-3 shadow-sm">
+                      <div className="flex items-center justify-between gap-2 border-b border-line pb-2">
+                        <button type="button" onClick={() => setOpenPlayerId(null)} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-2.5 py-1 text-xs font-bold text-ink transition hover:border-brand hover:text-brand">
+                          <span aria-hidden className="rtl:-scale-x-100">←</span> {pick({ ar: "رجوع", he: "חזרה", en: "Back" })}
+                        </button>
+                        <p className="min-w-0 flex-1 truncate text-sm font-bold text-ink">{pick(p.name) || tapToEdit}</p>
                       </div>
-                    );
-                  })}
-                </div>
+                      <ImageUpload value={p.image ?? ""} icon="user" onChange={(image) => updatePlayer(p.id, { image })} />
+                      {p.image && (
+                        <ImagePositioner src={p.image} value={p.imagePosition} onChange={(imagePosition) => updatePlayer(p.id, { imagePosition })} aspectRatio={p.aspectRatio ?? "4 / 5"} onAspectChange={(aspectRatio) => updatePlayer(p.id, { aspectRatio })} />
+                      )}
+                      <LocalizedField label={t.admin.team.newPlayerName} value={p.name} onChange={(name) => updatePlayer(p.id, { name })} />
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="block">
+                          <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.number}</span>
+                          <input value={p.number ?? ""} onChange={(e) => updatePlayer(p.id, { number: e.target.value })} className={plainInput} />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف اللاعب", he: "טלפון השחקן", en: "Player phone" })}</span>
+                          <input dir="ltr" type="tel" value={p.phone ?? ""} onChange={(e) => updatePlayer(p.id, { phone: e.target.value })} className={plainInput} />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف الأب", he: "טלפון האב", en: "Father's phone" })}</span>
+                          <input dir="ltr" type="tel" value={p.fatherPhone ?? ""} onChange={(e) => updatePlayer(p.id, { fatherPhone: e.target.value })} className={plainInput} />
+                        </label>
+                        <label className="block">
+                          <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف الأم", he: "טלפון האם", en: "Mother's phone" })}</span>
+                          <input dir="ltr" type="tel" value={p.motherPhone ?? ""} onChange={(e) => updatePlayer(p.id, { motherPhone: e.target.value })} className={plainInput} />
+                        </label>
+                      </div>
+                      <PaymentEditor player={p} onChange={(patch) => updatePlayer(p.id, patch)} />
+                      <div className="flex items-center justify-between border-t border-line pt-2">
+                        <div className="flex gap-3">
+                          <button type="button" onClick={() => { detachPlayer(editing.id, p.id); setOpenPlayerId(null); }} className="text-xs font-semibold text-muted hover:text-ink">↩ {t.admin.team.detach}</button>
+                          <button type="button" onClick={() => { if (confirm(t.admin.team.deleteWarn)) { deletePlayer(p.id); setOpenPlayerId(null); } }} className="text-xs font-semibold text-rose-600 hover:underline">{t.admin.actions.delete}</button>
+                        </div>
+                        <Button size="sm" onClick={() => setOpenPlayerId(null)}>{pick({ ar: "تم", he: "סיום", en: "Done" })}</Button>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Compact browsing: cards or list, tap to edit */}
+                {!openPlayerId && playersView === "grid" && (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {teamPlayers.map((p) => {
+                      const fee = p.feeAmount ?? DEFAULT_FEE;
+                      const left = Math.max(fee - Math.min(p.paidAmount ?? 0, fee), 0);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setOpenPlayerId(p.id)}
+                          className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white text-start shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-card"
+                        >
+                          <div className="relative aspect-[4/5] w-full">
+                            <Thumb src={p.image} position={p.imagePosition} fallback={initialOf(p.name)} className="h-full w-full" />
+                            {p.number ? (
+                              <span className="absolute end-2 top-2 grid min-w-7 place-items-center rounded-full bg-ink/80 px-1.5 py-0.5 text-xs font-bold text-white backdrop-blur">#{p.number}</span>
+                            ) : null}
+                          </div>
+                          <div className="min-w-0 px-3 py-2.5">
+                            <p className="truncate text-sm font-bold text-ink">{pick(p.name) || tapToEdit}</p>
+                            <p className={`truncate text-[11px] font-semibold ${left > 0 ? "text-amber-700" : "text-emerald-700"}`}>
+                              {left > 0 ? `${pick({ ar: "متبقّي", he: "נותר", en: "Left" })} ${money(left)}` : pick({ ar: "مدفوع بالكامل ✓", he: "שולם ✓", en: "Paid ✓" })}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {!openPlayerId && playersView === "list" && teamPlayers.length > 0 && (
+                  <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+                    {teamPlayers.map((p, i) => {
+                      const fee = p.feeAmount ?? DEFAULT_FEE;
+                      const left = Math.max(fee - Math.min(p.paidAmount ?? 0, fee), 0);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setOpenPlayerId(p.id)}
+                          className={`group flex w-full items-center gap-3 px-3 py-2.5 text-start transition hover:bg-surface ${i > 0 ? "border-t border-line" : ""}`}
+                        >
+                          <Thumb src={p.image} position={p.imagePosition} fallback={initialOf(p.name)} className="size-11 shrink-0 rounded-xl" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold text-ink">{pick(p.name) || tapToEdit}</p>
+                            <p className="truncate text-xs text-muted" dir="ltr">{p.phone || p.fatherPhone || p.motherPhone || "—"}</p>
+                          </div>
+                          {p.number ? <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-dark">#{p.number}</span> : null}
+                          <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${left > 0 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"}`}>
+                            {left > 0 ? `${pick({ ar: "متبقّي", he: "נותר", en: "Left" })} ${money(left)}` : pick({ ar: "مدفوع ✓", he: "שולם ✓", en: "Paid ✓" })}
+                          </span>
+                          <TapChevron className="text-lg" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
