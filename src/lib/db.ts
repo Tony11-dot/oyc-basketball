@@ -104,7 +104,39 @@ export const updateAttendance = (fn: (list: AttendanceRecord[]) => AttendanceRec
 
 // ---- Teams ------------------------------------------------------------------
 
-export const getTeams = () => read<Team[]>("teams", seedTeams);
+/**
+ * Teams are always served with their rosters sanitized: any playerIds/coachIds
+ * that no longer resolve to an existing player/coach are dropped, so counts and
+ * lists are accurate everywhere (admin, public site, coach portal). When stale
+ * ids are found the cleanup is also written back, permanently healing the data.
+ */
+export async function getTeams(): Promise<Team[]> {
+  const [teams, players, coaches] = await Promise.all([
+    read<Team[]>("teams", seedTeams),
+    read<Player[]>("players", seedPlayers),
+    read<Coach[]>("coaches", seedCoaches),
+  ]);
+  const pids = new Set(players.map((p) => p.id));
+  const cids = new Set(coaches.map((c) => c.id));
+  const clean = (t: Team): Team => {
+    const playerIds = t.playerIds.filter((id) => pids.has(id));
+    const coachIds = (t.coachIds ?? []).filter((id) => cids.has(id));
+    return playerIds.length !== t.playerIds.length || coachIds.length !== (t.coachIds ?? []).length
+      ? { ...t, playerIds, coachIds }
+      : t;
+  };
+  const cleaned = teams.map(clean);
+  if (cleaned.some((t, i) => t !== teams[i])) {
+    // Self-heal in storage (re-filter inside the lock so a concurrent update
+    // isn't clobbered). Never let a healing hiccup break the read path.
+    try {
+      await mutate<Team[]>("teams", (cur) => cur.map(clean), seedTeams);
+    } catch {
+      /* serve the cleaned view regardless */
+    }
+  }
+  return cleaned;
+}
 
 export const updateTeams = (fn: (list: Team[]) => Team[]) =>
   mutate<Team[]>("teams", fn, seedTeams);

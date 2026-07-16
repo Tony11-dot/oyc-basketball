@@ -49,6 +49,17 @@ export default function TeamsAdmin() {
   const playerById = (id: string) => players.find((p) => p.id === id);
   const coachById = (id: string) => coaches.find((c) => c.id === id);
 
+  // Resolved roster + whole-team payment totals (fee owed / collected / left).
+  // Only ids that resolve to a real player count, so numbers are always accurate.
+  const money = (n: number) => `${n.toLocaleString("en-US")} ₪`;
+  const rosterOf = (tm: Team) => tm.playerIds.map(playerById).filter(Boolean) as Player[];
+  const totalsOf = (tm: Team) => {
+    const ps = rosterOf(tm);
+    const fee = ps.reduce((s, p) => s + (p.feeAmount ?? DEFAULT_FEE), 0);
+    const paid = ps.reduce((s, p) => s + Math.min(p.paidAmount ?? 0, p.feeAmount ?? DEFAULT_FEE), 0);
+    return { fee, paid, left: Math.max(fee - paid, 0) };
+  };
+
   // ---- Team mutators --------------------------------------------------------
   const updateTeam = (id: string, patch: Partial<Team>) =>
     setTeams((list) => list.map((tm) => (tm.id === id ? { ...tm, ...patch } : tm)));
@@ -180,11 +191,16 @@ export default function TeamsAdmin() {
       ...prev.coaches.filter((o) => !v.coaches.some((c) => c.id === o.id)).map((c) => fetch(`/api/coaches/${c.id}`, { method: "DELETE" }).then(deleted)),
       ...prev.teams.filter((o) => !v.teams.some((tm) => tm.id === o.id)).map((tm) => fetch(`/api/teams/${tm.id}`, { method: "DELETE" }).then(deleted)),
     ]);
+    // Players + coaches BEFORE the teams that reference them, so a team never
+    // points at a player that doesn't exist yet (the read side drops dangling
+    // roster ids, so writing the team first could lose the attachment).
     await Promise.all([
       ...diff(v.players, prev.players).map((p) => fetch("/api/players", { method: "POST", headers, body: JSON.stringify(p) }).then(saved)),
       ...diff(v.coaches, prev.coaches).map((c) => fetch("/api/coaches", { method: "POST", headers, body: JSON.stringify(c) }).then(saved)),
-      ...diff(v.teams, prev.teams).map((tm) => fetch("/api/teams", { method: "POST", headers, body: JSON.stringify(tm) }).then(saved)),
     ]);
+    await Promise.all(
+      diff(v.teams, prev.teams).map((tm) => fetch("/api/teams", { method: "POST", headers, body: JSON.stringify(tm) }).then(saved)),
+    );
     return v;
   }, []);
 
@@ -242,10 +258,22 @@ export default function TeamsAdmin() {
                     <TapChevron className="ms-auto text-lg" />
                   </div>
                   <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
-                    <span>👤 {tm.playerIds.length} {t.teams.players}</span>
+                    <span>👤 {rosterOf(tm).length} {t.teams.players}</span>
                     <span>🧑‍🏫 {(tm.coachIds ?? []).length}</span>
                     <span>🏀 {tm.matches.length}</span>
                   </p>
+                  {(() => {
+                    const tt = totalsOf(tm);
+                    if (tt.fee <= 0) return null;
+                    return (
+                      <p className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-surface px-2.5 py-1.5 text-[11px] font-semibold">
+                        <span className="text-muted">💳 <span dir="ltr">{money(tt.paid)} / {money(tt.fee)}</span></span>
+                        <span className={tt.left > 0 ? "text-amber-700" : "text-emerald-700"}>
+                          {tt.left > 0 ? `${pick({ ar: "متبقّي", he: "נותר", en: "left" })} ${money(tt.left)}` : pick({ ar: "مكتمل ✓", he: "שולם ✓", en: "Paid ✓" })}
+                        </span>
+                      </p>
+                    );
+                  })()}
                 </div>
               </button>
               {/* reorder bar — its own row so it never overlaps the card text */}
@@ -265,7 +293,19 @@ export default function TeamsAdmin() {
                 <Thumb src={tm.image} position={tm.imagePosition} fallback={initialOf(tm.name, "🏀")} className="size-11 shrink-0 rounded-xl" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-ink">{pick(tm.name) || tapToEdit}</p>
-                  <p className="truncate text-xs text-muted">👤 {tm.playerIds.length} · 🧑‍🏫 {(tm.coachIds ?? []).length} · 🏀 {tm.matches.length}{!tm.enabled ? ` · ${pick({ ar: "مخفي", he: "מוסתר", en: "Hidden" })}` : ""}</p>
+                  <p className="truncate text-xs text-muted">👤 {rosterOf(tm).length} · 🧑‍🏫 {(tm.coachIds ?? []).length} · 🏀 {tm.matches.length}{!tm.enabled ? ` · ${pick({ ar: "مخفي", he: "מוסתר", en: "Hidden" })}` : ""}</p>
+                  {(() => {
+                    const tt = totalsOf(tm);
+                    if (tt.fee <= 0) return null;
+                    return (
+                      <p className="truncate text-[11px] font-semibold">
+                        <span className="text-muted">💳 <span dir="ltr">{money(tt.paid)} / {money(tt.fee)}</span></span>{" "}
+                        <span className={tt.left > 0 ? "text-amber-700" : "text-emerald-700"}>
+                          {tt.left > 0 ? `· ${pick({ ar: "متبقّي", he: "נותר", en: "left" })} ${money(tt.left)}` : `· ${pick({ ar: "مكتمل ✓", he: "שולם ✓", en: "Paid ✓" })}`}
+                        </span>
+                      </p>
+                    );
+                  })()}
                 </div>
                 <TapChevron className="text-lg" />
               </button>
@@ -281,14 +321,11 @@ export default function TeamsAdmin() {
 
       {/* Team detail — expands inline, organised into tabs */}
       {editing && (() => {
-        const teamPlayers = editing.playerIds.map(playerById).filter(Boolean) as Player[];
-        const totalFee = teamPlayers.reduce((s, p) => s + (p.feeAmount ?? DEFAULT_FEE), 0);
-        const totalPaid = teamPlayers.reduce((s, p) => s + Math.min(p.paidAmount ?? 0, p.feeAmount ?? DEFAULT_FEE), 0);
-        const outstanding = Math.max(totalFee - totalPaid, 0);
-        const money = (n: number) => `${n.toLocaleString("en-US")} ₪`;
+        const teamPlayers = rosterOf(editing);
+        const { fee: totalFee, paid: totalPaid, left: outstanding } = totalsOf(editing);
         const TABS: { key: TeamTab; icon: string; label: Localized; count?: number }[] = [
           { key: "settings", icon: "⚙", label: { ar: "الإعدادات", he: "הגדרות", en: "Settings" } },
-          { key: "players", icon: "👤", label: { ar: "اللاعبون", he: "שחקנים", en: "Players" }, count: editing.playerIds.length },
+          { key: "players", icon: "👤", label: { ar: "اللاعبون", he: "שחקנים", en: "Players" }, count: teamPlayers.length },
           { key: "coaches", icon: "🧑‍🏫", label: { ar: "المدرّبون", he: "מאמנים", en: "Coaches" }, count: (editing.coachIds ?? []).length },
           { key: "games", icon: "🏀", label: { ar: "المباريات", he: "משחקים", en: "Games" }, count: editing.matches.length },
         ];
@@ -391,7 +428,7 @@ export default function TeamsAdmin() {
                   onAddNew={(name) => addNewPlayer(editing.id, name)}
                 />
 
-                {editing.playerIds.length === 0 && <p className="text-sm text-muted">{t.admin.team.noPlayers}</p>}
+                {teamPlayers.length === 0 && <p className="text-sm text-muted">{t.admin.team.noPlayers}</p>}
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   {editing.playerIds.map((pid) => {
@@ -453,7 +490,7 @@ export default function TeamsAdmin() {
                   onAddNew={(name) => addNewCoach(editing.id, name)}
                 />
 
-                {(editing.coachIds ?? []).length === 0 && <p className="text-sm text-muted">{t.admin.team.noCoaches}</p>}
+                {(editing.coachIds ?? []).filter(coachById).length === 0 && <p className="text-sm text-muted">{t.admin.team.noCoaches}</p>}
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   {(editing.coachIds ?? []).map((cid) => {
