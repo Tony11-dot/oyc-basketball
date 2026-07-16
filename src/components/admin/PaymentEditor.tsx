@@ -2,10 +2,9 @@
 
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { Player } from "@/lib/types";
+import { DEFAULT_FEE } from "@/lib/fees";
 
-/** Default registration fee (₪) when a player has none set — mirrors the club's
- * annual registration fee used across the site. */
-export const DEFAULT_FEE = 3530;
+export { DEFAULT_FEE };
 
 const numInput =
   "h-10 w-full rounded-xl border border-line bg-white px-3.5 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";

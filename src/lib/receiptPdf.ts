@@ -6,7 +6,7 @@ import "server-only";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import type { Receipt } from "./types";
-import { drawLine, measure, toVisual, drawGlyphs } from "./pdfArabic";
+import { drawLine, hasHebrew, measure, toVisual, drawGlyphs } from "./pdfArabic";
 
 // Brand palette — navy + a warm brand red, matching the site.
 const NAVY = rgb(0.05, 0.13, 0.31);
@@ -21,6 +21,7 @@ const CLUB_AR = "النادي الأرثوذكسي لكرة السلة";
 const CITY_AR = "الناصرة";
 
 let _font: Uint8Array | null = null;
+let _hebFont: Uint8Array | null = null;
 let _logo: Uint8Array | null = null;
 
 async function fetchBin(baseUrl: string, p: string): Promise<Uint8Array> {
@@ -31,6 +32,15 @@ async function fetchBin(baseUrl: string, p: string): Promise<Uint8Array> {
 
 async function assets(baseUrl: string) {
   if (!_font) _font = await fetchBin(baseUrl, "/forms/Amiri-Regular.ttf");
+  // Amiri has no Hebrew glyphs — a payer name typed in Hebrew falls back to
+  // Noto Sans Hebrew (missing file just means boxes, never a failure).
+  if (!_hebFont) {
+    try {
+      _hebFont = await fetchBin(baseUrl, "/forms/NotoSansHebrew-Regular.ttf");
+    } catch {
+      _hebFont = new Uint8Array();
+    }
+  }
   if (!_logo) {
     try {
       _logo = await fetchBin(baseUrl, "/logo.png");
@@ -38,7 +48,7 @@ async function assets(baseUrl: string) {
       _logo = new Uint8Array();
     }
   }
-  return { font: _font, logo: _logo };
+  return { font: _font, hebFont: _hebFont, logo: _logo };
 }
 
 const METHOD_LABEL: Record<string, string> = {
@@ -55,11 +65,13 @@ function formatDate(iso: string): string {
 
 /** Render a single receipt to flat PDF bytes. */
 export async function buildReceiptPdf(baseUrl: string, receipt: Receipt): Promise<Uint8Array> {
-  const { font: fontBytes, logo } = await assets(baseUrl);
+  const { font: fontBytes, hebFont: hebBytes, logo } = await assets(baseUrl);
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   const font = await doc.embedFont(fontBytes, { subset: false });
+  const heb = hebBytes && hebBytes.length > 0 ? await doc.embedFont(hebBytes, { subset: false }) : font;
   const latin = await doc.embedFont(StandardFonts.Helvetica);
+  const fontFor = (s: string) => (hasHebrew(s) ? heb : font);
 
   const W = 595.28;
   const H = 841.89;
@@ -129,8 +141,8 @@ export async function buildReceiptPdf(baseUrl: string, receipt: Receipt): Promis
   for (const r of rows) {
     // label
     drawLine(page, font, r.label, { x: left + 18, y: ry - 12, size: 10, color: MUTED, boxWidth: contentW - 36, align: "end" });
-    // value
-    drawLine(page, font, r.value, { x: left + 18, y: ry - 30, size: r.strong ? 15 : 13, color: INK, boxWidth: contentW - 36, align: "end" });
+    // value (Hebrew names fall back to the Hebrew font)
+    drawLine(page, fontFor(r.value), r.value, { x: left + 18, y: ry - 30, size: r.strong ? 15 : 13, color: INK, boxWidth: contentW - 36, align: "end" });
     ry -= rowH;
     page.drawLine({ start: { x: left + 14, y: ry + 6 }, end: { x: right - 14, y: ry + 6 }, thickness: 0.75, color: LINE });
   }

@@ -8,12 +8,16 @@ import type { PDFFont, PDFPage, rgb } from "pdf-lib";
 type Rgb = ReturnType<typeof rgb>;
 
 export const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
+export const hasHebrew = (s: string) => /[֐-׿]/.test(s);
+/** Text that must be laid out right-to-left (Arabic and/or Hebrew). */
+const isRtl = (s: string) => hasArabic(s) || hasHebrew(s);
 
 const LTR_RUN = /^[A-Za-z0-9@._+\-/:#&()₪%,]+$/;
 const TOKEN = /[A-Za-z0-9@._+\-/:#&()₪%,]+|\s+|[^A-Za-z0-9@._+\-/:#&()₪%,\s]/g;
 
 /** Reshape Arabic to presentation forms and reorder to visual RTL, keeping
- * embedded Latin/number runs left-to-right. */
+ * embedded Latin/number runs left-to-right. Hebrew needs no reshaping but the
+ * same reordering: its characters tokenize individually and are reversed. */
 export function toVisual(text: string): string {
   const reshaped = reshaper.convertArabic(text);
   const tokens = reshaped.match(TOKEN) ?? [];
@@ -34,7 +38,7 @@ export function drawGlyphs(page: PDFPage, font: PDFFont, visual: string, x: numb
 
 /** Measured width of a string once shaped (for layout / centering). */
 export function measure(font: PDFFont, text: string, size: number): number {
-  const visual = hasArabic(text) ? toVisual(text) : text;
+  const visual = isRtl(text) ? toVisual(text) : text;
   return font.widthOfTextAtSize(visual, size);
 }
 
@@ -53,7 +57,7 @@ export function drawLine(
   opts: { x: number; y: number; size: number; color: Rgb; boxWidth?: number; align?: Align },
 ) {
   const { x, y, size, color, boxWidth, align = "start" } = opts;
-  const rtl = hasArabic(text);
+  const rtl = isRtl(text);
   const visual = rtl ? toVisual(text) : text;
   const w = font.widthOfTextAtSize(visual, size);
   let drawX = x;

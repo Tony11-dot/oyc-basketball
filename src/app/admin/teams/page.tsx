@@ -17,7 +17,7 @@ const emptyLoc = (): Localized => ({ ar: "", he: "", en: "" });
 const plainInput =
   "h-10 w-full rounded-xl border border-line bg-white px-3.5 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
 
-type TeamTab = "settings" | "players" | "coaches" | "games";
+type TeamTab = "settings" | "players" | "coaches" | "games" | "finances";
 
 const initialOf = (name: Localized, fallback = "?") =>
   (name.ar || name.he || name.en || "").trim().charAt(0) || fallback;
@@ -337,6 +337,7 @@ export default function TeamsAdmin() {
           { key: "players", icon: "👤", label: { ar: "اللاعبون", he: "שחקנים", en: "Players" }, count: teamPlayers.length },
           { key: "coaches", icon: "🧑‍🏫", label: { ar: "المدرّبون", he: "מאמנים", en: "Coaches" }, count: (editing.coachIds ?? []).length },
           { key: "games", icon: "🏀", label: { ar: "المباريات", he: "משחקים", en: "Games" }, count: editing.matches.length },
+          ...(payEnabled ? [{ key: "finances" as const, icon: "💰", label: { ar: "الماليّة", he: "כספים", en: "Finances" } }] : []),
         ];
         return (
         <DetailPanel title={pick(editing.name) || t.admin.team.name} onBack={() => setEditingId(null)}>
@@ -648,6 +649,76 @@ export default function TeamsAdmin() {
                     />
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* FINANCES TAB — who paid what, and a printable PDF report */}
+            {tab === "finances" && payEnabled && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-xl border border-line bg-white p-3 text-center">
+                    <p className="text-[11px] font-semibold text-muted">{pick({ ar: "المطلوب", he: "לתשלום", en: "Total due" })}</p>
+                    <p className="mt-0.5 text-sm font-extrabold text-ink" dir="ltr">{money(totalFee)}</p>
+                  </div>
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center">
+                    <p className="text-[11px] font-semibold text-emerald-700">{pick({ ar: "المحصّل", he: "נגבה", en: "Collected" })}</p>
+                    <p className="mt-0.5 text-sm font-extrabold text-emerald-700" dir="ltr">{money(totalPaid)}</p>
+                  </div>
+                  <div className={`rounded-xl border p-3 text-center ${outstanding > 0 ? "border-amber-200 bg-amber-50" : "border-line bg-white"}`}>
+                    <p className={`text-[11px] font-semibold ${outstanding > 0 ? "text-amber-700" : "text-muted"}`}>{pick({ ar: "المتبقّي", he: "נותר", en: "Outstanding" })}</p>
+                    <p className={`mt-0.5 text-sm font-extrabold ${outstanding > 0 ? "text-amber-700" : "text-ink"}`} dir="ltr">{money(outstanding)}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-bold text-ink">
+                    {pick({ ar: "مدفوعات اللاعبين", he: "תשלומי השחקנים", en: "Player payments" })}
+                  </span>
+                  <a
+                    href={`/api/teams/${editing.id}/report`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-brand-dark"
+                  >
+                    🧾 {pick({ ar: "توليد تقرير PDF", he: "הפקת דוח PDF", en: "Generate PDF report" })}
+                  </a>
+                </div>
+
+                {teamPlayers.length === 0 ? (
+                  <p className="text-sm text-muted">{t.admin.team.noPlayers}</p>
+                ) : (
+                  <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+                    {teamPlayers.map((p, i) => {
+                      const fee = p.feeAmount ?? DEFAULT_FEE;
+                      const paid = Math.min(p.paidAmount ?? 0, fee);
+                      const left = Math.max(fee - paid, 0);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => { setTab("players"); setOpenPlayerId(p.id); }}
+                          className={`group flex w-full items-center gap-3 px-3 py-2.5 text-start transition hover:bg-surface ${i > 0 ? "border-t border-line" : ""}`}
+                        >
+                          <Thumb src={p.image} position={p.imagePosition} fallback={initialOf(p.name)} className="size-10 shrink-0 rounded-xl" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold text-ink">{pick(p.name) || tapToEdit}{p.number ? <span className="ms-1.5 text-xs font-semibold text-muted">#{p.number}</span> : null}</p>
+                            <div className="mt-1 h-1.5 w-full max-w-45 overflow-hidden rounded-full bg-line">
+                              <div className={`h-full rounded-full ${left > 0 ? "bg-brand" : "bg-emerald-500"}`} style={{ width: `${fee > 0 ? Math.round((paid / fee) * 100) : 0}%` }} />
+                            </div>
+                          </div>
+                          <div className="shrink-0 text-end">
+                            <p className="text-xs font-bold text-emerald-700" dir="ltr">{money(paid)}</p>
+                            <p className={`text-[11px] font-semibold ${left > 0 ? "text-amber-700" : "text-muted"}`} dir="ltr">
+                              {left > 0 ? `- ${money(left)}` : pick({ ar: "مكتمل", he: "שולם", en: "settled" })}
+                            </p>
+                          </div>
+                          <TapChevron className="text-lg" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <p className="text-xs text-muted">{pick({ ar: "اضغط على لاعب لتعديل دفعاته.", he: "לחצו על שחקן לעריכת התשלומים.", en: "Tap a player to edit their payments." })}</p>
               </div>
             )}
 

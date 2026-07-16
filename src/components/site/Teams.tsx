@@ -106,7 +106,25 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
             onClick={() => setOpenId(null)}
             className="fixed inset-0 z-[70] overflow-y-auto"
           >
-            {open.detailBg ? <SectionBg url={open.detailBg} /> : <div className="fixed inset-0 brand-gradient" />}
+            {/* Backdrop: the custom detail background if set, else the team's own
+                photo — blurred + dimmed so it reads as ambience, fixed so it
+                covers the full viewport with no dead space while scrolling. */}
+            {(() => {
+              const bg = open.detailBg || open.image;
+              if (!bg) return <div className="fixed inset-0 brand-gradient" />;
+              return (
+                <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={bg}
+                    alt=""
+                    style={!open.detailBg ? { objectPosition: open.imagePosition ?? "center" } : undefined}
+                    className="h-full w-full scale-110 object-cover blur-lg"
+                  />
+                  <div className="absolute inset-0 bg-ink/60" />
+                </div>
+              );
+            })()}
 
             <button
               type="button"
