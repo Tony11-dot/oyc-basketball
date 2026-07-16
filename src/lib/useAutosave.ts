@@ -90,7 +90,27 @@ export function useAutosave<T>({
     schedule();
   }, [value, paused, ready, schedule]);
 
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  // Warn before the tab closes / navigates away while changes are unsaved (or a
+  // save is still in flight), so nothing typed can be lost silently.
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      const dirty = baseline.current !== null && JSON.stringify(valueRef.current) !== baseline.current;
+      if (dirty || saving.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+    // Last-chance flush on unmount (e.g. navigating to another admin page):
+    // the fetches inside onSave keep running after unmount, so pending edits
+    // still reach the server even mid-navigation.
+    flushRef.current();
+  }, []);
 
   const undo = useCallback(() => {
     setUndoStack((s) => {

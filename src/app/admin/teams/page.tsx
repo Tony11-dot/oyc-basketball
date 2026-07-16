@@ -54,7 +54,7 @@ export default function TeamsAdmin() {
     setTeams((list) => list.map((tm) => (tm.id === id ? { ...tm, ...patch } : tm)));
   const removeTeam = (id: string) => setTeams((list) => list.filter((tm) => tm.id !== id));
   const addTeam = () => {
-    const id = `new-${Date.now()}`;
+    const id = crypto.randomUUID();
     setTeams((list) => [
       ...list,
       {
@@ -82,7 +82,9 @@ export default function TeamsAdmin() {
       const next = [...list];
       const [m] = next.splice(index, 1);
       next.splice(target, 0, m);
-      return next;
+      // Renumber so the stored order always matches the visual order (autosave
+      // diffs whole objects, so this also marks the moved teams as changed).
+      return next.map((tm, i) => (tm.order === i ? tm : { ...tm, order: i }));
     });
   };
 
@@ -100,7 +102,7 @@ export default function TeamsAdmin() {
   const detachPlayer = (teamId: string, playerId: string) =>
     setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, playerIds: tm.playerIds.filter((pid) => pid !== playerId) } : tm)));
   const addNewPlayer = (teamId: string, initialName?: string) => {
-    const id = `newp-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    const id = crypto.randomUUID();
     const name = initialName ? { ar: initialName, he: initialName, en: initialName } : emptyLoc();
     setPlayers((list) => [...list, { id, name, number: "", position: emptyLoc(), image: "" }]);
     attachPlayer(teamId, id);
@@ -120,7 +122,7 @@ export default function TeamsAdmin() {
   const detachCoach = (teamId: string, coachId: string) =>
     setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, coachIds: (tm.coachIds ?? []).filter((cid) => cid !== coachId) } : tm)));
   const addNewCoach = (teamId: string, initialName?: string) => {
-    const id = `newc-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    const id = crypto.randomUUID();
     const name = initialName ? { ar: initialName, he: initialName, en: initialName } : emptyLoc();
     setCoaches((list) => [...list, { id, name, idNumber: "", phone: "", image: "" }]);
     attachCoach(teamId, id);
@@ -156,66 +158,41 @@ export default function TeamsAdmin() {
     setCoaches(v.coaches);
   }, []);
 
+  // Ids are generated client-side and never change (the POST routes upsert), so
+  // saving is safe at any moment — including while a detail sheet is open. Only
+  // entities that actually changed since the last save are sent; failures throw
+  // so autosave shows the error and retries. No refetch: state is never
+  // overwritten, so keystrokes typed while a save is in flight survive.
   const persist = useCallback(async (v: Composite, prev: Composite): Promise<Composite> => {
     const headers = { "Content-Type": "application/json" };
-    // 1. Players first (teams reference them).
-    const removedPlayers = prev.players.filter((o) => !v.players.some((p) => p.id === o.id));
-    await Promise.all(removedPlayers.map((p) => fetch(`/api/players/${p.id}`, { method: "DELETE" })));
-    const idMap = new Map<string, string>();
-    for (const p of v.players) {
-      const body = JSON.stringify({ name: p.name, number: p.number ?? "", position: p.position ?? emptyLoc(), image: p.image ?? "", imagePosition: p.imagePosition, aspectRatio: p.aspectRatio, feeAmount: p.feeAmount, paidAmount: p.paidAmount });
-      if (p.id.startsWith("newp-")) {
-        const res = await fetch("/api/players", { method: "POST", headers, body });
-        const d = await res.json();
-        if (d.player?.id) idMap.set(p.id, d.player.id);
-      } else await fetch(`/api/players/${p.id}`, { method: "PATCH", headers, body });
-    }
-    const realId = (id: string) => idMap.get(id) ?? id;
-
-    // 2. Coaches.
-    const removedCoaches = prev.coaches.filter((o) => !v.coaches.some((c) => c.id === o.id));
-    await Promise.all(removedCoaches.map((c) => fetch(`/api/coaches/${c.id}`, { method: "DELETE" })));
-    const coachIdMap = new Map<string, string>();
-    for (const c of v.coaches) {
-      const body = JSON.stringify({ name: c.name, idNumber: c.idNumber ?? "", phone: c.phone ?? "", image: c.image ?? "", imagePosition: c.imagePosition, aspectRatio: c.aspectRatio });
-      if (c.id.startsWith("newc-")) {
-        const res = await fetch("/api/coaches", { method: "POST", headers, body });
-        const d = await res.json();
-        if (d.coach?.id) coachIdMap.set(c.id, d.coach.id);
-      } else await fetch(`/api/coaches/${c.id}`, { method: "PATCH", headers, body });
-    }
-    const realCoachId = (id: string) => coachIdMap.get(id) ?? id;
-
-    // 3. Teams (with remapped ids).
-    const removedTeams = prev.teams.filter((o) => !v.teams.some((tm) => tm.id === o.id));
-    await Promise.all(removedTeams.map((tm) => fetch(`/api/teams/${tm.id}`, { method: "DELETE" })));
-    for (let i = 0; i < v.teams.length; i++) {
-      const tm = v.teams[i];
-      const body = JSON.stringify({
-        name: tm.name, description: tm.description, image: tm.image ?? "", imagePosition: tm.imagePosition, aspectRatio: tm.aspectRatio,
-        detailBg: tm.detailBg ?? "", ibbaLink: tm.ibbaLink ?? "",
-        playerIds: tm.playerIds.map(realId), coachIds: (tm.coachIds ?? []).map(realCoachId), matches: tm.matches, enabled: tm.enabled, order: i,
+    const deleted = (res: Response) => { if (!res.ok && res.status !== 404) throw new Error(`delete failed: ${res.status}`); };
+    const saved = (res: Response) => { if (!res.ok) throw new Error(`save failed: ${res.status}`); };
+    const diff = <T extends { id: string }>(cur: T[], before: T[]) =>
+      cur.filter((x) => {
+        const b = before.find((o) => o.id === x.id);
+        return !b || JSON.stringify(b) !== JSON.stringify(x);
       });
-      const isNew = tm.id.startsWith("new-");
-      await fetch(isNew ? "/api/teams" : `/api/teams/${tm.id}`, { method: isNew ? "POST" : "PATCH", headers, body });
-    }
 
-    const [tm, pl, co] = await Promise.all([
-      fetch("/api/teams?all=1").then((r) => r.json()),
-      fetch("/api/players").then((r) => r.json()),
-      fetch("/api/coaches").then((r) => r.json()),
+    // Deletions first, then upserts (players/coaches before the teams that
+    // reference them — a deleted player is auto-detached server-side).
+    await Promise.all([
+      ...prev.players.filter((o) => !v.players.some((p) => p.id === o.id)).map((p) => fetch(`/api/players/${p.id}`, { method: "DELETE" }).then(deleted)),
+      ...prev.coaches.filter((o) => !v.coaches.some((c) => c.id === o.id)).map((c) => fetch(`/api/coaches/${c.id}`, { method: "DELETE" }).then(deleted)),
+      ...prev.teams.filter((o) => !v.teams.some((tm) => tm.id === o.id)).map((tm) => fetch(`/api/teams/${tm.id}`, { method: "DELETE" }).then(deleted)),
     ]);
-    const next: Composite = { teams: tm.teams ?? [], players: pl.players ?? [], coaches: co.coaches ?? [] };
-    setComposite(next);
-    return next;
-  }, [setComposite]);
+    await Promise.all([
+      ...diff(v.players, prev.players).map((p) => fetch("/api/players", { method: "POST", headers, body: JSON.stringify(p) }).then(saved)),
+      ...diff(v.coaches, prev.coaches).map((c) => fetch("/api/coaches", { method: "POST", headers, body: JSON.stringify(c) }).then(saved)),
+      ...diff(v.teams, prev.teams).map((tm) => fetch("/api/teams", { method: "POST", headers, body: JSON.stringify(tm) }).then(saved)),
+    ]);
+    return v;
+  }, []);
 
   const { saveState, undo, canUndo } = useAutosave({
     value: composite,
     setValue: setComposite,
     onSave: persist,
     ready: loaded,
-    paused: !!editingId, // hold saves while a team sheet is open
   });
 
   if (!loaded) {
@@ -256,9 +233,6 @@ export default function TeamsAdmin() {
                     <span className="absolute start-2 top-2 rounded-full bg-ink/70 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur">
                       {pick({ ar: "مخفي", he: "מוסתר", en: "Hidden" })}
                     </span>
-                  )}
-                  {tm.id.startsWith("new-") && (
-                    <span className="absolute end-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">NEW</span>
                   )}
                 </div>
                 <div className="p-4">

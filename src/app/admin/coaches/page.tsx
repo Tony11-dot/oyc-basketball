@@ -40,7 +40,7 @@ export default function CoachesAdmin() {
     setCoaches((list) => list.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   const remove = (id: string) => setCoaches((list) => list.filter((c) => c.id !== id));
   const add = () => {
-    const id = `newc-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    const id = crypto.randomUUID();
     setCoaches((list) => [{ id, name: emptyLoc(), idNumber: "", phone: "", image: "" }, ...list]);
     setEditingId(id);
   };
@@ -56,26 +56,23 @@ export default function CoachesAdmin() {
 
   const editing = editingId ? coaches.find((c) => c.id === editingId) ?? null : null;
 
+  // Delete removed, upsert only what changed. Ids are client-generated and
+  // permanent (POST upserts), so saving is safe mid-edit and retries can't
+  // duplicate; no refetch ever overwrites in-flight keystrokes.
   const persist = useCallback(async (list: Coach[], prev: Coach[]): Promise<Coach[]> => {
     const headers = { "Content-Type": "application/json" };
     const removed = prev.filter((o) => !list.some((c) => c.id === o.id));
-    await Promise.all(removed.map((c) => fetch(`/api/coaches/${c.id}`, { method: "DELETE" })));
-    for (const c of list) {
-      const body = JSON.stringify({
-        name: c.name,
-        idNumber: c.idNumber ?? "",
-        phone: c.phone ?? "",
-        image: c.image ?? "",
-        imagePosition: c.imagePosition,
-        aspectRatio: c.aspectRatio,
-      });
-      if (c.id.startsWith("newc-")) await fetch("/api/coaches", { method: "POST", headers, body });
-      else await fetch(`/api/coaches/${c.id}`, { method: "PATCH", headers, body });
-    }
-    const fresh = await fetch("/api/coaches").then((r) => r.json());
-    const next: Coach[] = fresh.coaches ?? [];
-    setCoaches(next);
-    return next;
+    await Promise.all(removed.map((c) => fetch(`/api/coaches/${c.id}`, { method: "DELETE" }).then((r) => {
+      if (!r.ok && r.status !== 404) throw new Error(`delete failed: ${r.status}`);
+    })));
+    const changed = list.filter((c) => {
+      const before = prev.find((o) => o.id === c.id);
+      return !before || JSON.stringify(before) !== JSON.stringify(c);
+    });
+    await Promise.all(changed.map((c) => fetch("/api/coaches", { method: "POST", headers, body: JSON.stringify(c) }).then((r) => {
+      if (!r.ok) throw new Error(`save failed: ${r.status}`);
+    })));
+    return list;
   }, []);
 
   const { saveState, undo, canUndo } = useAutosave({
@@ -83,7 +80,6 @@ export default function CoachesAdmin() {
     setValue: setCoaches,
     onSave: persist,
     ready: loaded,
-    paused: !!editingId,
   });
 
   if (!loaded) {
@@ -134,9 +130,6 @@ export default function CoachesAdmin() {
             >
               <div className="relative aspect-[4/5] w-full">
                 <Thumb src={c.image} position={c.imagePosition} fallback={initialOf(c.name)} className="h-full w-full" />
-                {c.id.startsWith("newc-") && (
-                  <span className="absolute start-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">NEW</span>
-                )}
               </div>
               <div className="min-w-0 px-3 py-2.5">
                 <p className="truncate text-sm font-bold text-ink">{pick(c.name) || tapToEdit}</p>

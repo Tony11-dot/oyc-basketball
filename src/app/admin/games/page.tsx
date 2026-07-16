@@ -51,17 +51,19 @@ export default function GamesAdmin() {
   };
 
   // ---- Persist: PATCH only the teams whose matches changed ------------------
+  // Match ids are client-generated and stable, so saving is safe even while the
+  // inline editor is open; failures throw so autosave shows the error and
+  // retries. No refetch: in-flight keystrokes are never overwritten.
   const persist = useCallback(async (v: Team[], prev: Team[]): Promise<Team[]> => {
     const headers = { "Content-Type": "application/json" };
     const changed = v.filter((tm) => {
       const before = prev.find((p) => p.id === tm.id);
       return !before || JSON.stringify(before.matches) !== JSON.stringify(tm.matches);
     });
-    await Promise.all(changed.map((tm) => fetch(`/api/teams/${tm.id}`, { method: "PATCH", headers, body: JSON.stringify({ matches: tm.matches }) })));
-    const d = await fetch("/api/teams?all=1").then((r) => r.json());
-    const next: Team[] = d.teams ?? [];
-    setTeams(next);
-    return next;
+    await Promise.all(changed.map((tm) => fetch(`/api/teams/${tm.id}`, { method: "PATCH", headers, body: JSON.stringify({ matches: tm.matches }) }).then((r) => {
+      if (!r.ok) throw new Error(`save failed: ${r.status}`);
+    })));
+    return v;
   }, []);
 
   const { saveState, undo, canUndo } = useAutosave({
@@ -69,7 +71,6 @@ export default function GamesAdmin() {
     setValue: setTeams,
     onSave: persist,
     ready: loaded,
-    paused: !!editingKey,
   });
 
   // ---- Derived list ---------------------------------------------------------

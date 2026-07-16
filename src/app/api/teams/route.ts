@@ -12,7 +12,9 @@ export async function GET(request: Request) {
   return Response.json({ teams: visible });
 }
 
-// POST — create a team (admin only).
+// POST — create or update ("upsert") a team (admin only). Accepts an optional
+// client-generated id so autosave can retry safely without ids ever changing;
+// posting the same id twice updates instead of duplicating.
 export async function POST(request: Request) {
   if (!(await isAuthed())) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,31 +26,37 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const name = localized(body.name);
-  if (!name.ar && !name.he && !name.en) {
-    return Response.json({ error: "name is required" }, { status: 422 });
-  }
-
+  const id = typeof body.id === "string" && body.id.trim() ? body.id.trim() : randomUUID();
   const current = await getTeams();
   const maxOrder = current.reduce((m, t) => Math.max(m, t.order), -1);
 
-  const team: Team = {
-    id: randomUUID(),
-    name,
-    description: localized(body.description),
-    image: typeof body.image === "string" ? body.image : "",
-    imagePosition: typeof body.imagePosition === "string" ? body.imagePosition : undefined,
-    aspectRatio: typeof body.aspectRatio === "string" ? body.aspectRatio : undefined,
-    detailBg: typeof body.detailBg === "string" ? body.detailBg : undefined,
-    ibbaLink: typeof body.ibbaLink === "string" ? body.ibbaLink : undefined,
-    playerIds: strList(body.playerIds),
-    coachIds: strList(body.coachIds),
-    matches: parseMatches(body.matches),
-    enabled: body.enabled === undefined ? true : Boolean(body.enabled),
-    order: typeof body.order === "number" ? body.order : maxOrder + 1,
-    createdAt: new Date().toISOString(),
-  };
-
-  await updateTeams((list) => [...list, team]);
-  return Response.json({ team }, { status: 201 });
+  let saved: Team | undefined;
+  let existed = false;
+  await updateTeams((list) => {
+    const i = list.findIndex((t) => t.id === id);
+    saved = {
+      id,
+      name: localized(body.name),
+      description: localized(body.description),
+      image: typeof body.image === "string" ? body.image : "",
+      imagePosition: typeof body.imagePosition === "string" ? body.imagePosition : undefined,
+      aspectRatio: typeof body.aspectRatio === "string" ? body.aspectRatio : undefined,
+      detailBg: typeof body.detailBg === "string" ? body.detailBg : undefined,
+      ibbaLink: typeof body.ibbaLink === "string" ? body.ibbaLink : undefined,
+      playerIds: strList(body.playerIds),
+      coachIds: strList(body.coachIds),
+      matches: parseMatches(body.matches),
+      enabled: body.enabled === undefined ? true : Boolean(body.enabled),
+      order: typeof body.order === "number" ? body.order : i >= 0 ? list[i].order : maxOrder + 1,
+      createdAt: i >= 0 ? list[i].createdAt : new Date().toISOString(),
+    };
+    if (i >= 0) {
+      existed = true;
+      const next = [...list];
+      next[i] = saved;
+      return next;
+    }
+    return [...list, saved];
+  });
+  return Response.json({ team: saved }, { status: existed ? 200 : 201 });
 }

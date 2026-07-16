@@ -8,7 +8,9 @@ interface I18nValue {
   locale: Locale;
   setLocale: (l: Locale) => void;
   t: Dict;
-  /** Resolve a localized value to the active language (falls back to Hebrew). */
+  /** Resolve a localized value to the active language, falling back to any
+   * filled language (ar → he → en) so a name typed in one language is always
+   * visible in every UI language. */
   pick: (value: Localized) => string;
   locales: Locale[];
   /** Re-fetch the admin text overrides (call after saving them in the admin). */
@@ -90,7 +92,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       locale,
       setLocale,
       t,
-      pick: (v) => v?.[locale] ?? v?.ar ?? "",
+      pick: (v) => v?.[locale]?.trim() || v?.ar?.trim() || v?.he?.trim() || v?.en?.trim() || "",
       locales: LOCALES,
       refreshOverrides,
     };

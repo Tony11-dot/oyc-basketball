@@ -40,7 +40,7 @@ export default function PlayersAdmin() {
     setPlayers((list) => list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   const remove = (id: string) => setPlayers((list) => list.filter((p) => p.id !== id));
   const add = () => {
-    const id = `newp-${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    const id = crypto.randomUUID();
     setPlayers((list) => [{ id, name: emptyLoc(), number: "", position: emptyLoc(), image: "" }, ...list]);
     setEditingId(id);
   };
@@ -56,28 +56,24 @@ export default function PlayersAdmin() {
 
   const editing = editingId ? players.find((p) => p.id === editingId) ?? null : null;
 
-  // Persist the roster: delete removed, create new (newp-*), patch the rest,
-  // then refetch so new ids settle. Returns the canonical list for autosave.
+  // Persist the roster: delete removed, upsert only what changed. Ids are
+  // client-generated and permanent (POST upserts), so saving is safe even while
+  // a detail sheet is open, retries can't duplicate, and no refetch ever
+  // overwrites keystrokes typed while a save is in flight.
   const persist = useCallback(async (list: Player[], prev: Player[]): Promise<Player[]> => {
     const headers = { "Content-Type": "application/json" };
     const removed = prev.filter((o) => !list.some((p) => p.id === o.id));
-    await Promise.all(removed.map((p) => fetch(`/api/players/${p.id}`, { method: "DELETE" })));
-    for (const p of list) {
-      const body = JSON.stringify({
-        name: p.name,
-        number: p.number ?? "",
-        position: p.position ?? emptyLoc(),
-        image: p.image ?? "",
-        imagePosition: p.imagePosition,
-        aspectRatio: p.aspectRatio,
-      });
-      if (p.id.startsWith("newp-")) await fetch("/api/players", { method: "POST", headers, body });
-      else await fetch(`/api/players/${p.id}`, { method: "PATCH", headers, body });
-    }
-    const fresh = await fetch("/api/players").then((r) => r.json());
-    const next: Player[] = fresh.players ?? [];
-    setPlayers(next);
-    return next;
+    await Promise.all(removed.map((p) => fetch(`/api/players/${p.id}`, { method: "DELETE" }).then((r) => {
+      if (!r.ok && r.status !== 404) throw new Error(`delete failed: ${r.status}`);
+    })));
+    const changed = list.filter((p) => {
+      const before = prev.find((o) => o.id === p.id);
+      return !before || JSON.stringify(before) !== JSON.stringify(p);
+    });
+    await Promise.all(changed.map((p) => fetch("/api/players", { method: "POST", headers, body: JSON.stringify(p) }).then((r) => {
+      if (!r.ok) throw new Error(`save failed: ${r.status}`);
+    })));
+    return list;
   }, []);
 
   const { saveState, undo, canUndo } = useAutosave({
@@ -85,7 +81,6 @@ export default function PlayersAdmin() {
     setValue: setPlayers,
     onSave: persist,
     ready: loaded,
-    paused: !!editingId, // hold saves while a detail sheet is open
   });
 
   if (!loaded) {
@@ -141,9 +136,6 @@ export default function PlayersAdmin() {
                     #{p.number}
                   </span>
                 ) : null}
-                {p.id.startsWith("newp-") && (
-                  <span className="absolute start-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">NEW</span>
-                )}
               </div>
               <div className="min-w-0 px-3 py-2.5">
                 <p className="truncate text-sm font-bold text-ink">{pick(p.name) || tapToEdit}</p>
