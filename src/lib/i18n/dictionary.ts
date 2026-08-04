@@ -130,6 +130,8 @@ export interface Dict {
       wrong: string;
       error: string;
       demo: string;
+      showPassword: string;
+      hidePassword: string;
     };
     titles: {
       overview: string;
@@ -420,6 +422,8 @@ export const dictionaries: Record<Locale, Dict> = {
         wrong: "كلمة مرور خاطئة. حاول مجدداً.",
         error: "حدث خطأ ما. حاول مجدداً.",
         demo: "كلمة مرور تجريبية:",
+        showPassword: "إظهار كلمة المرور",
+        hidePassword: "إخفاء كلمة المرور",
       },
       titles: {
         overview: "لوحة التحكم",
@@ -708,6 +712,8 @@ export const dictionaries: Record<Locale, Dict> = {
         wrong: "סיסמה שגויה. נסו שוב.",
         error: "משהו השתבש. נסו שוב.",
         demo: "סיסמת הדגמה:",
+        showPassword: "הצגת הסיסמה",
+        hidePassword: "הסתרת הסיסמה",
       },
       titles: {
         overview: "לוח בקרה",
@@ -996,6 +1002,8 @@ export const dictionaries: Record<Locale, Dict> = {
         wrong: "Incorrect password. Try again.",
         error: "Something went wrong. Try again.",
         demo: "Demo password:",
+        showPassword: "Show password",
+        hidePassword: "Hide password",
       },
       titles: {
         overview: "Dashboard",
