@@ -33,6 +33,8 @@ export interface Player {
   imagePosition?: string;
   /** CSS aspect-ratio for the photo frame, e.g. "4 / 5". */
   aspectRatio?: string;
+  /** Date of birth, "YYYY-MM-DD". */
+  birthDate?: string;
   /** Total registration fee owed by this player, in whole shekels (₪). Defaults
    * to the club registration fee when unset. */
   feeAmount?: number;
@@ -256,7 +258,11 @@ export interface Receipt {
   id: string;
   /** Sequential human-friendly number shown on the PDF (e.g. 1, 2, 3…). */
   number: number;
-  /** Who paid (free text, any language). */
+  /** Roster player this receipt was issued to, when picked from the roster
+   * (older receipts and one-off names typed by hand have none). */
+  playerId?: string;
+  /** Who paid — a snapshot of the player's name at issue time (or free text
+   * for a receipt with no linked player). */
   name: string;
   /** Amount paid, in whole shekels (₪). */
   amount: number;

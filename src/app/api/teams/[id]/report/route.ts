@@ -1,6 +1,7 @@
-import { getPlayers, getTeams } from "@/lib/db";
+import { getPlayers, getTeams, getContent } from "@/lib/db";
 import { isAuthed } from "@/lib/auth";
 import { buildTeamReportPdf } from "@/lib/teamReportPdf";
+import { DEFAULT_FEE } from "@/lib/fees";
 
 // GET — generate + stream the team finances report PDF (admin only).
 export async function GET(
@@ -11,7 +12,7 @@ export async function GET(
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const [teams, players] = await Promise.all([getTeams(), getPlayers()]);
+  const [teams, players, content] = await Promise.all([getTeams(), getPlayers(), getContent()]);
   const team = teams.find((t) => t.id === id);
   if (!team) return Response.json({ error: "Not found" }, { status: 404 });
 
@@ -19,8 +20,9 @@ export async function GET(
     .map((pid) => players.find((p) => p.id === pid))
     .filter((p): p is NonNullable<typeof p> => p != null);
 
+  const defaultFee = content.register?.feeAmount || DEFAULT_FEE;
   const baseUrl = new URL(request.url).origin;
-  const bytes = await buildTeamReportPdf(baseUrl, team, roster);
+  const bytes = await buildTeamReportPdf(baseUrl, team, roster, defaultFee);
 
   // HTTP headers are Latin-1 only: ASCII fallback + RFC 5987 UTF-8 filename so
   // Arabic/Hebrew team names download with their real name where supported.

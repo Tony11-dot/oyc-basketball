@@ -11,7 +11,9 @@ import { PaymentEditor, DEFAULT_FEE } from "@/components/admin/PaymentEditor";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { useAutosave } from "@/lib/useAutosave";
-import type { Coach, Localized, Match, Player, Team } from "@/lib/types";
+import { PlayerReceipts } from "@/components/admin/PlayerReceipts";
+import { DateField } from "@/components/ui/Calendar";
+import type { Coach, Localized, Match, Player, SiteContent, Team } from "@/lib/types";
 
 const emptyLoc = (): Localized => ({ ar: "", he: "", en: "" });
 const plainInput =
@@ -27,7 +29,11 @@ export default function TeamsAdmin() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [content, setContent] = useState<SiteContent | null>(null);
   const [loaded, setLoaded] = useState(false);
+  // Club default fee (admin → Content → Register), used whenever a player has
+  // no explicit fee override — keeps every price display in sync with it.
+  const defaultFee = content?.register?.feeAmount || DEFAULT_FEE;
   const [view, setView] = useState<ViewMode>("grid");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tab, setTab] = useState<TeamTab>("settings");
@@ -42,10 +48,12 @@ export default function TeamsAdmin() {
       fetch("/api/teams?all=1").then((r) => r.json()),
       fetch("/api/players").then((r) => r.json()),
       fetch("/api/coaches").then((r) => r.json()),
-    ]).then(([tm, pl, co]) => {
+      fetch("/api/content").then((r) => r.json()),
+    ]).then(([tm, pl, co, ct]) => {
       setTeams(tm.teams ?? []);
       setPlayers(pl.players ?? []);
       setCoaches(co.coaches ?? []);
+      setContent(ct.content ?? null);
       setLoaded(true);
     });
   }, []);
@@ -59,8 +67,8 @@ export default function TeamsAdmin() {
   const rosterOf = (tm: Team) => tm.playerIds.map(playerById).filter(Boolean) as Player[];
   const totalsOf = (tm: Team) => {
     const ps = rosterOf(tm);
-    const fee = ps.reduce((s, p) => s + (p.feeAmount ?? DEFAULT_FEE), 0);
-    const paid = ps.reduce((s, p) => s + Math.min(p.paidAmount ?? 0, p.feeAmount ?? DEFAULT_FEE), 0);
+    const fee = ps.reduce((s, p) => s + (p.feeAmount ?? defaultFee), 0);
+    const paid = ps.reduce((s, p) => s + Math.min(p.paidAmount ?? 0, p.feeAmount ?? defaultFee), 0);
     return { fee, paid, left: Math.max(fee - paid, 0) };
   };
 
@@ -486,6 +494,12 @@ export default function TeamsAdmin() {
                           <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.number}</span>
                           <input value={p.number ?? ""} onChange={(e) => updatePlayer(p.id, { number: e.target.value })} className={plainInput} />
                         </label>
+                        <DateField
+                          label={pick({ ar: "تاريخ الميلاد", he: "תאריך לידה", en: "Date of birth" })}
+                          value={p.birthDate}
+                          onChange={(birthDate) => updatePlayer(p.id, { birthDate })}
+                          max={new Date().toISOString().slice(0, 10)}
+                        />
                         <label className="block">
                           <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف اللاعب", he: "טלפון השחקן", en: "Player phone" })}</span>
                           <input dir="ltr" type="tel" value={p.phone ?? ""} onChange={(e) => updatePlayer(p.id, { phone: e.target.value })} className={plainInput} />
@@ -499,7 +513,8 @@ export default function TeamsAdmin() {
                           <input dir="ltr" type="tel" value={p.motherPhone ?? ""} onChange={(e) => updatePlayer(p.id, { motherPhone: e.target.value })} className={plainInput} />
                         </label>
                       </div>
-                      {payEnabled && <PaymentEditor player={p} onChange={(patch) => updatePlayer(p.id, patch)} />}
+                      {payEnabled && <PaymentEditor player={p} defaultFee={defaultFee} onChange={(patch) => updatePlayer(p.id, patch)} />}
+                      <PlayerReceipts player={p} defaultFee={defaultFee} />
                       <div className="flex items-center justify-between border-t border-line pt-2">
                         <div className="flex gap-3">
                           <button type="button" onClick={() => { detachPlayer(editing.id, p.id); setOpenPlayerId(null); }} className="text-xs font-semibold text-muted hover:text-ink">↩ {t.admin.team.detach}</button>
@@ -515,7 +530,7 @@ export default function TeamsAdmin() {
                 {!openPlayerId && playersView === "grid" && (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {teamPlayers.map((p) => {
-                      const fee = p.feeAmount ?? DEFAULT_FEE;
+                      const fee = p.feeAmount ?? defaultFee;
                       const left = Math.max(fee - Math.min(p.paidAmount ?? 0, fee), 0);
                       return (
                         <button
@@ -548,7 +563,7 @@ export default function TeamsAdmin() {
                 {!openPlayerId && playersView === "list" && teamPlayers.length > 0 && (
                   <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
                     {teamPlayers.map((p, i) => {
-                      const fee = p.feeAmount ?? DEFAULT_FEE;
+                      const fee = p.feeAmount ?? defaultFee;
                       const left = Math.max(fee - Math.min(p.paidAmount ?? 0, fee), 0);
                       return (
                         <button
@@ -689,7 +704,7 @@ export default function TeamsAdmin() {
                 ) : (
                   <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
                     {teamPlayers.map((p, i) => {
-                      const fee = p.feeAmount ?? DEFAULT_FEE;
+                      const fee = p.feeAmount ?? defaultFee;
                       const paid = Math.min(p.paidAmount ?? 0, fee);
                       const left = Math.max(fee - paid, 0);
                       return (

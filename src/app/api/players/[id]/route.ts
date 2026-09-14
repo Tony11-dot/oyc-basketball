@@ -33,6 +33,7 @@ export async function PATCH(
         image: typeof body.image === "string" ? body.image : p.image,
         imagePosition: typeof body.imagePosition === "string" ? body.imagePosition : p.imagePosition,
         aspectRatio: typeof body.aspectRatio === "string" ? body.aspectRatio : p.aspectRatio,
+        birthDate: typeof body.birthDate === "string" ? body.birthDate : p.birthDate,
         feeAmount: typeof body.feeAmount === "number" ? body.feeAmount : p.feeAmount,
         paidAmount: typeof body.paidAmount === "number" ? body.paidAmount : p.paidAmount,
       };

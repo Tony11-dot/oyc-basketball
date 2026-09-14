@@ -6,11 +6,14 @@ import type { Receipt, ReceiptMethod } from "@/lib/types";
 const METHODS: ReceiptMethod[] = ["نقدا", "شيكات", "بطاقة اعتماد"];
 
 // GET — list receipts, newest first (admin only; they contain payment info).
-export async function GET() {
+// Optional ?playerId= narrows to one player's receipt history.
+export async function GET(request: Request) {
   if (!(await isAuthed())) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const receipts = (await getReceipts()).slice().sort((a, b) => b.number - a.number);
+  const playerId = new URL(request.url).searchParams.get("playerId");
+  let receipts = (await getReceipts()).slice().sort((a, b) => b.number - a.number);
+  if (playerId) receipts = receipts.filter((r) => r.playerId === playerId);
   return Response.json({ receipts });
 }
 
@@ -27,6 +30,7 @@ export async function POST(request: Request) {
   }
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
+  const playerId = typeof body.playerId === "string" && body.playerId.trim() ? body.playerId.trim() : undefined;
   const amount = typeof body.amount === "number" ? body.amount : Number(body.amount);
   const method = METHODS.includes(body.method as ReceiptMethod) ? (body.method as ReceiptMethod) : null;
 
@@ -40,6 +44,7 @@ export async function POST(request: Request) {
     created = {
       id: randomUUID(),
       number: nextNo,
+      playerId,
       name,
       amount: Math.round(amount),
       method,

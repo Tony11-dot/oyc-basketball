@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { PlayerPicker } from "@/components/admin/PlayerPicker";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
-import type { Localized, Receipt, ReceiptMethod } from "@/lib/types";
+import { DEFAULT_FEE } from "@/lib/fees";
+import type { Localized, Player, Receipt, ReceiptMethod, SiteContent, Team } from "@/lib/types";
 
 const input =
   "h-11 w-full rounded-xl border border-line bg-white px-3.5 text-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
@@ -18,9 +20,12 @@ const METHODS: { value: ReceiptMethod; label: Localized }[] = [
 export default function ReceiptsAdmin() {
   const { t, pick, locale } = useI18n();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [content, setContent] = useState<SiteContent | null>(null);
   const [loaded, setLoaded] = useState(false);
 
-  const [name, setName] = useState("");
+  const [playerId, setPlayerId] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<ReceiptMethod>("نقدا");
   const [note, setNote] = useState("");
@@ -28,30 +33,52 @@ export default function ReceiptsAdmin() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/receipts")
-      .then((r) => r.json())
-      .then((d) => { setReceipts(d.receipts ?? []); setLoaded(true); });
+    Promise.all([
+      fetch("/api/receipts").then((r) => r.json()),
+      fetch("/api/players").then((r) => r.json()),
+      fetch("/api/teams?all=1").then((r) => r.json()),
+      fetch("/api/content").then((r) => r.json()),
+    ]).then(([rc, pl, tm, ct]) => {
+      setReceipts(rc.receipts ?? []);
+      setPlayers(pl.players ?? []);
+      setTeams(tm.teams ?? []);
+      setContent(ct.content ?? null);
+      setLoaded(true);
+    });
   }, []);
+
+  const defaultFee = content?.register?.feeAmount || DEFAULT_FEE;
+  const player = playerId ? players.find((p) => p.id === playerId) ?? null : null;
+
+  // Selecting a player prefills the amount with their remaining balance
+  // (still editable) — but never overwrites something already typed in.
+  useEffect(() => {
+    if (!player || amount.trim() !== "") return;
+    const fee = player.feeAmount ?? defaultFee;
+    const remaining = Math.max(fee - Math.min(player.paidAmount ?? 0, fee), 0);
+    if (remaining > 0) setAmount(String(remaining));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player]);
 
   const dtf = useMemo(() => new Intl.DateTimeFormat(locale === "ar" ? "ar" : locale === "he" ? "he" : "en-GB", { day: "2-digit", month: "short", year: "numeric" }), [locale]);
   const methodLabel = (m: string) => pick(METHODS.find((x) => x.value === m)?.label ?? { ar: m, he: m, en: m });
 
-  const canSubmit = name.trim() !== "" && Number(amount) > 0 && !saving;
+  const canSubmit = player !== null && Number(amount) > 0 && !saving;
 
   async function create() {
-    if (!canSubmit) return;
+    if (!canSubmit || !player) return;
     setSaving(true);
     setError(null);
     try {
       const res = await fetch("/api/receipts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), amount: Number(amount), method, note: note.trim() }),
+        body: JSON.stringify({ playerId: player.id, name: pick(player.name) || player.id, amount: Number(amount), method, note: note.trim() }),
       });
       if (!res.ok) throw new Error();
       const d = await res.json();
       setReceipts((list) => [d.receipt, ...list]);
-      setName(""); setAmount(""); setNote(""); setMethod("نقدا");
+      setPlayerId(null); setAmount(""); setNote(""); setMethod("نقدا");
     } catch {
       setError(pick({ ar: "تعذّر إنشاء الوصل. حاول مجددًا.", he: "יצירת הקבלה נכשלה. נסו שוב.", en: "Could not create the receipt. Try again." }));
     } finally {
@@ -81,10 +108,10 @@ export default function ReceiptsAdmin() {
         <div className="h-fit space-y-3 rounded-2xl border border-line bg-white p-5 shadow-sm">
           <h2 className="text-sm font-bold text-ink">🧾 {pick({ ar: "وصل جديد", he: "קבלה חדשה", en: "New receipt" })}</h2>
 
-          <label className="block">
+          <div className="block">
             <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "استلمنا من", he: "התקבל מ", en: "Received from" })}</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={pick({ ar: "الاسم الكامل", he: "שם מלא", en: "Full name" })} className={input} />
-          </label>
+            <PlayerPicker players={players} teams={teams} value={playerId} onChange={setPlayerId} />
+          </div>
 
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "المبلغ (₪)", he: "סכום (₪)", en: "Amount (₪)" })}</span>

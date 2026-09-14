@@ -89,8 +89,10 @@ function drawFooter(page: PDFPage, font: PDFFont, latin: PDFFont, pageNo: number
   page.drawText(pn, { x: W - M - latin.widthOfTextAtSize(pn, 8), y: 34, size: 8, font: latin, color: MUTED });
 }
 
-/** Render the finances report for one team. `players` is the resolved roster. */
-export async function buildTeamReportPdf(baseUrl: string, team: Team, players: Player[]): Promise<Uint8Array> {
+/** Render the finances report for one team. `players` is the resolved roster.
+ * `defaultFee` is the club's current default fee (admin → Content → Register),
+ * used for any player with no explicit fee override. */
+export async function buildTeamReportPdf(baseUrl: string, team: Team, players: Player[], defaultFee: number = DEFAULT_FEE): Promise<Uint8Array> {
   const { font: fontBytes, hebFont: hebBytes, logo } = await assets(baseUrl);
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
@@ -102,7 +104,7 @@ export async function buildTeamReportPdf(baseUrl: string, team: Team, players: P
 
   const teamName = team.name.ar || team.name.he || team.name.en || "—";
   const rows = players.map((p) => {
-    const fee = p.feeAmount ?? DEFAULT_FEE;
+    const fee = p.feeAmount ?? defaultFee;
     const paid = Math.min(p.paidAmount ?? 0, fee);
     return { name: p.name.ar || p.name.he || p.name.en || "—", number: p.number ?? "", fee, paid, left: Math.max(fee - paid, 0) };
   });

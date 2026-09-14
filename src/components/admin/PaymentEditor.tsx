@@ -18,13 +18,17 @@ const clampNum = (v: string) => {
  * live "how much is left" balance with a progress bar. */
 export function PaymentEditor({
   player,
+  defaultFee = DEFAULT_FEE,
   onChange,
 }: {
   player: Player;
+  /** Club default fee (admin → Content → Register), used when this player has
+   * no explicit override. */
+  defaultFee?: number;
   onChange: (patch: Partial<Player>) => void;
 }) {
   const { pick } = useI18n();
-  const fee = player.feeAmount ?? DEFAULT_FEE;
+  const fee = player.feeAmount ?? defaultFee;
   const paid = Math.min(player.paidAmount ?? 0, fee);
   const remaining = Math.max(fee - paid, 0);
   const pct = fee > 0 ? Math.round((paid / fee) * 100) : 0;

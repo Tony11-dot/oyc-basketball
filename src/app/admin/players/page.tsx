@@ -6,10 +6,13 @@ import { LocalizedField } from "@/components/admin/LocalizedField";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { ImagePositioner } from "@/components/admin/ImagePositioner";
 import { ViewToggle, Thumb, TapChevron, AutosaveBar, DetailPanel, type ViewMode } from "@/components/admin/EntityList";
+import { PlayerReceipts } from "@/components/admin/PlayerReceipts";
 import { Button } from "@/components/ui/Button";
+import { DateField } from "@/components/ui/Calendar";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { useAutosave } from "@/lib/useAutosave";
-import type { Localized, Player } from "@/lib/types";
+import { DEFAULT_FEE } from "@/lib/fees";
+import type { Localized, Player, SiteContent } from "@/lib/types";
 
 const emptyLoc = (): Localized => ({ ar: "", he: "", en: "" });
 const plainInput =
@@ -24,14 +27,22 @@ const initialOf = (name: Localized, fallback = "?") =>
 export default function PlayersAdmin() {
   const { t, pick } = useI18n();
   const [players, setPlayers] = useState<Player[]>([]);
+  const [content, setContent] = useState<SiteContent | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Club default fee (admin → Content → Register) — used only to prefill a new
+  // receipt's amount with the player's remaining balance.
+  const defaultFee = content?.register?.feeAmount || DEFAULT_FEE;
 
   useEffect(() => {
-    fetch("/api/players").then((r) => r.json()).then((d) => {
-      setPlayers(d.players ?? []);
+    Promise.all([
+      fetch("/api/players").then((r) => r.json()),
+      fetch("/api/content").then((r) => r.json()),
+    ]).then(([pl, ct]) => {
+      setPlayers(pl.players ?? []);
+      setContent(ct.content ?? null);
       setLoaded(true);
     });
   }, []);
@@ -177,10 +188,18 @@ export default function PlayersAdmin() {
               <ImagePositioner src={editing.image} value={editing.imagePosition} onChange={(imagePosition) => update(editing.id, { imagePosition })} aspectRatio={editing.aspectRatio ?? "4 / 5"} onAspectChange={(aspectRatio) => update(editing.id, { aspectRatio })} />
             )}
             <LocalizedField label={t.admin.players.name} value={editing.name} onChange={(name) => update(editing.id, { name })} />
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.number}</span>
-              <input value={editing.number ?? ""} onChange={(e) => update(editing.id, { number: e.target.value })} className={plainInput} />
-            </label>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.number}</span>
+                <input value={editing.number ?? ""} onChange={(e) => update(editing.id, { number: e.target.value })} className={plainInput} />
+              </label>
+              <DateField
+                label={pick({ ar: "تاريخ الميلاد", he: "תאריך לידה", en: "Date of birth" })}
+                value={editing.birthDate}
+                onChange={(birthDate) => update(editing.id, { birthDate })}
+                max={new Date().toISOString().slice(0, 10)}
+              />
+            </div>
             <div className="grid gap-2 sm:grid-cols-3">
               <label className="block">
                 <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "هاتف اللاعب (اختياري)", he: "טלפון השחקן (רשות)", en: "Player phone (optional)" })}</span>
@@ -195,6 +214,7 @@ export default function PlayersAdmin() {
                 <input dir="ltr" type="tel" value={editing.motherPhone ?? ""} onChange={(e) => update(editing.id, { motherPhone: e.target.value })} className={plainInput} />
               </label>
             </div>
+            <PlayerReceipts player={editing} defaultFee={defaultFee} />
             <div className="flex items-center justify-between border-t border-line pt-3">
               <button
                 type="button"
