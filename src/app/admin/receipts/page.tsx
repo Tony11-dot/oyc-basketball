@@ -33,6 +33,7 @@ export default function ReceiptsAdmin() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sel = useSelection();
+  const [reconciling, setReconciling] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -115,6 +116,31 @@ export default function ReceiptsAdmin() {
     }
   }
 
+  async function reconcile() {
+    if (!confirm(pick({
+      ar: "إعادة احتساب رصيد كل لاعب من مجموع وصولاته؟ يرفع المبلغ المدفوع فقط عند الحاجة (لا يُخفَّض أبداً).",
+      he: "לחשב מחדש את יתרת כל שחקן לפי סך הקבלות שלו? הסכום ששולם רק יעלה במידת הצורך (לעולם לא יירד).",
+      en: "Recalculate every player's paid balance from their receipt totals? This only raises a paid amount when needed — it never lowers one.",
+    }))) return;
+    setReconciling(true);
+    try {
+      const res = await fetch("/api/receipts/backfill", { method: "POST" });
+      const d = await res.json();
+      if (!res.ok) throw new Error();
+      const byId = new Map<string, number>((d.updated as { id: string; to: number }[]).map((u) => [u.id, u.to]));
+      if (byId.size > 0) setPlayers((list) => list.map((p) => (byId.has(p.id) ? { ...p, paidAmount: byId.get(p.id) } : p)));
+      alert(pick({
+        ar: `تم تحديث ${d.updatedCount} لاعب.`,
+        he: `${d.updatedCount} שחקנים עודכנו.`,
+        en: `${d.updatedCount} player(s) updated.`,
+      }));
+    } catch {
+      alert(pick({ ar: "تعذّر إعادة الاحتساب. حاول مجددًا.", he: "החישוב מחדש נכשל. נסו שוב.", en: "Recalculation failed. Try again." }));
+    } finally {
+      setReconciling(false);
+    }
+  }
+
   const title = pick({ ar: "الوصول", he: "קבלות", en: "Receipts" });
   const subtitle = pick({ ar: "أنشئ وصلًا رسميًّا بالعربية بضغطة زر.", he: "הפקת קבלה רשמית בערבית בלחיצה אחת.", en: "Issue a formal Arabic payment receipt in one click." });
   const money = (n: number) => `${n.toLocaleString("en-US")} ₪`;
@@ -126,7 +152,19 @@ export default function ReceiptsAdmin() {
           <h1 className="text-2xl font-extrabold text-ink">{title}</h1>
           <p className="mt-1 text-sm text-muted">{subtitle}</p>
         </div>
-        {receipts.length > 0 && <SelectModeToggle active={sel.active} onToggle={sel.toggleActive} />}
+        <div className="flex items-center gap-2">
+          {receipts.length > 0 && (
+            <button
+              type="button"
+              onClick={reconcile}
+              disabled={reconciling}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink transition hover:border-brand hover:text-brand disabled:opacity-50"
+            >
+              🔄 {reconciling ? pick({ ar: "جارٍ الاحتساب…", he: "מחשב…", en: "Recalculating…" }) : pick({ ar: "احتساب الأرصدة من الوصول", he: "חישוב יתרות מקבלות", en: "Recalculate balances from receipts" })}
+            </button>
+          )}
+          {receipts.length > 0 && <SelectModeToggle active={sel.active} onToggle={sel.toggleActive} />}
+        </div>
       </div>
 
       {sel.active && (
