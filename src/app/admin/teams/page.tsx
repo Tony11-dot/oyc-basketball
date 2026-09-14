@@ -5,7 +5,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { LocalizedField } from "@/components/admin/LocalizedField";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { ImagePositioner } from "@/components/admin/ImagePositioner";
-import { ViewToggle, Thumb, TapChevron, AutosaveBar, DetailPanel, type ViewMode } from "@/components/admin/EntityList";
+import { ViewToggle, Thumb, TapChevron, AutosaveBar, DetailPanel, useSelection, SelectModeToggle, SelectionBar, BulkActionButton, SelectDot, type ViewMode } from "@/components/admin/EntityList";
 import { MatchFields } from "@/components/admin/MatchFields";
 import { PaymentEditor, DEFAULT_FEE } from "@/components/admin/PaymentEditor";
 import { Button } from "@/components/ui/Button";
@@ -40,7 +40,9 @@ export default function TeamsAdmin() {
   // Players tab: compact card/list browsing, tap a player to expand the editor.
   const [playersView, setPlayersView] = useState<ViewMode>("list");
   const [openPlayerId, setOpenPlayerId] = useState<string | null>(null);
-  const switchTab = (next: TeamTab) => { setTab(next); setOpenPlayerId(null); };
+  const teamSel = useSelection();
+  const playerSel = useSelection();
+  const switchTab = (next: TeamTab) => { setTab(next); setOpenPlayerId(null); playerSel.exit(); };
   const openTeam = (id: string) => { setEditingId(id); setTab("settings"); setOpenPlayerId(null); };
 
   useEffect(() => {
@@ -76,6 +78,7 @@ export default function TeamsAdmin() {
   const updateTeam = (id: string, patch: Partial<Team>) =>
     setTeams((list) => list.map((tm) => (tm.id === id ? { ...tm, ...patch } : tm)));
   const removeTeam = (id: string) => setTeams((list) => list.filter((tm) => tm.id !== id));
+  const removeTeams = (ids: Set<string>) => setTeams((list) => list.filter((tm) => !ids.has(tm.id)));
   const addTeam = () => {
     const id = crypto.randomUUID();
     setTeams((list) => [
@@ -125,6 +128,12 @@ export default function TeamsAdmin() {
   };
   const detachPlayer = (teamId: string, playerId: string) =>
     setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, playerIds: tm.playerIds.filter((pid) => pid !== playerId) } : tm)));
+  const deletePlayers = (ids: Set<string>) => {
+    setPlayers((list) => list.filter((p) => !ids.has(p.id)));
+    setTeams((list) => list.map((tm) => ({ ...tm, playerIds: tm.playerIds.filter((pid) => !ids.has(pid)) })));
+  };
+  const detachPlayers = (teamId: string, ids: Set<string>) =>
+    setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, playerIds: tm.playerIds.filter((pid) => !ids.has(pid)) } : tm)));
   const addNewPlayer = (teamId: string, initialName?: string): string => {
     const id = crypto.randomUUID();
     const name = initialName ? { ar: initialName, he: initialName, en: initialName } : emptyLoc();
@@ -244,21 +253,33 @@ export default function TeamsAdmin() {
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle mode={view} onChange={setView} labels={{ grid: pick({ ar: "بطاقات", he: "כרטיסים", en: "Cards" }), list: pick({ ar: "قائمة", he: "רשימה", en: "List" }) }} />
+          <SelectModeToggle active={teamSel.active} onToggle={teamSel.toggleActive} />
           <Button variant="subtle" size="sm" onClick={addTeam}>+ {t.admin.team.addTitle}</Button>
           <AutosaveBar saveState={saveState} onUndo={undo} canUndo={canUndo} />
         </div>
       </div>
 
       {!editing && (<>
+      {teamSel.active && (
+        <SelectionBar count={teamSel.ids.size} total={teams.length} onSelectAll={() => teamSel.setAll(teams.map((tm) => tm.id))} onExit={teamSel.exit}>
+          <BulkActionButton
+            count={teamSel.ids.size}
+            label={pick({ ar: "حذف المحدد", he: "מחיקת הנבחרים", en: "Delete selected" })}
+            confirmText={pick({ ar: `حذف ${teamSel.ids.size} فريق؟ لا يمكن التراجع.`, he: `למחוק ${teamSel.ids.size} קבוצות? לא ניתן לבטל.`, en: `Delete ${teamSel.ids.size} team(s)? This can't be undone.` })}
+            onRun={() => { removeTeams(teamSel.ids); teamSel.exit(); }}
+          />
+        </SelectionBar>
+      )}
       {teams.length === 0 && <p className="mt-8 text-sm text-muted">{t.admin.team.none}</p>}
 
       {view === "grid" ? (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {teams.map((tm, i) => (
             <div key={tm.id} className="group overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-card">
-              <button type="button" onClick={() => openTeam(tm.id)} className="block w-full text-start">
+              <button type="button" onClick={() => (teamSel.active ? teamSel.toggle(tm.id) : openTeam(tm.id))} className="block w-full text-start">
                 <div className="relative w-full" style={{ aspectRatio: tm.aspectRatio ?? "16 / 10" }}>
                   <Thumb src={tm.image} position={tm.imagePosition} fallback={initialOf(tm.name, "🏀")} className="h-full w-full" />
+                  {teamSel.active && <SelectDot checked={teamSel.isSelected(tm.id)} onClick={() => teamSel.toggle(tm.id)} className="absolute end-2 top-2" />}
                   {!tm.enabled && (
                     <span className="absolute start-2 top-2 rounded-full bg-ink/70 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur">
                       {pick({ ar: "مخفي", he: "מוסתר", en: "Hidden" })}
@@ -304,7 +325,8 @@ export default function TeamsAdmin() {
           {teams.map((tm, i) => (
             <div key={tm.id} className={`group flex items-center gap-3 px-3 py-2.5 transition hover:bg-surface ${i > 0 ? "border-t border-line" : ""}`}>
               <span className="w-6 shrink-0 text-center text-xs font-bold text-muted">{i + 1}</span>
-              <button type="button" onClick={() => openTeam(tm.id)} className="flex min-w-0 flex-1 items-center gap-3 text-start">
+              <button type="button" onClick={() => (teamSel.active ? teamSel.toggle(tm.id) : openTeam(tm.id))} className="flex min-w-0 flex-1 items-center gap-3 text-start">
+                {teamSel.active && <SelectDot checked={teamSel.isSelected(tm.id)} onClick={() => teamSel.toggle(tm.id)} />}
                 <Thumb src={tm.image} position={tm.imagePosition} fallback={initialOf(tm.name, "🏀")} className="size-11 shrink-0 rounded-xl" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-ink">{pick(tm.name) || tapToEdit}</p>
@@ -455,9 +477,35 @@ export default function TeamsAdmin() {
                     {!openPlayerId && (
                       <ViewToggle mode={playersView} onChange={setPlayersView} labels={{ grid: pick({ ar: "بطاقات", he: "כרטיסים", en: "Cards" }), list: pick({ ar: "قائمة", he: "רשימה", en: "List" }) }} />
                     )}
+                    {!openPlayerId && teamPlayers.length > 0 && (
+                      <SelectModeToggle active={playerSel.active} onToggle={playerSel.toggleActive} />
+                    )}
                     <Button size="sm" variant="subtle" onClick={() => setOpenPlayerId(addNewPlayer(editing.id))}>{t.admin.team.addNew}</Button>
                   </div>
                 </div>
+
+                {!openPlayerId && playerSel.active && (
+                  <SelectionBar
+                    count={playerSel.ids.size}
+                    total={teamPlayers.length}
+                    onSelectAll={() => playerSel.setAll(teamPlayers.map((p) => p.id))}
+                    onExit={playerSel.exit}
+                  >
+                    <BulkActionButton
+                      count={playerSel.ids.size}
+                      tone="neutral"
+                      label={`↩ ${pick({ ar: "إزالة من الفريق", he: "הסרה מהקבוצה", en: "Remove from team" })}`}
+                      confirmText={pick({ ar: `إزالة ${playerSel.ids.size} لاعب من الفريق؟ سيبقون في قائمة اللاعبين العامة.`, he: `להסיר ${playerSel.ids.size} שחקנים מהקבוצה? הם יישארו במאגר הכללי.`, en: `Remove ${playerSel.ids.size} player(s) from the team? They'll stay in the shared player pool.` })}
+                      onRun={() => { detachPlayers(editing.id, playerSel.ids); playerSel.exit(); }}
+                    />
+                    <BulkActionButton
+                      count={playerSel.ids.size}
+                      label={`🗑 ${pick({ ar: "حذف نهائي", he: "מחיקה לצמיתות", en: "Delete permanently" })}`}
+                      confirmText={pick({ ar: `حذف ${playerSel.ids.size} لاعب نهائياً من كل مكان؟ لا يمكن التراجع.`, he: `למחוק ${playerSel.ids.size} שחקנים לצמיתות מכל מקום? לא ניתן לבטל.`, en: `Permanently delete ${playerSel.ids.size} player(s) everywhere? This can't be undone.` })}
+                      onRun={() => { deletePlayers(playerSel.ids); playerSel.exit(); }}
+                    />
+                  </SelectionBar>
+                )}
 
                 {!openPlayerId && (
                   <PlayerPicker
@@ -514,7 +562,11 @@ export default function TeamsAdmin() {
                         </label>
                       </div>
                       {payEnabled && <PaymentEditor player={p} defaultFee={defaultFee} onChange={(patch) => updatePlayer(p.id, patch)} />}
-                      <PlayerReceipts player={p} defaultFee={defaultFee} />
+                      <PlayerReceipts
+                        player={p}
+                        defaultFee={defaultFee}
+                        onPaidChange={(delta) => updatePlayer(p.id, { paidAmount: Math.max((p.paidAmount ?? 0) + delta, 0) })}
+                      />
                       <div className="flex items-center justify-between border-t border-line pt-2">
                         <div className="flex gap-2">
                           <button
@@ -552,11 +604,12 @@ export default function TeamsAdmin() {
                         <button
                           key={p.id}
                           type="button"
-                          onClick={() => setOpenPlayerId(p.id)}
+                          onClick={() => (playerSel.active ? playerSel.toggle(p.id) : setOpenPlayerId(p.id))}
                           className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white text-start shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-card"
                         >
                           <div className="relative aspect-[4/5] w-full">
                             <Thumb src={p.image} position={p.imagePosition} fallback={initialOf(p.name)} className="h-full w-full" />
+                            {playerSel.active && <SelectDot checked={playerSel.isSelected(p.id)} onClick={() => playerSel.toggle(p.id)} className="absolute start-2 top-2" />}
                             {p.number ? (
                               <span className="absolute end-2 top-2 grid min-w-7 place-items-center rounded-full bg-ink/80 px-1.5 py-0.5 text-xs font-bold text-white backdrop-blur">#{p.number}</span>
                             ) : null}
@@ -585,9 +638,10 @@ export default function TeamsAdmin() {
                         <button
                           key={p.id}
                           type="button"
-                          onClick={() => setOpenPlayerId(p.id)}
+                          onClick={() => (playerSel.active ? playerSel.toggle(p.id) : setOpenPlayerId(p.id))}
                           className={`group flex w-full items-center gap-3 px-3 py-2.5 text-start transition hover:bg-surface ${i > 0 ? "border-t border-line" : ""}`}
                         >
+                          {playerSel.active && <SelectDot checked={playerSel.isSelected(p.id)} onClick={() => playerSel.toggle(p.id)} />}
                           <Thumb src={p.image} position={p.imagePosition} fallback={initialOf(p.name)} className="size-11 shrink-0 rounded-xl" />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-bold text-ink">{pick(p.name) || tapToEdit}</p>

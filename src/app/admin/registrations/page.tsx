@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { useSelection, SelectModeToggle, SelectionBar, BulkActionButton, SelectDot } from "@/components/admin/EntityList";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -15,7 +16,7 @@ const STATUS_BADGE: Record<RegistrationStatus, string> = {
 };
 
 export default function RegistrationsAdmin() {
-  const { t } = useI18n();
+  const { t, pick } = useI18n();
   const f = t.register.form;
   const toast = useToast();
   const [list, setList] = useState<Registration[]>([]);
@@ -23,6 +24,7 @@ export default function RegistrationsAdmin() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | "all">("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  const sel = useSelection();
 
   async function load() {
     setLoading(true);
@@ -75,6 +77,13 @@ export default function RegistrationsAdmin() {
     }
   }
 
+  async function removeMany(ids: Set<string>) {
+    const results = await Promise.all([...ids].map((id) => fetch(`/api/registrations/${id}`, { method: "DELETE" }).then((r) => r.ok)));
+    const okIds = new Set([...ids].filter((_, i) => results[i]));
+    setList((l) => l.filter((r) => !okIds.has(r.id)));
+    if (okIds.size < ids.size) toast.error(t.admin.toasts.saveError);
+  }
+
   return (
     <AdminShell>
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -82,9 +91,12 @@ export default function RegistrationsAdmin() {
           <h1 className="text-2xl font-extrabold text-ink">{t.admin.titles.registrations}</h1>
           <p className="mt-1 text-sm text-muted">{t.admin.titles.registrationsSub}</p>
         </div>
-        <Button variant="secondary" size="sm" onClick={load}>
-          ↻ {t.admin.refresh}
-        </Button>
+        <div className="flex items-center gap-2">
+          <SelectModeToggle active={sel.active} onToggle={sel.toggleActive} />
+          <Button variant="secondary" size="sm" onClick={load}>
+            ↻ {t.admin.refresh}
+          </Button>
+        </div>
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -106,6 +118,17 @@ export default function RegistrationsAdmin() {
         </select>
       </div>
 
+      {sel.active && (
+        <SelectionBar count={sel.ids.size} total={filtered.length} onSelectAll={() => sel.setAll(filtered.map((r) => r.id))} onExit={sel.exit}>
+          <BulkActionButton
+            count={sel.ids.size}
+            label={pick({ ar: "حذف المحدد", he: "מחיקת הנבחרים", en: "Delete selected" })}
+            confirmText={pick({ ar: `حذف ${sel.ids.size} تسجيل؟ لا يمكن التراجع.`, he: `למחוק ${sel.ids.size} הרשמות? לא ניתן לבטל.`, en: `Delete ${sel.ids.size} registration(s)? This can't be undone.` })}
+            onRun={() => { removeMany(sel.ids); sel.exit(); }}
+          />
+        </SelectionBar>
+      )}
+
       <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
         {loading ? (
           <p className="p-6 text-sm text-muted">{t.admin.loading}</p>
@@ -115,6 +138,7 @@ export default function RegistrationsAdmin() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line bg-surface text-start text-xs font-semibold uppercase tracking-wide text-muted">
+                {sel.active && <th className="w-10 px-2 py-3" />}
                 <th className="px-4 py-3 text-start">{t.admin.reg.name}</th>
                 <th className="hidden px-4 py-3 text-start sm:table-cell">{t.admin.reg.phone}</th>
                 <th className="hidden px-4 py-3 text-start md:table-cell">{t.admin.reg.email}</th>
@@ -126,9 +150,10 @@ export default function RegistrationsAdmin() {
               {filtered.map((r) => (
                 <tr
                   key={r.id}
-                  onClick={() => setOpenId(r.id)}
+                  onClick={() => (sel.active ? sel.toggle(r.id) : setOpenId(r.id))}
                   className="cursor-pointer border-b border-line last:border-0 transition hover:bg-surface"
                 >
+                  {sel.active && <td className="px-2 py-3"><SelectDot checked={sel.isSelected(r.id)} onClick={() => sel.toggle(r.id)} /></td>}
                   <td className="px-4 py-3 font-medium text-ink">{playerOf(r)}</td>
                   <td className="hidden px-4 py-3 text-muted sm:table-cell" dir="ltr">{phoneOf(r)}</td>
                   <td className="hidden px-4 py-3 text-muted md:table-cell" dir="ltr">{r.email}</td>

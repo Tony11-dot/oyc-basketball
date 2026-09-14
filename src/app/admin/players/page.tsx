@@ -5,7 +5,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { LocalizedField } from "@/components/admin/LocalizedField";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { ImagePositioner } from "@/components/admin/ImagePositioner";
-import { ViewToggle, Thumb, TapChevron, AutosaveBar, DetailPanel, type ViewMode } from "@/components/admin/EntityList";
+import { ViewToggle, Thumb, TapChevron, AutosaveBar, DetailPanel, useSelection, SelectModeToggle, SelectionBar, BulkActionButton, SelectDot, type ViewMode } from "@/components/admin/EntityList";
 import { PlayerReceipts } from "@/components/admin/PlayerReceipts";
 import { Button } from "@/components/ui/Button";
 import { DateField } from "@/components/ui/Calendar";
@@ -32,6 +32,7 @@ export default function PlayersAdmin() {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const sel = useSelection();
   // Club default fee (admin → Content → Register) — used only to prefill a new
   // receipt's amount with the player's remaining balance.
   const defaultFee = content?.register?.feeAmount || DEFAULT_FEE;
@@ -50,6 +51,7 @@ export default function PlayersAdmin() {
   const update = (id: string, patch: Partial<Player>) =>
     setPlayers((list) => list.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   const remove = (id: string) => setPlayers((list) => list.filter((p) => p.id !== id));
+  const removeMany = (ids: Set<string>) => setPlayers((list) => list.filter((p) => !ids.has(p.id)));
   const add = () => {
     const id = crypto.randomUUID();
     setPlayers((list) => [{ id, name: emptyLoc(), number: "", image: "" }, ...list]);
@@ -113,6 +115,7 @@ export default function PlayersAdmin() {
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle mode={view} onChange={setView} labels={{ grid: pick({ ar: "بطاقات", he: "כרטיסים", en: "Cards" }), list: pick({ ar: "قائمة", he: "רשימה", en: "List" }) }} />
+          <SelectModeToggle active={sel.active} onToggle={sel.toggleActive} />
           <Button variant="subtle" size="sm" onClick={add}>+ {t.admin.players.add}</Button>
           <AutosaveBar saveState={saveState} onUndo={undo} canUndo={canUndo} />
         </div>
@@ -129,6 +132,17 @@ export default function PlayersAdmin() {
         <span className="text-xs text-muted">{filtered.length} / {players.length}</span>
       </div>
 
+      {sel.active && (
+        <SelectionBar count={sel.ids.size} total={filtered.length} onSelectAll={() => sel.setAll(filtered.map((p) => p.id))} onExit={sel.exit}>
+          <BulkActionButton
+            count={sel.ids.size}
+            label={pick({ ar: "حذف المحدد", he: "מחיקת הנבחרים", en: "Delete selected" })}
+            confirmText={pick({ ar: `حذف ${sel.ids.size} لاعب؟ لا يمكن التراجع.`, he: `למחוק ${sel.ids.size} שחקנים? לא ניתן לבטל.`, en: `Delete ${sel.ids.size} player(s)? This can't be undone.` })}
+            onRun={() => { removeMany(sel.ids); sel.exit(); }}
+          />
+        </SelectionBar>
+      )}
+
       {players.length === 0 ? (
         <p className="mt-8 text-sm text-muted">{t.admin.players.none}</p>
       ) : view === "grid" ? (
@@ -137,11 +151,12 @@ export default function PlayersAdmin() {
             <button
               key={p.id}
               type="button"
-              onClick={() => setEditingId(p.id)}
+              onClick={() => (sel.active ? sel.toggle(p.id) : setEditingId(p.id))}
               className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white text-start shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-card"
             >
               <div className="relative aspect-[4/5] w-full">
                 <Thumb src={p.image} position={p.imagePosition} fallback={initialOf(p.name)} className="h-full w-full" />
+                {sel.active && <SelectDot checked={sel.isSelected(p.id)} onClick={() => sel.toggle(p.id)} className="absolute start-2 top-2" />}
                 {p.number ? (
                   <span className="absolute end-2 top-2 grid min-w-7 place-items-center rounded-full bg-ink/80 px-1.5 py-0.5 text-xs font-bold text-white backdrop-blur">
                     #{p.number}
@@ -161,9 +176,10 @@ export default function PlayersAdmin() {
             <button
               key={p.id}
               type="button"
-              onClick={() => setEditingId(p.id)}
+              onClick={() => (sel.active ? sel.toggle(p.id) : setEditingId(p.id))}
               className={`group flex w-full items-center gap-3 px-3 py-2.5 text-start transition hover:bg-surface ${i > 0 ? "border-t border-line" : ""}`}
             >
+              {sel.active && <SelectDot checked={sel.isSelected(p.id)} onClick={() => sel.toggle(p.id)} />}
               <Thumb src={p.image} position={p.imagePosition} fallback={initialOf(p.name)} className="size-11 shrink-0 rounded-xl" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-ink">{pick(p.name) || tapToEdit}</p>
@@ -214,7 +230,11 @@ export default function PlayersAdmin() {
                 <input dir="ltr" type="tel" value={editing.motherPhone ?? ""} onChange={(e) => update(editing.id, { motherPhone: e.target.value })} className={plainInput} />
               </label>
             </div>
-            <PlayerReceipts player={editing} defaultFee={defaultFee} />
+            <PlayerReceipts
+              player={editing}
+              defaultFee={defaultFee}
+              onPaidChange={(delta) => update(editing.id, { paidAmount: Math.max((editing.paidAmount ?? 0) + delta, 0) })}
+            />
             <div className="flex items-center justify-between border-t border-line pt-3">
               <button
                 type="button"

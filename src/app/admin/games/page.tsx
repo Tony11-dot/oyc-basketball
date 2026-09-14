@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { MatchFields } from "@/components/admin/MatchFields";
-import { ViewToggle, TapChevron, AutosaveBar, DetailPanel, type ViewMode } from "@/components/admin/EntityList";
+import { ViewToggle, TapChevron, AutosaveBar, DetailPanel, useSelection, SelectModeToggle, SelectionBar, BulkActionButton, SelectDot, type ViewMode } from "@/components/admin/EntityList";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { useAutosave } from "@/lib/useAutosave";
@@ -29,6 +29,7 @@ export default function GamesAdmin() {
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [editingKey, setEditingKey] = useState<string | null>(null); // `${teamId}:${matchId}`
+  const sel = useSelection();
 
   useEffect(() => {
     fetch("/api/teams?all=1")
@@ -43,6 +44,9 @@ export default function GamesAdmin() {
     setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, matches: tm.matches.filter((m) => m.id !== matchId) } : tm)));
     setEditingKey(null);
   };
+  // Bulk delete: keys are `${teamId}:${matchId}`, spanning possibly several teams.
+  const removeMatches = (keys: Set<string>) =>
+    setTeams((list) => list.map((tm) => ({ ...tm, matches: tm.matches.filter((m) => !keys.has(`${tm.id}:${m.id}`)) })));
   const addMatch = (teamId: string) => {
     if (!teamId) return;
     const id = `m-${Date.now()}`;
@@ -128,6 +132,7 @@ export default function GamesAdmin() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ViewToggle mode={view} onChange={setView} labels={{ grid: pick({ ar: "بطاقات", he: "כרטיסים", en: "Cards" }), list: pick({ ar: "قائمة", he: "רשימה", en: "List" }) }} />
+          <SelectModeToggle active={sel.active} onToggle={sel.toggleActive} />
           <AutosaveBar saveState={saveState} onUndo={undo} canUndo={canUndo} />
         </div>
       </div>
@@ -152,6 +157,22 @@ export default function GamesAdmin() {
         </div>
       )}
 
+      {!editing && sel.active && (
+        <SelectionBar
+          count={sel.ids.size}
+          total={filtered.length}
+          onSelectAll={() => sel.setAll(filtered.map((g) => `${g.team.id}:${g.match.id}`))}
+          onExit={sel.exit}
+        >
+          <BulkActionButton
+            count={sel.ids.size}
+            label={pick({ ar: "حذف المحدد", he: "מחיקת הנבחרים", en: "Delete selected" })}
+            confirmText={pick({ ar: `حذف ${sel.ids.size} مباراة؟ لا يمكن التراجع.`, he: `למחוק ${sel.ids.size} משחקים? לא ניתן לבטל.`, en: `Delete ${sel.ids.size} game(s)? This can't be undone.` })}
+            onRun={() => { removeMatches(sel.ids); sel.exit(); }}
+          />
+        </SelectionBar>
+      )}
+
       {/* List / cards */}
       {!editing && (
         <>
@@ -161,13 +182,15 @@ export default function GamesAdmin() {
             <div className="mt-5 overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
               {filtered.map((g, i) => {
                 const up = isUpcoming(g.time);
+                const key = `${g.team.id}:${g.match.id}`;
                 return (
                   <button
-                    key={`${g.team.id}:${g.match.id}`}
+                    key={key}
                     type="button"
-                    onClick={() => setEditingKey(`${g.team.id}:${g.match.id}`)}
+                    onClick={() => (sel.active ? sel.toggle(key) : setEditingKey(key))}
                     className={`group flex w-full items-center gap-3 px-4 py-3 text-start transition hover:bg-surface ${i > 0 ? "border-t border-line" : ""}`}
                   >
+                    {sel.active && <SelectDot checked={sel.isSelected(key)} onClick={() => sel.toggle(key)} />}
                     <span className={`grid size-11 shrink-0 place-items-center rounded-xl text-lg ${up ? "bg-brand-50" : "bg-surface"}`}>🏀</span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-ink">
@@ -185,13 +208,15 @@ export default function GamesAdmin() {
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((g) => {
                 const up = isUpcoming(g.time);
+                const key = `${g.team.id}:${g.match.id}`;
                 return (
                   <button
-                    key={`${g.team.id}:${g.match.id}`}
+                    key={key}
                     type="button"
-                    onClick={() => setEditingKey(`${g.team.id}:${g.match.id}`)}
-                    className="group rounded-2xl border border-line bg-white p-4 text-start shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-card"
+                    onClick={() => (sel.active ? sel.toggle(key) : setEditingKey(key))}
+                    className="group relative rounded-2xl border border-line bg-white p-4 text-start shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-card"
                   >
+                    {sel.active && <SelectDot checked={sel.isSelected(key)} onClick={() => sel.toggle(key)} className="absolute end-3 top-3" />}
                     <div className="flex items-center justify-between">
                       <span className="rounded-md bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-dark">{pick(g.team.name) || "—"}</span>
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${up ? "bg-emerald-100 text-emerald-700" : "bg-surface text-muted"}`}>{up ? upcomingLabel : pastLabel}</span>

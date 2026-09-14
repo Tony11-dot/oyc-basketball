@@ -5,7 +5,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { LocalizedField } from "@/components/admin/LocalizedField";
 import { ImageUpload } from "@/components/admin/ImageUpload";
 import { ImagePositioner } from "@/components/admin/ImagePositioner";
-import { ViewToggle, Thumb, TapChevron, AutosaveBar, DetailPanel, type ViewMode } from "@/components/admin/EntityList";
+import { ViewToggle, Thumb, TapChevron, AutosaveBar, DetailPanel, useSelection, SelectModeToggle, SelectionBar, BulkActionButton, SelectDot, type ViewMode } from "@/components/admin/EntityList";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { useAutosave } from "@/lib/useAutosave";
@@ -28,6 +28,7 @@ export default function CoachesAdmin() {
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const sel = useSelection();
 
   useEffect(() => {
     fetch("/api/coaches").then((r) => r.json()).then((d) => {
@@ -39,6 +40,7 @@ export default function CoachesAdmin() {
   const update = (id: string, patch: Partial<Coach>) =>
     setCoaches((list) => list.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   const remove = (id: string) => setCoaches((list) => list.filter((c) => c.id !== id));
+  const removeMany = (ids: Set<string>) => setCoaches((list) => list.filter((c) => !ids.has(c.id)));
   const add = () => {
     const id = crypto.randomUUID();
     setCoaches((list) => [{ id, name: emptyLoc(), idNumber: "", phone: "", image: "" }, ...list]);
@@ -101,6 +103,7 @@ export default function CoachesAdmin() {
         </div>
         <div className="flex items-center gap-2">
           <ViewToggle mode={view} onChange={setView} labels={{ grid: pick({ ar: "بطاقات", he: "כרטיסים", en: "Cards" }), list: pick({ ar: "قائمة", he: "רשימה", en: "List" }) }} />
+          <SelectModeToggle active={sel.active} onToggle={sel.toggleActive} />
           <Button variant="subtle" size="sm" onClick={add}>+ {t.admin.coaches.add}</Button>
           <AutosaveBar saveState={saveState} onUndo={undo} canUndo={canUndo} />
         </div>
@@ -117,6 +120,17 @@ export default function CoachesAdmin() {
         <span className="text-xs text-muted">{filtered.length} / {coaches.length}</span>
       </div>
 
+      {sel.active && (
+        <SelectionBar count={sel.ids.size} total={filtered.length} onSelectAll={() => sel.setAll(filtered.map((c) => c.id))} onExit={sel.exit}>
+          <BulkActionButton
+            count={sel.ids.size}
+            label={pick({ ar: "حذف المحدد", he: "מחיקת הנבחרים", en: "Delete selected" })}
+            confirmText={pick({ ar: `حذف ${sel.ids.size} مدرّب؟ لا يمكن التراجع.`, he: `למחוק ${sel.ids.size} מאמנים? לא ניתן לבטל.`, en: `Delete ${sel.ids.size} coach(es)? This can't be undone.` })}
+            onRun={() => { removeMany(sel.ids); sel.exit(); }}
+          />
+        </SelectionBar>
+      )}
+
       {coaches.length === 0 ? (
         <p className="mt-8 text-sm text-muted">{t.admin.coaches.none}</p>
       ) : view === "grid" ? (
@@ -125,11 +139,12 @@ export default function CoachesAdmin() {
             <button
               key={c.id}
               type="button"
-              onClick={() => setEditingId(c.id)}
+              onClick={() => (sel.active ? sel.toggle(c.id) : setEditingId(c.id))}
               className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-white text-start shadow-sm transition hover:-translate-y-0.5 hover:border-brand hover:shadow-card"
             >
               <div className="relative aspect-[4/5] w-full">
                 <Thumb src={c.image} position={c.imagePosition} fallback={initialOf(c.name)} className="h-full w-full" />
+                {sel.active && <SelectDot checked={sel.isSelected(c.id)} onClick={() => sel.toggle(c.id)} className="absolute start-2 top-2" />}
               </div>
               <div className="min-w-0 px-3 py-2.5">
                 <p className="truncate text-sm font-bold text-ink">{pick(c.name) || tapToEdit}</p>
@@ -144,9 +159,10 @@ export default function CoachesAdmin() {
             <button
               key={c.id}
               type="button"
-              onClick={() => setEditingId(c.id)}
+              onClick={() => (sel.active ? sel.toggle(c.id) : setEditingId(c.id))}
               className={`group flex w-full items-center gap-3 px-3 py-2.5 text-start transition hover:bg-surface ${i > 0 ? "border-t border-line" : ""}`}
             >
+              {sel.active && <SelectDot checked={sel.isSelected(c.id)} onClick={() => sel.toggle(c.id)} />}
               <Thumb src={c.image} position={c.imagePosition} fallback={initialOf(c.name)} className="size-11 shrink-0 rounded-xl" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-ink">{pick(c.name) || tapToEdit}</p>

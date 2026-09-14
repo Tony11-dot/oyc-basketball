@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { SaveState } from "@/lib/useAutosave";
@@ -119,6 +120,132 @@ export function Thumb({
         </div>
       )}
     </div>
+  );
+}
+
+/** Tracks "selection mode" for a list: whether it's on, and which ids are
+ * checked. Shared by every admin list (players, teams, coaches, games,
+ * receipts, registrations) so bulk actions behave identically everywhere. */
+export function useSelection() {
+  const [active, setActive] = useState(false);
+  const [ids, setIds] = useState<Set<string>>(new Set());
+
+  const toggleActive = () => {
+    setActive((a) => !a);
+    setIds(new Set());
+  };
+  const exit = () => {
+    setActive(false);
+    setIds(new Set());
+  };
+  const toggle = (id: string) =>
+    setIds((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const setAll = (allIds: string[]) =>
+    setIds((s) => (s.size === allIds.length ? new Set() : new Set(allIds)));
+
+  return { active, ids, toggleActive, exit, toggle, setAll, isSelected: (id: string) => ids.has(id) };
+}
+
+/** Button that turns selection mode on/off — put beside ViewToggle. */
+export function SelectModeToggle({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+  const { pick } = useI18n();
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition",
+        active ? "border-brand bg-brand text-white" : "border-line bg-white text-muted hover:text-ink",
+      )}
+    >
+      {active ? "✕" : "☑"} {active ? pick({ ar: "إلغاء التحديد", he: "בטל בחירה", en: "Cancel select" }) : pick({ ar: "تحديد", he: "בחירה", en: "Select" })}
+    </button>
+  );
+}
+
+/** Sticky bar shown while in selection mode: count, select-all, and whatever
+ * bulk actions the page passes in as children (e.g. a delete button). */
+export function SelectionBar({
+  count,
+  total,
+  onSelectAll,
+  onExit,
+  children,
+}: {
+  count: number;
+  total: number;
+  onSelectAll: () => void;
+  onExit: () => void;
+  children?: React.ReactNode;
+}) {
+  const { pick } = useI18n();
+  return (
+    <div className="sticky top-2 z-10 mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-brand/30 bg-brand-50 px-3.5 py-2.5 shadow-sm">
+      <span className="text-xs font-bold text-brand-dark">{count} {pick({ ar: "محدد", he: "נבחרו", en: "selected" })}</span>
+      <button type="button" onClick={onSelectAll} className="text-xs font-semibold text-brand-dark hover:underline">
+        {count >= total && total > 0 ? pick({ ar: "إلغاء التحديد", he: "נקה בחירה", en: "Clear all" }) : pick({ ar: "تحديد الكل", he: "בחר הכול", en: "Select all" })}
+      </button>
+      <div className="ms-auto flex flex-wrap items-center gap-2">{children}</div>
+      <button type="button" onClick={onExit} className="text-xs font-semibold text-muted hover:text-ink">
+        {pick({ ar: "إغلاق", he: "סגירה", en: "Close" })}
+      </button>
+    </div>
+  );
+}
+
+/** A bulk-action button for a SelectionBar — disabled at zero, confirms once
+ * for the whole batch with a page-supplied message (so the wording always
+ * matches what will actually happen — delete vs. detach, plural count, etc). */
+export function BulkActionButton({
+  count,
+  onRun,
+  confirmText,
+  label,
+  tone = "danger",
+}: {
+  count: number;
+  onRun: () => void;
+  confirmText: string;
+  label: string;
+  tone?: "danger" | "neutral";
+}) {
+  return (
+    <button
+      type="button"
+      disabled={count === 0}
+      onClick={() => { if (confirm(confirmText)) onRun(); }}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold shadow-sm transition disabled:cursor-not-allowed disabled:opacity-40",
+        tone === "danger" ? "bg-rose-600 text-white hover:bg-rose-700" : "border border-line bg-white text-ink hover:border-ink/40 hover:bg-surface",
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
+/** Checkbox overlay for a selectable card/row. Stops the parent's onClick from
+ * also firing (selection and "open detail" share the same clickable element). */
+export function SelectDot({ checked, onClick, className }: { checked: boolean; onClick: () => void; className?: string }) {
+  return (
+    <span
+      role="checkbox"
+      aria-checked={checked}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className={cn(
+        "grid size-6 shrink-0 cursor-pointer place-items-center rounded-md border-2 bg-white/90 text-xs font-bold backdrop-blur transition",
+        checked ? "border-brand bg-brand text-white" : "border-line text-transparent hover:border-brand/50",
+        className,
+      )}
+    >
+      ✓
+    </span>
   );
 }
 

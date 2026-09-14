@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { getReceipts, updateReceipts } from "@/lib/db";
+import { getReceipts, updateReceipts, updatePlayers } from "@/lib/db";
 import { isAuthed } from "@/lib/auth";
 import type { Receipt, ReceiptMethod } from "@/lib/types";
 
@@ -53,6 +53,15 @@ export async function POST(request: Request) {
     };
     return [created, ...list];
   });
+
+  // A receipt tied to a roster player is proof of payment — credit it to that
+  // player's balance so Teams/Players/Finances all reflect it immediately.
+  if (playerId && created) {
+    const paidNow = created.amount;
+    await updatePlayers((list) =>
+      list.map((p) => (p.id === playerId ? { ...p, paidAmount: (p.paidAmount ?? 0) + paidNow } : p)),
+    );
+  }
 
   return Response.json({ receipt: created }, { status: 201 });
 }

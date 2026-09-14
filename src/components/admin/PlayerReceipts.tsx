@@ -20,11 +20,16 @@ const numInput =
 export function PlayerReceipts({
   player,
   defaultFee = DEFAULT_FEE,
+  onPaidChange,
 }: {
   player: Player;
   /** Club default fee (admin → Content → Register); used only to prefill a
    * new receipt's amount with the player's remaining balance. */
   defaultFee?: number;
+  /** Called with +amount when a receipt is created and -amount when one is
+   * deleted, so the parent can reflect the balance change immediately (the
+   * server already applies the same change to the player's paidAmount). */
+  onPaidChange?: (delta: number) => void;
 }) {
   const { pick, locale } = useI18n();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
@@ -73,6 +78,7 @@ export function PlayerReceipts({
       if (!res.ok) throw new Error();
       const d = await res.json();
       setReceipts((list) => [d.receipt, ...list]);
+      onPaidChange?.(Number(amount));
       setOpen(false);
     } catch {
       setError(pick({ ar: "تعذّر إنشاء الوصل. حاول مجددًا.", he: "יצירת הקבלה נכשלה. נסו שוב.", en: "Could not create the receipt. Try again." }));
@@ -83,8 +89,10 @@ export function PlayerReceipts({
 
   const remove = async (id: string) => {
     if (!confirm(pick({ ar: "حذف هذا الوصل؟", he: "למחוק את הקבלה?", en: "Delete this receipt?" }))) return;
+    const removed = receipts.find((r) => r.id === id);
     setReceipts((list) => list.filter((r) => r.id !== id));
     await fetch(`/api/receipts/${id}`, { method: "DELETE" });
+    if (removed) onPaidChange?.(-removed.amount);
   };
 
   return (

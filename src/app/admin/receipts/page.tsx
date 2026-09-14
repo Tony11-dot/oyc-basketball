@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PlayerPicker } from "@/components/admin/PlayerPicker";
+import { useSelection, SelectModeToggle, SelectionBar, BulkActionButton, SelectDot } from "@/components/admin/EntityList";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { DEFAULT_FEE } from "@/lib/fees";
@@ -31,6 +32,7 @@ export default function ReceiptsAdmin() {
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sel = useSelection();
 
   useEffect(() => {
     Promise.all([
@@ -78,6 +80,8 @@ export default function ReceiptsAdmin() {
       if (!res.ok) throw new Error();
       const d = await res.json();
       setReceipts((list) => [d.receipt, ...list]);
+      const paidNow = Number(amount);
+      setPlayers((list) => list.map((p) => (p.id === player.id ? { ...p, paidAmount: (p.paidAmount ?? 0) + paidNow } : p)));
       setPlayerId(null); setAmount(""); setNote(""); setMethod("نقدا");
     } catch {
       setError(pick({ ar: "تعذّر إنشاء الوصل. حاول مجددًا.", he: "יצירת הקבלה נכשלה. נסו שוב.", en: "Could not create the receipt. Try again." }));
@@ -88,8 +92,27 @@ export default function ReceiptsAdmin() {
 
   async function remove(id: string) {
     if (!confirm(pick({ ar: "حذف هذا الوصل؟", he: "למחוק את הקבלה?", en: "Delete this receipt?" }))) return;
+    const removed = receipts.find((r) => r.id === id);
     setReceipts((list) => list.filter((r) => r.id !== id));
     await fetch(`/api/receipts/${id}`, { method: "DELETE" });
+    if (removed?.playerId) {
+      const takeBack = removed.amount;
+      setPlayers((list) => list.map((p) => (p.id === removed.playerId ? { ...p, paidAmount: Math.max((p.paidAmount ?? 0) - takeBack, 0) } : p)));
+    }
+  }
+
+  async function removeMany(ids: Set<string>) {
+    const removedList = receipts.filter((r) => ids.has(r.id));
+    setReceipts((list) => list.filter((r) => !ids.has(r.id)));
+    await Promise.all(removedList.map((r) => fetch(`/api/receipts/${r.id}`, { method: "DELETE" })));
+    const takeBackByPlayer = new Map<string, number>();
+    for (const r of removedList) {
+      if (!r.playerId) continue;
+      takeBackByPlayer.set(r.playerId, (takeBackByPlayer.get(r.playerId) ?? 0) + r.amount);
+    }
+    if (takeBackByPlayer.size > 0) {
+      setPlayers((list) => list.map((p) => (takeBackByPlayer.has(p.id) ? { ...p, paidAmount: Math.max((p.paidAmount ?? 0) - takeBackByPlayer.get(p.id)!, 0) } : p)));
+    }
   }
 
   const title = pick({ ar: "الوصول", he: "קבלות", en: "Receipts" });
@@ -98,10 +121,24 @@ export default function ReceiptsAdmin() {
 
   return (
     <AdminShell>
-      <div>
-        <h1 className="text-2xl font-extrabold text-ink">{title}</h1>
-        <p className="mt-1 text-sm text-muted">{subtitle}</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-ink">{title}</h1>
+          <p className="mt-1 text-sm text-muted">{subtitle}</p>
+        </div>
+        {receipts.length > 0 && <SelectModeToggle active={sel.active} onToggle={sel.toggleActive} />}
       </div>
+
+      {sel.active && (
+        <SelectionBar count={sel.ids.size} total={receipts.length} onSelectAll={() => sel.setAll(receipts.map((r) => r.id))} onExit={sel.exit}>
+          <BulkActionButton
+            count={sel.ids.size}
+            label={pick({ ar: "حذف المحدد", he: "מחיקת הנבחרים", en: "Delete selected" })}
+            confirmText={pick({ ar: `حذف ${sel.ids.size} وصل؟ سيُخصم المبلغ من رصيد اللاعبين المرتبطين. لا يمكن التراجع.`, he: `למחוק ${sel.ids.size} קבלות? הסכום ינוכה מיתרת השחקנים המשויכים. לא ניתן לבטל.`, en: `Delete ${sel.ids.size} receipt(s)? Linked players' paid balance will be reduced accordingly. This can't be undone.` })}
+            onRun={() => { removeMany(sel.ids); sel.exit(); }}
+          />
+        </SelectionBar>
+      )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[360px_1fr]">
         {/* Create form */}
@@ -161,6 +198,7 @@ export default function ReceiptsAdmin() {
             <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
               {receipts.map((r, i) => (
                 <div key={r.id} className={`flex flex-wrap items-center gap-3 px-4 py-3 ${i > 0 ? "border-t border-line" : ""}`}>
+                  {sel.active && <SelectDot checked={sel.isSelected(r.id)} onClick={() => sel.toggle(r.id)} />}
                   <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-xs font-black text-brand-dark">#{r.number}</span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-ink">{r.name}</p>
