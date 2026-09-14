@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { LocalizedField } from "@/components/admin/LocalizedField";
 import { ImageUpload } from "@/components/admin/ImageUpload";
@@ -9,7 +9,7 @@ import { ViewToggle, Thumb, TapChevron, AutosaveBar, DetailPanel, useSelection, 
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { useAutosave } from "@/lib/useAutosave";
-import type { Coach, Localized } from "@/lib/types";
+import type { Coach, Localized, Team } from "@/lib/types";
 
 const emptyLoc = (): Localized => ({ ar: "", he: "", en: "" });
 const plainInput =
@@ -24,6 +24,7 @@ const initialOf = (name: Localized, fallback = "?") =>
 export default function CoachesAdmin() {
   const { t, pick } = useI18n();
   const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ViewMode>("grid");
@@ -35,7 +36,30 @@ export default function CoachesAdmin() {
       setCoaches(d.coaches ?? []);
       setLoaded(true);
     });
+    fetch("/api/teams?all=1").then((r) => r.json()).then((d) => setTeams(d.teams ?? []));
   }, []);
+
+  // Which team(s) a coach is attached to — the relationship lives on the team
+  // side (Team.coachIds), so a coach is "on" a team whenever its id is listed there.
+  const teamsOf = (coachId: string) => teams.filter((tm) => (tm.coachIds ?? []).includes(coachId));
+
+  // Attaching/detaching writes straight through to the team (not autosaved via
+  // this page's own diff), since it mutates a different entity than the one
+  // this page's persist() tracks.
+  async function attachTeam(coachId: string, teamId: string) {
+    const team = teams.find((tm) => tm.id === teamId);
+    if (!team || (team.coachIds ?? []).includes(coachId)) return;
+    const updated = { ...team, coachIds: [...(team.coachIds ?? []), coachId] };
+    setTeams((list) => list.map((tm) => (tm.id === teamId ? updated : tm)));
+    await fetch("/api/teams", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updated) });
+  }
+  async function detachTeam(coachId: string, teamId: string) {
+    const team = teams.find((tm) => tm.id === teamId);
+    if (!team) return;
+    const updated = { ...team, coachIds: (team.coachIds ?? []).filter((id) => id !== coachId) };
+    setTeams((list) => list.map((tm) => (tm.id === teamId ? updated : tm)));
+    await fetch("/api/teams", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updated) });
+  }
 
   const update = (id: string, patch: Partial<Coach>) =>
     setCoaches((list) => list.map((c) => (c.id === id ? { ...c, ...patch } : c)));
@@ -195,6 +219,29 @@ export default function CoachesAdmin() {
               <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.coaches.phone}</span>
               <input dir="ltr" value={editing.phone ?? ""} onChange={(e) => update(editing.id, { phone: e.target.value })} className={plainInput} />
             </label>
+            <div className="space-y-2">
+              <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "الفريق الذي يدرّبه", he: "הקבוצה שהוא מאמן", en: "Team coached" })}</span>
+              <TeamPicker
+                teams={teams.filter((tm) => !(tm.coachIds ?? []).includes(editing.id))}
+                pick={pick}
+                placeholder={pick({ ar: "ابحث عن فريق...", he: "חיפוש קבוצה...", en: "Search team..." })}
+                onAttach={(teamId) => attachTeam(editing.id, teamId)}
+              />
+              {teamsOf(editing.id).length === 0 ? (
+                <p className="text-xs text-muted">{pick({ ar: "لا يوجد فريق مرتبط بعد.", he: "טרם שויכה לקבוצה.", en: "No team assigned yet." })}</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {teamsOf(editing.id).map((tm) => (
+                    <span key={tm.id} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-semibold text-ink">
+                      {pick(tm.name) || tm.id}
+                      <button type="button" onClick={() => detachTeam(editing.id, tm.id)} className="text-muted hover:text-rose-600" aria-label={pick({ ar: "إزالة", he: "הסרה", en: "Remove" })}>
+                        ✕
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="flex items-center justify-between border-t border-line pt-3">
               <button
                 type="button"
@@ -209,5 +256,75 @@ export default function CoachesAdmin() {
         </DetailPanel>
       )}
     </AdminShell>
+  );
+}
+
+// Searchable, filterable team dropdown — mirrors the PlayerPicker/CoachPicker
+// combobox pattern used on the Teams admin page, minus "add new" (teams aren't
+// created from here).
+function TeamPicker({
+  teams,
+  pick,
+  placeholder,
+  onAttach,
+}: {
+  teams: Team[];
+  pick: (v: Localized) => string;
+  placeholder: string;
+  onAttach: (id: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", onDown);
+    return () => window.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const needle = q.trim().toLowerCase();
+  const matches = teams.filter((tm) => {
+    if (!needle) return true;
+    return [tm.name.ar, tm.name.he, tm.name.en].filter(Boolean).join(" ").toLowerCase().includes(needle);
+  });
+
+  const choose = (id: string) => { onAttach(id); setQ(""); setOpen(false); };
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <input
+        value={q}
+        onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && matches.length === 1) { e.preventDefault(); choose(matches[0].id); }
+          if (e.key === "Escape") setOpen(false);
+        }}
+        placeholder={placeholder}
+        className={plainInput}
+      />
+      {open && (
+        <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-line bg-white py-1 shadow-card">
+          {matches.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-muted">—</p>
+          ) : (
+            matches.map((tm) => (
+              <button
+                key={tm.id}
+                type="button"
+                onClick={() => choose(tm.id)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-start text-sm text-ink transition hover:bg-surface"
+              >
+                <span className="font-medium">{pick(tm.name) || tm.id}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
   );
 }
