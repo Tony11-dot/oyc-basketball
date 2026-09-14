@@ -516,9 +516,25 @@ export default function TeamsAdmin() {
                       {payEnabled && <PaymentEditor player={p} defaultFee={defaultFee} onChange={(patch) => updatePlayer(p.id, patch)} />}
                       <PlayerReceipts player={p} defaultFee={defaultFee} />
                       <div className="flex items-center justify-between border-t border-line pt-2">
-                        <div className="flex gap-3">
-                          <button type="button" onClick={() => { detachPlayer(editing.id, p.id); setOpenPlayerId(null); }} className="text-xs font-semibold text-muted hover:text-ink">↩ {t.admin.team.detach}</button>
-                          <button type="button" onClick={() => { if (confirm(t.admin.team.deleteWarn)) { deletePlayer(p.id); setOpenPlayerId(null); } }} className="text-xs font-semibold text-rose-600 hover:underline">{t.admin.actions.delete}</button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!confirm(pick({ ar: "إزالة هذا اللاعب من الفريق؟ يبقى في قائمة اللاعبين العامة.", he: "להסיר את השחקן מהקבוצה? הוא יישאר במאגר השחקנים הכללי.", en: "Remove this player from the team? They'll stay in the shared player pool." }))) return;
+                              detachPlayer(editing.id, p.id);
+                              setOpenPlayerId(null);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg border border-line px-2.5 py-1.5 text-xs font-semibold text-ink transition hover:border-ink/40 hover:bg-surface"
+                          >
+                            ↩ {t.admin.team.detach}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { if (confirm(t.admin.team.deleteWarn)) { deletePlayer(p.id); setOpenPlayerId(null); } }}
+                            className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-rose-700"
+                          >
+                            🗑 {t.admin.actions.delete}
+                          </button>
                         </div>
                         <Button size="sm" onClick={() => setOpenPlayerId(null)}>{pick({ ar: "تم", he: "סיום", en: "Done" })}</Button>
                       </div>
