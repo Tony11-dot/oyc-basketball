@@ -9,6 +9,7 @@ const METHODS: { value: ReceiptMethod; label: Localized }[] = [
   { value: "نقدا", label: { ar: "نقدًا", he: "מזומן", en: "Cash" } },
   { value: "شيكات", label: { ar: "شيكات", he: "צ׳קים", en: "Cheque" } },
   { value: "بطاقة اعتماد", label: { ar: "بطاقة اعتماد", he: "כרטיס אשראי", en: "Credit card" } },
+  { value: "تحويل بنكي", label: { ar: "تحويل بنكي", he: "העברה בנקאית", en: "Bank transfer" } },
 ];
 
 const numInput =
@@ -118,7 +119,7 @@ export function PlayerReceipts({
               <input value={note} onChange={(e) => setNote(e.target.value)} className={numInput} />
             </label>
           </div>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
             {METHODS.map((m) => (
               <button
                 key={m.value}

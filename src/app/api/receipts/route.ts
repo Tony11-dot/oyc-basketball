@@ -3,7 +3,7 @@ import { getReceipts, updateReceipts, updatePlayers } from "@/lib/db";
 import { isAuthed } from "@/lib/auth";
 import type { Receipt, ReceiptMethod } from "@/lib/types";
 
-const METHODS: ReceiptMethod[] = ["نقدا", "شيكات", "بطاقة اعتماد"];
+const METHODS: ReceiptMethod[] = ["نقدا", "شيكات", "بطاقة اعتماد", "تحويل بنكي"];
 
 // GET — list receipts, newest first (admin only; they contain payment info).
 // Optional ?playerId= narrows to one player's receipt history.

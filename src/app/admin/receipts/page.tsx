@@ -16,6 +16,7 @@ const METHODS: { value: ReceiptMethod; label: Localized }[] = [
   { value: "نقدا", label: { ar: "نقدًا", he: "מזומן", en: "Cash" } },
   { value: "شيكات", label: { ar: "شيكات", he: "צ׳קים", en: "Cheque" } },
   { value: "بطاقة اعتماد", label: { ar: "بطاقة اعتماد", he: "כרטיס אשראי", en: "Credit card" } },
+  { value: "تحويل بنكي", label: { ar: "تحويل بنكي", he: "העברה בנקאית", en: "Bank transfer" } },
 ];
 
 export default function ReceiptsAdmin() {
@@ -195,7 +196,7 @@ export default function ReceiptsAdmin() {
 
           <div className="block">
             <span className="mb-1 block text-xs font-semibold text-ink">{pick({ ar: "طريقة الدفع", he: "אמצעי תשלום", en: "Payment method" })}</span>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5">
               {METHODS.map((m) => (
                 <button
                   key={m.value}

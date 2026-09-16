@@ -55,6 +55,7 @@ const METHOD_LABEL: Record<string, string> = {
   "نقدا": "نقدًا",
   "شيكات": "شيكات",
   "بطاقة اعتماد": "بطاقة اعتماد",
+  "تحويل بنكي": "تحويل بنكي",
 };
 
 function formatDate(iso: string): string {
