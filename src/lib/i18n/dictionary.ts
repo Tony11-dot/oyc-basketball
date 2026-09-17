@@ -82,7 +82,7 @@ export interface Dict {
       father: string; mother: string; phoneFather: string; phoneMother: string;
       address: string; school: string; grade: string;
       jerseySize: string; jerseyPlaceholder: string;
-      payment: string; paymentPlaceholder: string; paymentCash: string; paymentCheck: string; paymentCard: string; paymentBankTransfer: string;
+      payment: string; paymentPlaceholder: string; paymentCash: string; paymentCheck: string; paymentCard: string; paymentBankTransfer: string; paymentStandingOrder: string;
       paymentWithin7Days: string;
       cardTitle: string; cardName: string; cardNumber: string; cardExpiry: string; cardCvc: string;
       payNow: string; paySecureNote: string; payPending: string;
@@ -358,7 +358,7 @@ export const dictionaries: Record<Locale, Dict> = {
         father: "اسم الأب", mother: "اسم الأم", phoneFather: "هاتف الأب", phoneMother: "هاتف الأم",
         address: "العنوان", school: "المدرسة", grade: "الصف",
         jerseySize: "مقاس الزيّ الرياضي", jerseyPlaceholder: "— اختر المقاس —",
-        payment: "طريقة دفع الرسوم", paymentPlaceholder: "— طريقة الدفع —", paymentCash: "نقداً", paymentCheck: "شيكات", paymentCard: "بطاقة اعتماد", paymentBankTransfer: "تحويل بنكي",
+        payment: "طريقة دفع الرسوم", paymentPlaceholder: "— طريقة الدفع —", paymentCash: "نقداً", paymentCheck: "شيكات", paymentCard: "بطاقة اعتماد", paymentBankTransfer: "تحويل بنكي", paymentStandingOrder: "أمر دائم",
         paymentWithin7Days: "يُرجى تسديد الرسوم خلال 7 أيام من تاريخ التسجيل.",
         cardTitle: "تفاصيل البطاقة", cardName: "الاسم على البطاقة", cardNumber: "رقم البطاقة", cardExpiry: "تاريخ الانتهاء", cardCvc: "الرمز السرّي",
         payNow: "ادفع الآن", paySecureNote: "تتم المعالجة عبر بوّابة دفع آمنة؛ لا نحتفظ ببيانات بطاقتك.", payPending: "سيُكمَّل الدفع بعد الإرسال.",
@@ -648,7 +648,7 @@ export const dictionaries: Record<Locale, Dict> = {
         father: "שם האב", mother: "שם האם", phoneFather: "טלפון האב", phoneMother: "טלפון האם",
         address: "כתובת", school: "בית ספר", grade: "כיתה",
         jerseySize: "מידת מדים", jerseyPlaceholder: "— בחר מידה —",
-        payment: "אופן תשלום", paymentPlaceholder: "— אופן תשלום —", paymentCash: "מזומן", paymentCheck: "צ'קים", paymentCard: "כרטיס אשראי", paymentBankTransfer: "העברה בנקאית",
+        payment: "אופן תשלום", paymentPlaceholder: "— אופן תשלום —", paymentCash: "מזומן", paymentCheck: "צ'קים", paymentCard: "כרטיס אשראי", paymentBankTransfer: "העברה בנקאית", paymentStandingOrder: "הוראת קבע",
         paymentWithin7Days: "יש להסדיר את התשלום תוך 7 ימים ממועד ההרשמה.",
         cardTitle: "פרטי כרטיס", cardName: "השם על הכרטיס", cardNumber: "מספר כרטיס", cardExpiry: "תוקף", cardCvc: "קוד אבטחה",
         payNow: "לתשלום", paySecureNote: "התשלום מתבצע דרך שער תשלום מאובטח; איננו שומרים את פרטי הכרטיס.", payPending: "התשלום יושלם לאחר השליחה.",
@@ -938,7 +938,7 @@ export const dictionaries: Record<Locale, Dict> = {
         father: "Father's name", mother: "Mother's name", phoneFather: "Father's phone", phoneMother: "Mother's phone",
         address: "Address", school: "School", grade: "Grade / class",
         jerseySize: "Jersey size", jerseyPlaceholder: "— Select size —",
-        payment: "Payment method", paymentPlaceholder: "— Payment method —", paymentCash: "Cash", paymentCheck: "Cheques", paymentCard: "Credit card", paymentBankTransfer: "Bank transfer",
+        payment: "Payment method", paymentPlaceholder: "— Payment method —", paymentCash: "Cash", paymentCheck: "Cheques", paymentCard: "Credit card", paymentBankTransfer: "Bank transfer", paymentStandingOrder: "Standing order",
         paymentWithin7Days: "Please settle the fee within 7 days of registering.",
         cardTitle: "Card details", cardName: "Name on card", cardNumber: "Card number", cardExpiry: "Expiry", cardCvc: "CVC",
         payNow: "Pay now", paySecureNote: "Processed through a secure payment gateway; we never store your card details.", payPending: "Payment will be completed after you submit.",

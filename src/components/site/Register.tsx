@@ -389,6 +389,7 @@ function RegisterForm({ bg, content, stripeReady }: { bg?: string; content?: Reg
                       <option value="نقدا">{f.paymentCash}</option>
                       <option value="شيكات">{f.paymentCheck}</option>
                       <option value="تحويل بنكي">{f.paymentBankTransfer}</option>
+                      <option value="أمر دائم">{f.paymentStandingOrder}</option>
                       <option value={CARD_VALUE}>{f.paymentCard}</option>
                     </select>
                   </Field>

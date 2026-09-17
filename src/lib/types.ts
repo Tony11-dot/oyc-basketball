@@ -250,7 +250,7 @@ export interface Registration {
 
 /** Payment method options for a manually-issued receipt. Mirrors the three
  * methods on the registration form (cash / cheque / credit card). */
-export type ReceiptMethod = "نقدا" | "شيكات" | "بطاقة اعتماد" | "تحويل بنكي";
+export type ReceiptMethod = "نقدا" | "شيكات" | "بطاقة اعتماد" | "تحويل بنكي" | "أمر دائم";
 
 /** A payment receipt issued from the admin. The admin fills a name, an amount
  * and a payment method; the system renders a formal Arabic PDF from it. */

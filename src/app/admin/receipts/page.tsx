@@ -17,6 +17,7 @@ const METHODS: { value: ReceiptMethod; label: Localized }[] = [
   { value: "شيكات", label: { ar: "شيكات", he: "צ׳קים", en: "Cheque" } },
   { value: "بطاقة اعتماد", label: { ar: "بطاقة اعتماد", he: "כרטיס אשראי", en: "Credit card" } },
   { value: "تحويل بنكي", label: { ar: "تحويل بنكي", he: "העברה בנקאית", en: "Bank transfer" } },
+  { value: "أمر دائم", label: { ar: "أمر دائم", he: "הוראת קבע", en: "Standing order" } },
 ];
 
 export default function ReceiptsAdmin() {

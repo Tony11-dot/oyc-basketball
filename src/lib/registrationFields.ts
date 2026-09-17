@@ -5,7 +5,7 @@
 // Jersey + payment values MUST match the PDF dropdown option strings exactly
 // (the payment values are the Arabic options baked into the template).
 export const JERSEY_SIZES = ["8", "10", "12", "14", "XXS", "XS", "S", "M", "L", "XL"] as const;
-export const PAYMENT_VALUES = ["نقدا", "شيكات", "بطاقة اعتماد", "تحويل بنكي"] as const;
+export const PAYMENT_VALUES = ["نقدا", "شيكات", "بطاقة اعتماد", "تحويل بنكي", "أمر دائم"] as const;
 
 // Registration fee in the smallest currency unit (agorot): ₪3,530.00.
 // Shared by the client (Stripe Payment Element) and the server (PaymentIntent).
