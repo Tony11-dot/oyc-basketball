@@ -235,16 +235,26 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                                 </span>
                               )}
                               <span className="text-base font-bold text-ink">{pick(m.opponent)}</span>
+                              {m.opponentNumber && (
+                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-500">#{m.opponentNumber}</span>
+                              )}
+                              <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-bold text-muted">
+                                {m.isHome === false ? t.teams.away : t.teams.home}
+                              </span>
                             </div>
                             {formatMatch(m) && <p className="mt-1.5 text-sm text-muted">🗓️ {formatMatch(m)}</p>}
-                            {pick(m.where) && <p className="mt-0.5 text-sm text-muted">📍 {t.teams.at} {pick(m.where)}</p>}
-                            {m.contactName && pick(m.contactName) && (
-                              <p className="mt-0.5 text-sm text-muted">🧑‍💼 {t.teams.responsible}: {pick(m.contactName)}</p>
-                            )}
-                            {m.contactPhone && (
-                              <p className="mt-0.5 text-sm text-muted">
-                                📞 <a href={`tel:${m.contactPhone}`} dir="ltr" className="font-semibold text-brand-dark hover:underline">{m.contactPhone}</a>
-                              </p>
+                            {m.isHome === false && (
+                              <>
+                                {pick(m.where) && <p className="mt-0.5 text-sm text-muted">📍 {t.teams.at} {pick(m.where)}</p>}
+                                {m.contactName && pick(m.contactName) && (
+                                  <p className="mt-0.5 text-sm text-muted">🧑‍💼 {t.teams.responsible}: {pick(m.contactName)}</p>
+                                )}
+                                {m.contactPhone && (
+                                  <p className="mt-0.5 text-sm text-muted">
+                                    📞 <a href={`tel:${m.contactPhone}`} dir="ltr" className="font-semibold text-brand-dark hover:underline">{m.contactPhone}</a>
+                                  </p>
+                                )}
+                              </>
                             )}
                             {m.ibbaLink && (
                               <a

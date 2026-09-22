@@ -50,10 +50,15 @@ export interface Player {
 export interface Match {
   id: string;
   opponent: Localized;
+  /** Opponent's team/league number, shown next to their name (home + away). */
+  opponentNumber?: string;
   /** Optional opponent logo/crest. */
   opponentLogo?: string;
   /** ISO date-time. The weekday is derived from this for display. */
   date: string;
+  /** True for a home game, false for away. Location + contact fields only
+   * apply to away games. Defaults to true (home) when unset. */
+  isHome: boolean;
   where: Localized;
   /** The person to contact for this opponent / fixture (المسؤول). */
   contactName?: Localized;

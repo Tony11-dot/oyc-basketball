@@ -50,7 +50,7 @@ export default function GamesAdmin() {
   const addMatch = (teamId: string) => {
     if (!teamId) return;
     const id = `m-${Date.now()}`;
-    setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, matches: [...tm.matches, { id, opponent: emptyLoc(), date: "", where: emptyLoc(), ibbaLink: "" }] } : tm)));
+    setTeams((list) => list.map((tm) => (tm.id === teamId ? { ...tm, matches: [...tm.matches, { id, opponent: emptyLoc(), date: "", isHome: true, where: emptyLoc(), ibbaLink: "" }] } : tm)));
     setEditingKey(`${teamId}:${id}`);
   };
 
@@ -122,6 +122,8 @@ export default function GamesAdmin() {
   const subtitle = pick({ ar: "كل مباريات النادي في مكان واحد — أضف، عدّل واحذف.", he: "כל משחקי המועדון במקום אחד — הוספה, עריכה ומחיקה.", en: "Every club game in one place — add, edit and delete." });
   const upcomingLabel = pick({ ar: "قادمة", he: "קרובים", en: "Upcoming" });
   const pastLabel = pick({ ar: "سابقة", he: "עברו", en: "Past" });
+  const homeLabel = pick({ ar: "داخلية", he: "בית", en: "Home" });
+  const awayLabel = pick({ ar: "خارجية", he: "חוץ", en: "Away" });
 
   return (
     <AdminShell>
@@ -195,8 +197,12 @@ export default function GamesAdmin() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-ink">
                         {pick(g.team.name) || "—"} <span className="text-muted">vs</span> {pick(g.match.opponent) || pick({ ar: "خصم", he: "יריב", en: "Opponent" })}
+                        {g.match.opponentNumber ? ` #${g.match.opponentNumber}` : ""}
                       </p>
-                      <p className="truncate text-xs text-muted">{fmtDate(g.match.date)}{pick(g.match.where) ? ` · ${pick(g.match.where)}` : ""}</p>
+                      <p className="truncate text-xs text-muted">
+                        {fmtDate(g.match.date)} · {g.match.isHome === false ? awayLabel : homeLabel}
+                        {g.match.isHome === false && pick(g.match.where) ? ` · ${pick(g.match.where)}` : ""}
+                      </p>
                     </div>
                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${up ? "bg-emerald-100 text-emerald-700" : "bg-surface text-muted"}`}>{up ? upcomingLabel : pastLabel}</span>
                     <TapChevron className="text-lg" />
@@ -221,10 +227,13 @@ export default function GamesAdmin() {
                       <span className="rounded-md bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-dark">{pick(g.team.name) || "—"}</span>
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${up ? "bg-emerald-100 text-emerald-700" : "bg-surface text-muted"}`}>{up ? upcomingLabel : pastLabel}</span>
                     </div>
-                    <p className="mt-3 text-base font-extrabold text-ink">🏀 {pick(g.match.opponent) || pick({ ar: "خصم", he: "יריב", en: "Opponent" })}</p>
-                    <p className="mt-1 text-xs font-semibold text-muted">{fmtDate(g.match.date)}</p>
-                    {pick(g.match.where) && <p className="mt-0.5 text-xs text-muted">📍 {pick(g.match.where)}</p>}
-                    {pick(g.match.contactName ?? emptyLoc()) && <p className="mt-0.5 text-xs text-muted">👤 {pick(g.match.contactName ?? emptyLoc())}{g.match.contactPhone ? ` · ${g.match.contactPhone}` : ""}</p>}
+                    <p className="mt-3 text-base font-extrabold text-ink">
+                      🏀 {pick(g.match.opponent) || pick({ ar: "خصم", he: "יריב", en: "Opponent" })}
+                      {g.match.opponentNumber && <span className="ms-1 text-sm font-bold text-muted">#{g.match.opponentNumber}</span>}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-muted">{fmtDate(g.match.date)} · {g.match.isHome === false ? awayLabel : homeLabel}</p>
+                    {g.match.isHome === false && pick(g.match.where) && <p className="mt-0.5 text-xs text-muted">📍 {pick(g.match.where)}</p>}
+                    {g.match.isHome === false && pick(g.match.contactName ?? emptyLoc()) && <p className="mt-0.5 text-xs text-muted">👤 {pick(g.match.contactName ?? emptyLoc())}{g.match.contactPhone ? ` · ${g.match.contactPhone}` : ""}</p>}
                     <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand">{pick({ ar: "تعديل", he: "עריכה", en: "Edit" })} <TapChevron /></span>
                   </button>
                 );

@@ -126,6 +126,9 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                         >
                           {past ? t.games.past : t.games.upcoming}
                         </span>
+                        <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-bold text-muted">
+                          {match.isHome === false ? t.games.away : t.games.home}
+                        </span>
                       </div>
                       <div className="mt-2.5 flex flex-wrap items-center gap-2">
                         <span className="text-xs font-bold text-muted">{t.games.vs}</span>
@@ -135,16 +138,23 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                           </span>
                         )}
                         <span className="text-lg font-bold text-ink">{pick(match.opponent)}</span>
+                        {match.opponentNumber && (
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-500">#{match.opponentNumber}</span>
+                        )}
                       </div>
                       {formatDate(match) && <p className="mt-1.5 text-sm text-muted">🗓️ {formatDate(match)}</p>}
-                      {pick(match.where) && <p className="mt-0.5 text-sm text-muted">📍 {t.games.at} {pick(match.where)}</p>}
-                      {match.contactName && pick(match.contactName) && (
-                        <p className="mt-0.5 text-sm text-muted">🧑‍💼 {t.games.responsible}: {pick(match.contactName)}</p>
-                      )}
-                      {match.contactPhone && (
-                        <p className="mt-0.5 text-sm text-muted">
-                          📞 <a href={`tel:${match.contactPhone}`} dir="ltr" className="font-semibold text-brand-dark hover:underline">{match.contactPhone}</a>
-                        </p>
+                      {match.isHome === false && (
+                        <>
+                          {pick(match.where) && <p className="mt-0.5 text-sm text-muted">📍 {t.games.at} {pick(match.where)}</p>}
+                          {match.contactName && pick(match.contactName) && (
+                            <p className="mt-0.5 text-sm text-muted">🧑‍💼 {t.games.responsible}: {pick(match.contactName)}</p>
+                          )}
+                          {match.contactPhone && (
+                            <p className="mt-0.5 text-sm text-muted">
+                              📞 <a href={`tel:${match.contactPhone}`} dir="ltr" className="font-semibold text-brand-dark hover:underline">{match.contactPhone}</a>
+                            </p>
+                          )}
+                        </>
                       )}
                       {match.ibbaLink && (
                         <a

@@ -167,7 +167,7 @@ export default function TeamsAdmin() {
     setTeams((list) =>
       list.map((tm) =>
         tm.id === teamId
-          ? { ...tm, matches: [...tm.matches, { id: `m-${Date.now()}`, opponent: emptyLoc(), date: "", where: emptyLoc(), ibbaLink: "" }] }
+          ? { ...tm, matches: [...tm.matches, { id: `m-${Date.now()}`, opponent: emptyLoc(), date: "", isHome: true, where: emptyLoc(), ibbaLink: "" }] }
           : tm,
       ),
     );
@@ -221,8 +221,22 @@ export default function TeamsAdmin() {
       ...diff(v.players, prev.players).map((p) => fetch("/api/players", { method: "POST", headers, body: JSON.stringify(p) }).then(saved)),
       ...diff(v.coaches, prev.coaches).map((c) => fetch("/api/coaches", { method: "POST", headers, body: JSON.stringify(c) }).then(saved)),
     ]);
+    // Existing teams are saved with a field-level PATCH (only the keys that
+    // actually changed in this tab), never the whole cached object — so a save
+    // triggered by, say, a roster edit can't clobber matches with a stale
+    // snapshot if they were changed concurrently elsewhere (e.g. the dedicated
+    // Games admin page). New teams don't exist on the server yet, so they still
+    // need a full create via POST.
     await Promise.all(
-      diff(v.teams, prev.teams).map((tm) => fetch("/api/teams", { method: "POST", headers, body: JSON.stringify(tm) }).then(saved)),
+      diff(v.teams, prev.teams).map((tm) => {
+        const before = prev.teams.find((p) => p.id === tm.id);
+        if (!before) return fetch("/api/teams", { method: "POST", headers, body: JSON.stringify(tm) }).then(saved);
+        const patch: Record<string, unknown> = {};
+        (Object.keys(tm) as (keyof Team)[]).forEach((key) => {
+          if (JSON.stringify(tm[key]) !== JSON.stringify(before[key])) patch[key] = tm[key];
+        });
+        return fetch(`/api/teams/${tm.id}`, { method: "PATCH", headers, body: JSON.stringify(patch) }).then(saved);
+      }),
     );
     return v;
   }, []);

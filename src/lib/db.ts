@@ -118,11 +118,21 @@ export async function getTeams(): Promise<Team[]> {
   ]);
   const pids = new Set(players.map((p) => p.id));
   const cids = new Set(coaches.map((c) => c.id));
+  // Backfill home/away on older matches saved before that field existed: a
+  // recorded contact person only ever makes sense for an away fixture, so its
+  // presence is the signal; everything else defaults to a home game.
+  const healMatch = (m: Team["matches"][number]): Team["matches"][number] => {
+    if (m.isHome !== undefined) return m;
+    const hasContact = Boolean(m.contactName?.ar || m.contactName?.he || m.contactName?.en || m.contactPhone);
+    return { ...m, isHome: !hasContact };
+  };
   const clean = (t: Team): Team => {
     const playerIds = t.playerIds.filter((id) => pids.has(id));
     const coachIds = (t.coachIds ?? []).filter((id) => cids.has(id));
-    return playerIds.length !== t.playerIds.length || coachIds.length !== (t.coachIds ?? []).length
-      ? { ...t, playerIds, coachIds }
+    const matches = t.matches.map(healMatch);
+    const matchesChanged = matches.some((m, i) => m !== t.matches[i]);
+    return playerIds.length !== t.playerIds.length || coachIds.length !== (t.coachIds ?? []).length || matchesChanged
+      ? { ...t, playerIds, coachIds, matches }
       : t;
   };
   const cleaned = teams.map(clean);

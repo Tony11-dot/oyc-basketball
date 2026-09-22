@@ -37,12 +37,14 @@ export interface Dict {
     noCoaches: string;
     responsible: string;
     phone: string;
+    home: string;
+    away: string;
   };
   games: {
     eyebrow: string; heading: string; subheading: string; empty: string;
     filterTeam: string; filterPlayer: string; allTeams: string; allPlayers: string;
     upcoming: string; past: string; vs: string; at: string; viewIbba: string;
-    responsible: string; phone: string;
+    responsible: string; phone: string; home: string; away: string;
   };
   coach: {
     loginTitle: string; loginSubtitle: string; idLabel: string; idPlaceholder: string;
@@ -213,8 +215,12 @@ export interface Dict {
       matchesHint: string;
       addMatch: string;
       opponent: string;
+      opponentNumber: string;
       opponentLogo: string;
       matchDate: string;
+      homeAway: string;
+      matchHome: string;
+      matchAway: string;
       matchWhere: string;
       contactName: string;
       contactNameHint: string;
@@ -283,6 +289,8 @@ export const dictionaries: Record<Locale, Dict> = {
       noCoaches: "لم تتم إضافة مدرّبين بعد.",
       responsible: "المسؤول",
       phone: "الهاتف",
+      home: "داخلية",
+      away: "خارجية",
     },
     games: {
       eyebrow: "الجدول",
@@ -300,6 +308,8 @@ export const dictionaries: Record<Locale, Dict> = {
       viewIbba: "صفحة IBBA",
       responsible: "المسؤول",
       phone: "الهاتف",
+      home: "داخلية",
+      away: "خارجية",
     },
     coach: {
       loginTitle: "بوّابة المدرّبين",
@@ -505,8 +515,12 @@ export const dictionaries: Record<Locale, Dict> = {
         matchesHint: "ضد من، متى، أين، المسؤول، ورابط IBBA",
         addMatch: "+ إضافة مباراة",
         opponent: "الخصم",
+        opponentNumber: "رقم الفريق",
         opponentLogo: "شعار الخصم",
         matchDate: "التاريخ والوقت",
+        homeAway: "داخلية / خارجية",
+        matchHome: "داخلية",
+        matchAway: "خارجية",
         matchWhere: "المكان",
         contactName: "المسؤول",
         contactNameHint: "الشخص الذي يُراجَع لدى الفريق الخصم",
@@ -573,6 +587,8 @@ export const dictionaries: Record<Locale, Dict> = {
       noCoaches: "עדיין לא נוספו מאמנים.",
       responsible: "איש קשר",
       phone: "טלפון",
+      home: "בית",
+      away: "חוץ",
     },
     games: {
       eyebrow: "לוח משחקים",
@@ -590,6 +606,8 @@ export const dictionaries: Record<Locale, Dict> = {
       viewIbba: "עמוד IBBA",
       responsible: "איש קשר",
       phone: "טלפון",
+      home: "בית",
+      away: "חוץ",
     },
     coach: {
       loginTitle: "פורטל המאמנים",
@@ -795,8 +813,12 @@ export const dictionaries: Record<Locale, Dict> = {
         matchesHint: "נגד מי, מתי, איפה, איש קשר, וקישור IBBA",
         addMatch: "+ הוספת משחק",
         opponent: "יריבה",
+        opponentNumber: "מספר קבוצה",
         opponentLogo: "סמל היריבה",
         matchDate: "תאריך ושעה",
+        homeAway: "בית / חוץ",
+        matchHome: "בית",
+        matchAway: "חוץ",
         matchWhere: "מיקום",
         contactName: "איש קשר",
         contactNameHint: "האדם אליו פונים בקבוצה היריבה",
@@ -863,6 +885,8 @@ export const dictionaries: Record<Locale, Dict> = {
       noCoaches: "No coaches added yet.",
       responsible: "Contact",
       phone: "Phone",
+      home: "Home",
+      away: "Away",
     },
     games: {
       eyebrow: "Schedule",
@@ -880,6 +904,8 @@ export const dictionaries: Record<Locale, Dict> = {
       viewIbba: "IBBA page",
       responsible: "Contact",
       phone: "Phone",
+      home: "Home",
+      away: "Away",
     },
     coach: {
       loginTitle: "Coaches portal",
@@ -1085,8 +1111,12 @@ export const dictionaries: Record<Locale, Dict> = {
         matchesHint: "who, when, where, contact, and an IBBA link",
         addMatch: "+ Add match",
         opponent: "Opponent",
+        opponentNumber: "Team #",
         opponentLogo: "Opponent logo",
         matchDate: "Date & time",
+        homeAway: "Home / Away",
+        matchHome: "Home",
+        matchAway: "Away",
         matchWhere: "Where",
         contactName: "Contact person",
         contactNameHint: "the person to go to at the opponent club",

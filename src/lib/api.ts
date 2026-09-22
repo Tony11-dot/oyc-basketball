@@ -37,8 +37,10 @@ export function parseMatches(v: unknown): Match[] {
     return {
       id: typeof o.id === "string" && o.id ? o.id : randomUUID(),
       opponent: localized(o.opponent),
+      opponentNumber: typeof o.opponentNumber === "string" ? o.opponentNumber : undefined,
       opponentLogo: typeof o.opponentLogo === "string" ? o.opponentLogo : undefined,
       date: typeof o.date === "string" ? o.date : "",
+      isHome: o.isHome !== false,
       where: localized(o.where),
       contactName: o.contactName != null ? localized(o.contactName) : undefined,
       contactPhone: typeof o.contactPhone === "string" ? o.contactPhone : undefined,
