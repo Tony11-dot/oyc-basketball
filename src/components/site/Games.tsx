@@ -110,7 +110,8 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                       viewport={{ once: true, amount: 0.2 }}
                       transition={{ duration: 0.4, delay: Math.min(i, 6) * 0.05 }}
                       className={cn(
-                        "rounded-2xl border border-line bg-white p-4 shadow-sm md:p-5",
+                        "rounded-2xl border border-line bg-white p-4 shadow-sm md:p-5 border-s-4",
+                        match.isHome === false ? "border-s-accent" : "border-s-brand-200",
                         past && "opacity-70",
                       )}
                     >
@@ -126,7 +127,14 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                         >
                           {past ? t.games.past : t.games.upcoming}
                         </span>
-                        <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-bold text-muted">
+                        <span
+                          className={cn(
+                            "rounded-full border px-2.5 py-0.5 text-xs font-bold",
+                            match.isHome === false
+                              ? "border-accent bg-accent text-white"
+                              : "border-line bg-white text-ink",
+                          )}
+                        >
                           {match.isHome === false ? t.games.away : t.games.home}
                         </span>
                       </div>

@@ -139,6 +139,48 @@ body {
   }
 }
 
+/* ---- Accessibility widget --------------------------------------------------
+   Toggled by <AccessibilityWidget>. Redefining the theme's CSS custom
+   properties on html.a11y-contrast retints every text-ink/bg-surface/border-line
+   utility in one place, since Tailwind's utilities read those vars at paint time. */
+html.a11y-contrast {
+  --color-ink: #000000;
+  --color-muted: #202020;
+  --color-line: #000000;
+  --color-surface: #ffffff;
+  --color-brand: #001a4d;
+  --color-brand-dark: #00102e;
+  --color-brand-light: #1d3f8f;
+  --color-brand-50: #ffffff;
+  --color-brand-100: #dbe4f5;
+  --color-accent: #8f000c;
+  --color-accent-dark: #600008;
+  --background: #ffffff;
+  --foreground: #000000;
+}
+html.a11y-contrast :focus-visible {
+  outline: 3px solid #ffb700;
+  outline-offset: 2px;
+}
+
+html.a11y-grayscale {
+  filter: grayscale(1);
+}
+
+html.a11y-underline a {
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+}
+
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
 /* ---- Seamless infinite "train" marquee (reels + photos) -------------------
    The track holds N identical copies of the content and shifts left by exactly
    one copy's width, so the last item sits flush against the first — no gaps.

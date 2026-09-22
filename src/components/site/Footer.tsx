@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { SiteContent } from "@/lib/types";
 import { Logo } from "@/components/ui/Logo";
@@ -86,8 +87,24 @@ export function Footer({ footer, styles }: { footer: SiteContent["footer"]; styl
           </div>
         </div>
 
-        <div className="mt-6 border-t border-white/15 pt-4 text-center text-sm text-white/70">
+        <div className="mt-6 flex flex-col items-center gap-3 border-t border-white/15 pt-4 text-center text-sm text-white/70">
           <p>© {new Date().getFullYear()} OBA Nazareth. {t.footer.rights}</p>
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-white/60">
+            <Link href="/privacy" className="transition hover:text-white">{t.footer.privacy}</Link>
+            <Link href="/cookies" className="transition hover:text-white">{t.footer.cookies}</Link>
+            <Link href="/terms" className="transition hover:text-white">{t.footer.terms}</Link>
+          </nav>
+          <p className="text-xs text-white/50">
+            {t.footer.credit}{" "}
+            <a
+              href="https://github.com/Tony11-dot"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-white/70 transition hover:text-white"
+            >
+              Tony Aboud
+            </a>
+          </p>
         </div>
       </div>
     </footer>

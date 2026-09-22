@@ -93,7 +93,15 @@ export interface Dict {
       consent: string; feeNote: string; optional: string;
     };
   };
-  footer: { contact: string; address: string; directions: string; follow: string; rights: string; adminLink: string };
+  footer: {
+    contact: string; address: string; directions: string; follow: string; rights: string; adminLink: string;
+    privacy: string; cookies: string; terms: string; credit: string;
+  };
+  a11y: {
+    open: string; title: string; close: string;
+    fontSize: string; decrease: string; increase: string;
+    contrast: string; grayscale: string; underline: string; reduceMotion: string; reset: string;
+  };
   admin: {
     loading: string;
     viewSite: string;
@@ -379,7 +387,15 @@ export const dictionaries: Record<Locale, Dict> = {
         optional: "اختياري",
       },
     },
-    footer: { contact: "تواصل", address: "العنوان", directions: "الاتجاهات عبر Waze", follow: "تابعنا", rights: "جميع الحقوق محفوظة.", adminLink: "الإدارة" },
+    footer: {
+      contact: "تواصل", address: "العنوان", directions: "الاتجاهات عبر Waze", follow: "تابعنا", rights: "جميع الحقوق محفوظة.", adminLink: "الإدارة",
+      privacy: "سياسة الخصوصية", cookies: "سياسة ملفات تعريف الارتباط", terms: "شروط الاستخدام", credit: "تطوير",
+    },
+    a11y: {
+      open: "إعدادات الوصول", title: "إمكانية الوصول", close: "إغلاق",
+      fontSize: "حجم الخط", decrease: "تصغير", increase: "تكبير",
+      contrast: "تباين عالٍ", grayscale: "أبيض وأسود", underline: "تسطير الروابط", reduceMotion: "تقليل الحركة", reset: "إعادة الضبط",
+    },
     admin: {
       loading: "جارٍ التحميل…",
       viewSite: "عرض الموقع",
@@ -677,7 +693,15 @@ export const dictionaries: Record<Locale, Dict> = {
         optional: "רשות",
       },
     },
-    footer: { contact: "צור קשר", address: "כתובת", directions: "ניווט ב-Waze", follow: "עקבו אחרינו", rights: "כל הזכויות שמורות.", adminLink: "ניהול" },
+    footer: {
+      contact: "צור קשר", address: "כתובת", directions: "ניווט ב-Waze", follow: "עקבו אחרינו", rights: "כל הזכויות שמורות.", adminLink: "ניהול",
+      privacy: "מדיניות פרטיות", cookies: "מדיניות עוגיות", terms: "תנאי שימוש", credit: "פותח על ידי",
+    },
+    a11y: {
+      open: "הגדרות נגישות", title: "נגישות", close: "סגירה",
+      fontSize: "גודל טקסט", decrease: "הקטנה", increase: "הגדלה",
+      contrast: "ניגודיות גבוהה", grayscale: "גווני אפור", underline: "קו תחתון לקישורים", reduceMotion: "צמצום תנועה", reset: "איפוס",
+    },
     admin: {
       loading: "טוען…",
       viewSite: "צפייה באתר",
@@ -975,7 +999,15 @@ export const dictionaries: Record<Locale, Dict> = {
         optional: "optional",
       },
     },
-    footer: { contact: "Contact", address: "Address", directions: "Directions on Waze", follow: "Follow us", rights: "All rights reserved.", adminLink: "Admin" },
+    footer: {
+      contact: "Contact", address: "Address", directions: "Directions on Waze", follow: "Follow us", rights: "All rights reserved.", adminLink: "Admin",
+      privacy: "Privacy Policy", cookies: "Cookie Policy", terms: "Terms of Use", credit: "Developed by",
+    },
+    a11y: {
+      open: "Accessibility options", title: "Accessibility", close: "Close",
+      fontSize: "Text size", decrease: "Decrease", increase: "Increase",
+      contrast: "High contrast", grayscale: "Grayscale", underline: "Underline links", reduceMotion: "Reduce motion", reset: "Reset",
+    },
     admin: {
       loading: "Loading…",
       viewSite: "View site",

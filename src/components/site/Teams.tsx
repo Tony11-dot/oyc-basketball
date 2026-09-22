@@ -7,6 +7,7 @@ import type { Coach, Locale, Match, Player, Team } from "@/lib/types";
 import { ImageBlock } from "@/components/ui/ImageBlock";
 import { SectionHeading } from "./SectionHeading";
 import { SectionBg } from "./SectionBg";
+import { cn } from "@/lib/cn";
 
 const INTL_LOCALE: Record<Locale, string> = { ar: "ar", he: "he", en: "en-GB" };
 
@@ -226,7 +227,13 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                     ) : (
                       <ul className="mt-4 space-y-3">
                         {open.matches.map((m) => (
-                          <li key={m.id} className="rounded-2xl border border-line p-4">
+                          <li
+                            key={m.id}
+                            className={cn(
+                              "rounded-2xl border border-line p-4 border-s-4",
+                              m.isHome === false ? "border-s-accent" : "border-s-brand-200",
+                            )}
+                          >
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="text-xs font-bold text-muted">{t.teams.vs}</span>
                               {m.opponentLogo && (
@@ -238,7 +245,14 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                               {m.opponentNumber && (
                                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-500">#{m.opponentNumber}</span>
                               )}
-                              <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-bold text-muted">
+                              <span
+                                className={cn(
+                                  "rounded-full border px-2.5 py-0.5 text-xs font-bold",
+                                  m.isHome === false
+                                    ? "border-accent bg-accent text-white"
+                                    : "border-line bg-white text-ink",
+                                )}
+                              >
                                 {m.isHome === false ? t.teams.away : t.teams.home}
                               </span>
                             </div>
