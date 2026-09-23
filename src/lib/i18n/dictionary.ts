@@ -39,12 +39,14 @@ export interface Dict {
     phone: string;
     home: string;
     away: string;
+    round: string;
   };
   games: {
     eyebrow: string; heading: string; subheading: string; empty: string;
     filterTeam: string; filterPlayer: string; allTeams: string; allPlayers: string;
+    filterLocation: string; allLocations: string;
     upcoming: string; past: string; vs: string; at: string; viewIbba: string;
-    responsible: string; phone: string; home: string; away: string;
+    responsible: string; phone: string; home: string; away: string; round: string;
   };
   coach: {
     loginTitle: string; loginSubtitle: string; idLabel: string; idPlaceholder: string;
@@ -230,6 +232,7 @@ export interface Dict {
       matchHome: string;
       matchAway: string;
       matchWhere: string;
+      round: string;
       contactName: string;
       contactNameHint: string;
       contactPhone: string;
@@ -299,6 +302,7 @@ export const dictionaries: Record<Locale, Dict> = {
       phone: "الهاتف",
       home: "داخلية",
       away: "خارجية",
+      round: "الجولة",
     },
     games: {
       eyebrow: "الجدول",
@@ -309,6 +313,8 @@ export const dictionaries: Record<Locale, Dict> = {
       filterPlayer: "حسب اللاعب",
       allTeams: "كل الفرق",
       allPlayers: "كل اللاعبين",
+      filterLocation: "حسب المكان",
+      allLocations: "الكل",
       upcoming: "القادمة",
       past: "السابقة",
       vs: "ضد",
@@ -318,6 +324,7 @@ export const dictionaries: Record<Locale, Dict> = {
       phone: "الهاتف",
       home: "داخلية",
       away: "خارجية",
+      round: "الجولة",
     },
     coach: {
       loginTitle: "بوّابة المدرّبين",
@@ -538,6 +545,7 @@ export const dictionaries: Record<Locale, Dict> = {
         matchHome: "داخلية",
         matchAway: "خارجية",
         matchWhere: "المكان",
+        round: "الجولة",
         contactName: "المسؤول",
         contactNameHint: "الشخص الذي يُراجَع لدى الفريق الخصم",
         contactPhone: "هاتف المسؤول",
@@ -605,6 +613,7 @@ export const dictionaries: Record<Locale, Dict> = {
       phone: "טלפון",
       home: "בית",
       away: "חוץ",
+      round: "מחזור",
     },
     games: {
       eyebrow: "לוח משחקים",
@@ -615,6 +624,8 @@ export const dictionaries: Record<Locale, Dict> = {
       filterPlayer: "לפי שחקן",
       allTeams: "כל הקבוצות",
       allPlayers: "כל השחקנים",
+      filterLocation: "לפי מקום",
+      allLocations: "הכול",
       upcoming: "הקרובים",
       past: "שהיו",
       vs: "נגד",
@@ -624,6 +635,7 @@ export const dictionaries: Record<Locale, Dict> = {
       phone: "טלפון",
       home: "בית",
       away: "חוץ",
+      round: "מחזור",
     },
     coach: {
       loginTitle: "פורטל המאמנים",
@@ -844,6 +856,7 @@ export const dictionaries: Record<Locale, Dict> = {
         matchHome: "בית",
         matchAway: "חוץ",
         matchWhere: "מיקום",
+        round: "מחזור",
         contactName: "איש קשר",
         contactNameHint: "האדם אליו פונים בקבוצה היריבה",
         contactPhone: "טלפון איש הקשר",
@@ -911,6 +924,7 @@ export const dictionaries: Record<Locale, Dict> = {
       phone: "Phone",
       home: "Home",
       away: "Away",
+      round: "Round",
     },
     games: {
       eyebrow: "Schedule",
@@ -921,6 +935,8 @@ export const dictionaries: Record<Locale, Dict> = {
       filterPlayer: "By player",
       allTeams: "All teams",
       allPlayers: "All players",
+      filterLocation: "By location",
+      allLocations: "All",
       upcoming: "Upcoming",
       past: "Past",
       vs: "vs",
@@ -930,6 +946,7 @@ export const dictionaries: Record<Locale, Dict> = {
       phone: "Phone",
       home: "Home",
       away: "Away",
+      round: "Round",
     },
     coach: {
       loginTitle: "Coaches portal",
@@ -1150,6 +1167,7 @@ export const dictionaries: Record<Locale, Dict> = {
         matchHome: "Home",
         matchAway: "Away",
         matchWhere: "Where",
+        round: "Round",
         contactName: "Contact person",
         contactNameHint: "the person to go to at the opponent club",
         contactPhone: "Contact phone",

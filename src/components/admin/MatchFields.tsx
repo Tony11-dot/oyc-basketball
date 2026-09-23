@@ -32,6 +32,10 @@ export function MatchFields({
           <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.opponentNumber}</span>
           <input dir="ltr" value={match.opponentNumber ?? ""} onChange={(e) => onChange({ opponentNumber: e.target.value })} className={plainInput} />
         </label>
+        <label className="block w-20 shrink-0">
+          <span className="mb-1 block text-xs font-semibold text-ink">{t.admin.team.round}</span>
+          <input value={match.round ?? ""} onChange={(e) => onChange({ round: e.target.value })} className={plainInput} />
+        </label>
       </div>
       <DateField label={t.admin.team.matchDate} value={match.date} withTime onChange={(date) => onChange({ date })} />
 

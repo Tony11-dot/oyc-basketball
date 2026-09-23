@@ -3,26 +3,31 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
-import type { Locale, Match, Player, Team } from "@/lib/types";
+import type { Match, Player, Team } from "@/lib/types";
+import { formatMatchDateTime } from "@/lib/matchDate";
 import { ImageBlock } from "@/components/ui/ImageBlock";
 import { SectionHeading } from "./SectionHeading";
 import { SectionBg } from "./SectionBg";
+import { GameDetailModal } from "./GameDetailModal";
 import { cn } from "@/lib/cn";
-
-const INTL_LOCALE: Record<Locale, string> = { ar: "ar", he: "he", en: "en-GB" };
 
 interface Fixture {
   match: Match;
   team: Team;
 }
 
+type LocationFilter = "all" | "home" | "away";
+
 // Public "Games" section. Aggregates every team's fixtures into one schedule,
-// ordered by date (soonest first), filterable by team and by player. The data
-// comes straight from the teams' matches — the single source managed in admin.
+// ordered by date (soonest first), filterable by team, player and home/away.
+// Tapping a fixture opens a dramatic team-vs-team detail view. The data comes
+// straight from the teams' matches — the single source managed in admin.
 export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]; bg?: string }) {
   const { t, pick, locale } = useI18n();
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [playerFilter, setPlayerFilter] = useState<string>("all");
+  const [locationFilter, setLocationFilter] = useState<LocationFilter>("all");
+  const [selected, setSelected] = useState<Fixture | null>(null);
 
   // Flatten all fixtures and sort ascending by date (undated games sort last).
   const fixtures = useMemo<Fixture[]>(() => {
@@ -37,12 +42,14 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
 
   const visible = useMemo(
     () =>
-      fixtures.filter(({ team }) => {
+      fixtures.filter(({ match, team }) => {
         if (teamFilter !== "all" && team.id !== teamFilter) return false;
         if (playerFilter !== "all" && !team.playerIds.includes(playerFilter)) return false;
+        if (locationFilter === "home" && match.isHome === false) return false;
+        if (locationFilter === "away" && match.isHome !== false) return false;
         return true;
       }),
-    [fixtures, teamFilter, playerFilter],
+    [fixtures, teamFilter, playerFilter, locationFilter],
   );
 
   // Computed after mount so SSR and the first client render agree (avoids a
@@ -50,22 +57,7 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => setNow(Date.now()), []);
 
-  const formatDate = (m: Match) => {
-    if (!m.date) return "";
-    const d = new Date(m.date);
-    if (isNaN(+d)) return "";
-    try {
-      return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(d);
-    } catch {
-      return d.toLocaleString();
-    }
-  };
+  const formatDate = (m: Match) => formatMatchDateTime(m, locale);
 
   const selectCls =
     "h-11 rounded-xl border border-line bg-white px-3.5 text-sm font-semibold text-ink outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
@@ -94,6 +86,16 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                   <option key={p.id} value={p.id}>{pick(p.name)}</option>
                 ))}
               </select>
+              <select
+                value={locationFilter}
+                onChange={(e) => setLocationFilter(e.target.value as LocationFilter)}
+                className={selectCls}
+                aria-label={t.games.filterLocation}
+              >
+                <option value="all">{t.games.allLocations}</option>
+                <option value="home">{t.games.home}</option>
+                <option value="away">{t.games.away}</option>
+              </select>
             </div>
 
             {visible.length === 0 ? (
@@ -109,8 +111,12 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.2 }}
                       transition={{ duration: 0.4, delay: Math.min(i, 6) * 0.05 }}
+                      onClick={() => setSelected({ match, team })}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelected({ match, team })}
                       className={cn(
-                        "rounded-2xl border border-line bg-white p-4 shadow-sm md:p-5 border-s-4",
+                        "cursor-pointer rounded-2xl border border-line bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-card md:p-5 border-s-4",
                         match.isHome === false ? "border-s-accent" : "border-s-brand-200",
                         past && "opacity-70",
                       )}
@@ -137,6 +143,11 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                         >
                           {match.isHome === false ? t.games.away : t.games.home}
                         </span>
+                        {match.round && (
+                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
+                            {t.games.round} {match.round}
+                          </span>
+                        )}
                       </div>
                       <div className="mt-2.5 flex flex-wrap items-center gap-2">
                         <span className="text-xs font-bold text-muted">{t.games.vs}</span>
@@ -159,7 +170,7 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                           )}
                           {match.contactPhone && (
                             <p className="mt-0.5 text-sm text-muted">
-                              📞 <a href={`tel:${match.contactPhone}`} dir="ltr" className="font-semibold text-brand-dark hover:underline">{match.contactPhone}</a>
+                              📞 <a href={`tel:${match.contactPhone}`} dir="ltr" onClick={(e) => e.stopPropagation()} className="font-semibold text-brand-dark hover:underline">{match.contactPhone}</a>
                             </p>
                           )}
                         </>
@@ -169,6 +180,7 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                           href={match.ibbaLink}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-brand-dark transition hover:text-brand"
                         >
                           🔗 {t.games.viewIbba}
@@ -182,6 +194,10 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
           </>
         )}
       </div>
+
+      {selected && (
+        <GameDetailModal match={selected.match} teamName={selected.team.name} onClose={() => setSelected(null)} />
+      )}
     </section>
   );
 }

@@ -3,19 +3,26 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
-import type { Coach, Locale, Match, Player, Team } from "@/lib/types";
+import type { Coach, Match, Player, Team } from "@/lib/types";
+import { formatMatchDateTime } from "@/lib/matchDate";
 import { ImageBlock } from "@/components/ui/ImageBlock";
 import { SectionHeading } from "./SectionHeading";
 import { SectionBg } from "./SectionBg";
+import { GameDetailModal } from "./GameDetailModal";
 import { cn } from "@/lib/cn";
 
-const INTL_LOCALE: Record<Locale, string> = { ar: "ar", he: "he", en: "en-GB" };
+interface Fixture {
+  match: Match;
+  team: Team;
+}
 
 // Public "Teams" section. Each card opens a full-screen detail sheet listing the
-// team's players and matches, plus a link to the team's IBBA page.
+// team's players and matches, plus a link to the team's IBBA page. Tapping a
+// match opens the same dramatic team-vs-team detail view used on the Games section.
 export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; players: Player[]; coaches?: Coach[]; bg?: string }) {
   const { t, pick, locale } = useI18n();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Fixture | null>(null);
   const open = teams.find((tm) => tm.id === openId) ?? null;
 
   const byId = new Map(players.map((p) => [p.id, p]));
@@ -31,22 +38,7 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  function formatMatch(m: Match): string {
-    if (!m.date) return "";
-    const d = new Date(m.date);
-    if (isNaN(+d)) return "";
-    try {
-      return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(d);
-    } catch {
-      return d.toLocaleString();
-    }
-  }
+  const formatMatch = (m: Match) => formatMatchDateTime(m, locale);
 
   return (
     <section id="teams" className={`relative scroll-mt-20 overflow-hidden py-20 md:py-28 ${bg ? "flex min-h-screen flex-col justify-center" : ""}`}>
@@ -229,8 +221,12 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                         {open.matches.map((m) => (
                           <li
                             key={m.id}
+                            onClick={() => setSelected({ match: m, team: open })}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelected({ match: m, team: open })}
                             className={cn(
-                              "rounded-2xl border border-line p-4 border-s-4",
+                              "cursor-pointer rounded-2xl border border-line p-4 transition hover:-translate-y-0.5 hover:shadow-card border-s-4",
                               m.isHome === false ? "border-s-accent" : "border-s-brand-200",
                             )}
                           >
@@ -255,6 +251,11 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                               >
                                 {m.isHome === false ? t.teams.away : t.teams.home}
                               </span>
+                              {m.round && (
+                                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
+                                  {t.teams.round} {m.round}
+                                </span>
+                              )}
                             </div>
                             {formatMatch(m) && <p className="mt-1.5 text-sm text-muted">🗓️ {formatMatch(m)}</p>}
                             {m.isHome === false && (
@@ -265,7 +266,7 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                                 )}
                                 {m.contactPhone && (
                                   <p className="mt-0.5 text-sm text-muted">
-                                    📞 <a href={`tel:${m.contactPhone}`} dir="ltr" className="font-semibold text-brand-dark hover:underline">{m.contactPhone}</a>
+                                    📞 <a href={`tel:${m.contactPhone}`} dir="ltr" onClick={(e) => e.stopPropagation()} className="font-semibold text-brand-dark hover:underline">{m.contactPhone}</a>
                                   </p>
                                 )}
                               </>
@@ -275,6 +276,7 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                                 href={m.ibbaLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
                                 className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-brand-dark transition hover:text-brand"
                               >
                                 🔗 {t.teams.viewIbba}
@@ -291,6 +293,10 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
           </motion.div>
         )}
       </AnimatePresence>
+
+      {selected && (
+        <GameDetailModal match={selected.match} teamName={selected.team.name} onClose={() => setSelected(null)} />
+      )}
     </section>
   );
 }

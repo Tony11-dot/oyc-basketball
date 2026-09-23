@@ -59,6 +59,8 @@ export interface Match {
   /** True for a home game, false for away. Location + contact fields only
    * apply to away games. Defaults to true (home) when unset. */
   isHome: boolean;
+  /** Free-text round / matchday label the admin fills in (e.g. "5", "מחזור 12"). */
+  round?: string;
   where: Localized;
   /** The person to contact for this opponent / fixture (المسؤول). */
   contactName?: Localized;
