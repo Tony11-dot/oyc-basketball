@@ -9,7 +9,7 @@ import { ImageBlock } from "@/components/ui/ImageBlock";
 import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/cn";
 
-const CLUB_NAME: Localized = { ar: "نادي الروم", he: "נדי אלרום", en: "OBA Nazareth" };
+const CLUB_NAME: Localized = { ar: "النادي الأرثوذكسي", he: "האגודה האורתודוקסית", en: "OBA Nazareth" };
 
 /** Dramatic "team vs team" scoreboard shown when a fixture is tapped. The club
  * is always the highlighted side; the layout is pinned left/right by a fixed

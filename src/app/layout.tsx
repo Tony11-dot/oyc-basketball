@@ -21,17 +21,22 @@ const cairo = Cairo({
   display: "swap",
 });
 
-const TITLE = "نادي الروم الأرثوذكسي لكرة السلة – الناصرة";
+const TITLE = "النادي الأرثوذكسي لكرة السلة – الناصرة";
 const DESCRIPTION =
-  "نادي الروم لكرة السلة في الناصرة (النادي الأرثوذكسي لكرة السلة) — تعرّفوا على فرقنا ولاعبينا ومبارياتنا، وسجّلوا أطفالكم الآن.";
+  "النادي الأرثوذكسي لكرة السلة في الناصرة — تعرّفوا على فرقنا ولاعبينا ومبارياتنا، وسجّلوا أطفالكم الآن.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: TITLE,
   description: DESCRIPTION,
+  // Keywords (and the JSON-LD alternateName below) are invisible to visitors —
+  // they carry the colloquial "نادي الروم" and common misspellings so a search
+  // for any of them still finds the club, without showing them on the page.
   keywords: [
-    "نادي الروم لكرة السلة",
     "النادي الأرثوذكسي لكرة السلة",
+    "النادي الاورثوذكسي لكرة السلة",
+    "النادي الارثوذكسي لكرة السلة",
+    "نادي الروم لكرة السلة",
     "نادي الروم الأرثوذكسي",
     "كرة السلة الناصرة",
     "الروم الأرثوذكس الناصرة",
@@ -44,7 +49,7 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
     url: "/",
-    siteName: "نادي الروم الأرثوذكسي لكرة السلة",
+    siteName: "النادي الأرثوذكسي لكرة السلة",
     images: ["/logo.png"],
     locale: "ar_IL",
     type: "website",
@@ -65,6 +70,7 @@ const orgJsonLd = {
   "@type": "SportsOrganization",
   name: "النادي الأرثوذكسي لكرة السلة",
   alternateName: [
+    "النادي الاورثوذكسي لكرة السلة",
     "نادي الروم لكرة السلة",
     "نادي الروم الأرثوذكسي لكرة السلة",
     "Orthodox Basketball Association",
