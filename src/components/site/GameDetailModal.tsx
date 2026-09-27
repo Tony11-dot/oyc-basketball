@@ -38,11 +38,7 @@ export function GameDetailModal({
   const clubSlot = (
     <div className="flex flex-1 flex-col items-center gap-2 text-center">
       <span className="size-24 overflow-hidden rounded-2xl bg-white shadow-2xl ring-4 ring-white md:size-32">
-        {team.image ? (
-          <ImageBlock src={team.image} alt={pick(team.name)} rounded="rounded-none" objectPosition={team.imagePosition} />
-        ) : (
-          <span className="grid h-full w-full place-items-center p-2"><Logo className="h-full w-auto" /></span>
-        )}
+        <span className="grid h-full w-full place-items-center p-2"><Logo className="h-full w-auto" /></span>
       </span>
       <span className="text-lg font-black leading-tight text-white drop-shadow md:text-xl">{pick(CLUB_NAME)}</span>
     </div>
@@ -77,18 +73,24 @@ export function GameDetailModal({
           onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
-          className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+          className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
         >
+          {/* Full team photo (the squad) */}
+          <div className="relative w-full overflow-hidden" style={{ aspectRatio: team.aspectRatio ?? "16 / 9" }}>
+            <ImageBlock src={team.image} alt={pick(team.name)} rounded="rounded-none" objectPosition={team.imagePosition} />
+            <div className={cn("pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t to-transparent", isAway ? "from-accent-dark" : "from-brand-dark")} />
+          </div>
+
           {/* Scoreboard header */}
           <div className={cn(
-              "relative px-5 pb-7 pt-10 md:px-8",
+              "px-5 pb-7 pt-6 md:px-8",
               isAway ? "bg-gradient-to-br from-brand-darker via-accent-dark to-accent" : "bg-gradient-to-br from-brand-darker via-brand-dark to-brand-light",
             )}>
             <button
               type="button"
               onClick={onClose}
               aria-label={t.a11y.close}
-              className="absolute end-3 top-3 grid size-9 place-items-center rounded-full bg-white/15 text-lg text-white transition hover:bg-white/25"
+              className="absolute end-3 top-3 z-10 grid size-9 place-items-center rounded-full bg-black/40 text-lg text-white backdrop-blur transition hover:bg-black/60"
             >
               ✕
             </button>
