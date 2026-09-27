@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { Match, Player, Team } from "@/lib/types";
 import { matchDateParts } from "@/lib/matchDate";
 import { ImageBlock } from "@/components/ui/ImageBlock";
+import { Logo } from "@/components/ui/Logo";
 import { SectionHeading } from "./SectionHeading";
 import { SectionBg } from "./SectionBg";
 import { GameDetailModal } from "./GameDetailModal";
@@ -122,42 +123,47 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                         past && "opacity-60 saturate-50",
                       )}
                     >
-                      {/* Faint team photo wash behind the whole card */}
-                      {team.image && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={team.image} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-15 mix-blend-luminosity" />
-                      )}
-                      <div className="relative p-5 md:p-7">
-                        {/* Badges */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={cn(
-                              "rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider md:text-sm",
-                              match.isHome === false ? "bg-white text-accent-dark" : "bg-white text-brand-dark",
-                            )}
-                          >
-                            {match.isHome === false ? t.games.away : t.games.home}
-                          </span>
-                          <span
-                            className={cn(
-                              "rounded-full px-3 py-1 text-xs font-bold md:text-sm",
-                              past ? "bg-white/15 text-white/70" : "bg-emerald-400 text-emerald-950",
-                            )}
-                          >
-                            {past ? t.games.past : t.games.upcoming}
-                          </span>
-                          {match.round && (
-                            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold md:text-sm">
-                              {t.games.round} {match.round}
-                            </span>
+                      {/* Full team photo (the squad) as a wide banner, fading into the card */}
+                      <div className="relative w-full overflow-hidden" style={{ aspectRatio: team.aspectRatio ?? "16 / 9" }}>
+                        <ImageBlock src={team.image} alt={pick(team.name)} rounded="rounded-none" objectPosition={team.imagePosition} className="transition duration-500 group-hover:scale-105" />
+                        <div
+                          className={cn(
+                            "pointer-events-none absolute inset-0 bg-gradient-to-t via-transparent to-black/30",
+                            match.isHome === false ? "from-accent-dark" : "from-brand-dark",
                           )}
-                        </div>
+                        />
+                          {/* Badges */}
+                          <div className="absolute inset-x-0 top-0 flex flex-wrap items-center gap-2 p-4 md:p-5">
+                            <span
+                              className={cn(
+                                "rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider md:text-sm",
+                                match.isHome === false ? "bg-white text-accent-dark" : "bg-white text-brand-dark",
+                              )}
+                            >
+                              {match.isHome === false ? t.games.away : t.games.home}
+                            </span>
+                            <span
+                              className={cn(
+                                "rounded-full px-3 py-1 text-xs font-bold md:text-sm",
+                                past ? "bg-white/15 text-white/70" : "bg-emerald-400 text-emerald-950",
+                              )}
+                            >
+                              {past ? t.games.past : t.games.upcoming}
+                            </span>
+                            {match.round && (
+                              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold md:text-sm">
+                                {t.games.round} {match.round}
+                              </span>
+                            )}
+                          </div>
 
+                      </div>
+                      <div className="relative p-5 pt-3 md:p-7 md:pt-4">
                         {/* Team vs opponent */}
                         <div className="mt-5 flex items-center justify-between gap-3">
                           <div className="flex min-w-0 flex-1 flex-col items-center gap-2 text-center">
-                            <span className="size-20 overflow-hidden rounded-2xl bg-white shadow-xl ring-4 ring-white/80 md:size-28">
-                              <ImageBlock src={team.image} alt={pick(team.name)} rounded="rounded-none" objectPosition={team.imagePosition} />
+                            <span className="grid size-20 place-items-center rounded-2xl bg-white p-2 shadow-xl ring-4 ring-white/80 md:size-28">
+                              <Logo className="h-full w-auto" />
                             </span>
                             <span className="line-clamp-2 text-base font-black leading-tight drop-shadow md:text-xl">{pick(team.name)}</span>
                           </div>
