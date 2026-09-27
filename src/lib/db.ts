@@ -5,6 +5,7 @@ import "server-only";
 import { promises as fs } from "fs";
 import path from "path";
 import type { AdminSettings, AttendanceRecord, Coach, Highlight, Player, Receipt, Registration, SiteContent, Team } from "./types";
+import { demoCoaches, demoGallery, demoHighlights, demoPlayers, demoStaff, demoTeams, demoVolunteers } from "./demoData";
 import { seedAttendance, seedCoaches, seedHighlights, seedPlayers, seedReceipts, seedRegistrations, seedTeams, seedContent } from "./seed";
 
 const useRedis = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN;
@@ -27,7 +28,85 @@ const DATA_DIR = process.env.VERCEL ? "/tmp/oyc-data" : path.join(process.cwd(),
 // Serialise writes per-key to avoid lost updates within a single instance.
 const locks = new Map<string, Promise<unknown>>();
 
+// ---- Sample-data purge --------------------------------------------------------
+// Earlier versions seeded sample teams/players/coaches/etc. into a fresh
+// database. Any stored copy the admin never touched is removed on read (and the
+// cleaned value written back). Anything the admin edited — even a single field —
+// no longer matches and is kept as their own data.
+
+/** JSON with sorted keys, so equality doesn't depend on property order. */
+function stable(v: unknown): string {
+  return JSON.stringify(v, (_k, val) =>
+    val && typeof val === "object" && !Array.isArray(val)
+      ? Object.fromEntries(Object.keys(val).sort().map((k) => [k, (val as Record<string, unknown>)[k]]))
+      : val,
+  );
+}
+
+/** Drops list items identical to the sample item with the same id. */
+function withoutDemo<T extends { id: string }>(list: T[], demo: T[]): T[] {
+  const byId = new Map(demo.map((d) => [d.id, stable(d)]));
+  const out = list.filter((item) => byId.get(item.id) !== stable(item));
+  return out.length === list.length ? list : out;
+}
+
+function purgeTeams(teams: Team[]): Team[] {
+  let changed = false;
+  const out: Team[] = [];
+  for (const t of teams) {
+    const demo = demoTeams.find((d) => d.id === t.id);
+    if (!demo) {
+      out.push(t);
+      continue;
+    }
+    // Strip untouched sample fixtures, then drop the team itself if what's left
+    // is still just the untouched sample team (roster links aside — those only
+    // pointed at sample players/coaches).
+    const matches = withoutDemo(t.matches, demo.matches);
+    const rest = (x: Team) => stable({ ...x, playerIds: [], coachIds: [], matches: [] });
+    if (matches.length === 0 && rest(t) === rest(demo)) {
+      changed = true;
+      continue;
+    }
+    if (matches !== t.matches) changed = true;
+    out.push(matches === t.matches ? t : { ...t, matches });
+  }
+  return changed ? out : teams;
+}
+
+function purgeContent(c: SiteContent): SiteContent {
+  const gallery = c.gallery && withoutDemo(c.gallery, demoGallery);
+  const staff = c.staff && withoutDemo(c.staff, demoStaff);
+  const volunteers = c.volunteers && withoutDemo(c.volunteers, demoVolunteers);
+  return gallery === c.gallery && staff === c.staff && volunteers === c.volunteers
+    ? c
+    : { ...c, gallery, staff, volunteers };
+}
+
+const PURGE: Record<string, (v: never) => unknown> = {
+  players: (v: Player[]) => withoutDemo(v, demoPlayers),
+  coaches: (v: Coach[]) => withoutDemo(v, demoCoaches),
+  highlights: (v: Highlight[]) => withoutDemo(v, demoHighlights),
+  teams: purgeTeams,
+  content: purgeContent,
+};
+
 async function read<T>(key: string, fallback: T): Promise<T> {
+  const val = await readRaw<T>(key, fallback);
+  const purge = PURGE[key] as ((v: T) => T) | undefined;
+  if (!purge) return val;
+  const cleaned = purge(val);
+  if (cleaned !== val) {
+    try {
+      await write(key, cleaned);
+    } catch {
+      /* serve the cleaned view regardless */
+    }
+  }
+  return cleaned;
+}
+
+async function readRaw<T>(key: string, fallback: T): Promise<T> {
   if (useRedis) {
     const r = await redis();
     const val = await r.get<T>(key);
