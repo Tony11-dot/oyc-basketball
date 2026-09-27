@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { Match, Player, Team } from "@/lib/types";
-import { formatMatchDateTime } from "@/lib/matchDate";
+import { matchDateParts } from "@/lib/matchDate";
 import { ImageBlock } from "@/components/ui/ImageBlock";
 import { SectionHeading } from "./SectionHeading";
 import { SectionBg } from "./SectionBg";
@@ -57,8 +57,6 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => setNow(Date.now()), []);
 
-  const formatDate = (m: Match) => formatMatchDateTime(m, locale);
-
   const selectCls =
     "h-11 rounded-xl border border-line bg-white px-3.5 text-sm font-semibold text-ink outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
 
@@ -101,9 +99,10 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
             {visible.length === 0 ? (
               <p className="mt-10 text-center text-muted">{t.games.empty}</p>
             ) : (
-              <ul className="mx-auto mt-10 max-w-3xl space-y-3">
+              <ul className="mx-auto mt-10 max-w-3xl space-y-5">
                 {visible.map(({ match, team }, i) => {
                   const past = now != null && match.date ? +new Date(match.date) < now : false;
+                  const dp = matchDateParts(match, locale);
                   return (
                     <motion.li
                       key={`${team.id}-${match.id}`}
@@ -116,76 +115,105 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                       tabIndex={0}
                       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelected({ match, team })}
                       className={cn(
-                        "cursor-pointer rounded-2xl border border-line bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-card md:p-5 border-s-4",
-                        match.isHome === false ? "border-s-accent" : "border-s-brand-200",
-                        past && "opacity-70",
+                        "group relative cursor-pointer overflow-hidden rounded-3xl text-white shadow-lg ring-1 ring-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-2xl",
+                        match.isHome === false
+                          ? "bg-gradient-to-br from-brand-darker via-accent-dark to-accent"
+                          : "bg-gradient-to-br from-brand-darker via-brand-dark to-brand-light",
+                        past && "opacity-60 saturate-50",
                       )}
                     >
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                        <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-bold text-brand-dark">
-                          {pick(team.name)}
-                        </span>
-                        <span
-                          className={cn(
-                            "rounded-full px-2.5 py-0.5 text-xs font-bold",
-                            past ? "bg-slate-100 text-slate-500" : "bg-emerald-100 text-emerald-700",
-                          )}
-                        >
-                          {past ? t.games.past : t.games.upcoming}
-                        </span>
-                        <span
-                          className={cn(
-                            "rounded-full border px-2.5 py-0.5 text-xs font-bold",
-                            match.isHome === false
-                              ? "border-accent bg-accent text-white"
-                              : "border-line bg-white text-ink",
-                          )}
-                        >
-                          {match.isHome === false ? t.games.away : t.games.home}
-                        </span>
-                        {match.round && (
-                          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
-                            {t.games.round} {match.round}
+                      {/* Faint team photo wash behind the whole card */}
+                      {team.image && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={team.image} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-15 mix-blend-luminosity" />
+                      )}
+                      <div className="relative p-5 md:p-7">
+                        {/* Badges */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={cn(
+                              "rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider md:text-sm",
+                              match.isHome === false ? "bg-white text-accent-dark" : "bg-white text-brand-dark",
+                            )}
+                          >
+                            {match.isHome === false ? t.games.away : t.games.home}
                           </span>
+                          <span
+                            className={cn(
+                              "rounded-full px-3 py-1 text-xs font-bold md:text-sm",
+                              past ? "bg-white/15 text-white/70" : "bg-emerald-400 text-emerald-950",
+                            )}
+                          >
+                            {past ? t.games.past : t.games.upcoming}
+                          </span>
+                          {match.round && (
+                            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold md:text-sm">
+                              {t.games.round} {match.round}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Team vs opponent */}
+                        <div className="mt-5 flex items-center justify-between gap-3">
+                          <div className="flex min-w-0 flex-1 flex-col items-center gap-2 text-center">
+                            <span className="size-20 overflow-hidden rounded-2xl bg-white shadow-xl ring-4 ring-white/80 md:size-28">
+                              <ImageBlock src={team.image} alt={pick(team.name)} rounded="rounded-none" objectPosition={team.imagePosition} />
+                            </span>
+                            <span className="line-clamp-2 text-base font-black leading-tight drop-shadow md:text-xl">{pick(team.name)}</span>
+                          </div>
+                          <span className="shrink-0 text-3xl font-black italic tracking-tighter text-white/90 drop-shadow-lg md:text-5xl">
+                            {t.games.vs}
+                          </span>
+                          <div className="flex min-w-0 flex-1 flex-col items-center gap-2 text-center">
+                            <span className="size-20 overflow-hidden rounded-full bg-white/10 shadow-xl ring-4 ring-white/30 md:size-28">
+                              <ImageBlock src={match.opponentLogo} alt={pick(match.opponent)} rounded="rounded-none" />
+                            </span>
+                            <span className="line-clamp-2 text-base font-black leading-tight drop-shadow md:text-xl">
+                              {pick(match.opponent)}
+                              {match.opponentNumber && <span className="ms-1 text-sm font-bold text-white/60">#{match.opponentNumber}</span>}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Date + time — big and unambiguous */}
+                        {dp && (
+                          <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-2xl bg-black/30 text-center ring-1 ring-white/15 backdrop-blur-sm">
+                            <div className="px-3 py-3">
+                              <p className="text-xs font-bold text-white/60 md:text-sm">🗓️ {dp.weekday}</p>
+                              <p dir="ltr" className="mt-0.5 text-2xl font-black tabular-nums tracking-tight md:text-3xl">{dp.date}</p>
+                            </div>
+                            <div className="border-s border-white/15 px-3 py-3">
+                              <p className="text-xs font-bold text-white/60 md:text-sm">⏰</p>
+                              <p dir="ltr" className="mt-0.5 text-2xl font-black tabular-nums tracking-tight md:text-3xl">{dp.time}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {match.isHome === false && (
+                          <div className="mt-4 space-y-1 text-sm font-semibold text-white/85 md:text-base">
+                            {pick(match.where) && <p>📍 {t.games.at} {pick(match.where)}</p>}
+                            {match.contactName && pick(match.contactName) && (
+                              <p>🧑‍💼 {t.games.responsible}: {pick(match.contactName)}</p>
+                            )}
+                            {match.contactPhone && (
+                              <p>
+                                📞 <a href={`tel:${match.contactPhone}`} dir="ltr" onClick={(e) => e.stopPropagation()} className="font-bold text-white underline-offset-2 hover:underline">{match.contactPhone}</a>
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {match.ibbaLink && (
+                          <a
+                            href={match.ibbaLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/25"
+                          >
+                            🔗 {t.games.viewIbba}
+                          </a>
                         )}
                       </div>
-                      <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-bold text-muted">{t.games.vs}</span>
-                        {match.opponentLogo && (
-                          <span className="size-6 overflow-hidden rounded-full">
-                            <ImageBlock src={match.opponentLogo} alt={pick(match.opponent)} rounded="rounded-none" />
-                          </span>
-                        )}
-                        <span className="text-lg font-bold text-ink">{pick(match.opponent)}</span>
-                        {match.opponentNumber && (
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-500">#{match.opponentNumber}</span>
-                        )}
-                      </div>
-                      {formatDate(match) && <p className="mt-1.5 text-sm text-muted">🗓️ {formatDate(match)}</p>}
-                      {match.isHome === false && (
-                        <>
-                          {pick(match.where) && <p className="mt-0.5 text-sm text-muted">📍 {t.games.at} {pick(match.where)}</p>}
-                          {match.contactName && pick(match.contactName) && (
-                            <p className="mt-0.5 text-sm text-muted">🧑‍💼 {t.games.responsible}: {pick(match.contactName)}</p>
-                          )}
-                          {match.contactPhone && (
-                            <p className="mt-0.5 text-sm text-muted">
-                              📞 <a href={`tel:${match.contactPhone}`} dir="ltr" onClick={(e) => e.stopPropagation()} className="font-semibold text-brand-dark hover:underline">{match.contactPhone}</a>
-                            </p>
-                          )}
-                        </>
-                      )}
-                      {match.ibbaLink && (
-                        <a
-                          href={match.ibbaLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-brand-dark transition hover:text-brand"
-                        >
-                          🔗 {t.games.viewIbba}
-                        </a>
-                      )}
                     </motion.li>
                   );
                 })}
@@ -196,7 +224,7 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
       </div>
 
       {selected && (
-        <GameDetailModal match={selected.match} teamName={selected.team.name} onClose={() => setSelected(null)} />
+        <GameDetailModal match={selected.match} team={selected.team} onClose={() => setSelected(null)} />
       )}
     </section>
   );

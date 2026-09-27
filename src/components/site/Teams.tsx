@@ -295,7 +295,7 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
       </AnimatePresence>
 
       {selected && (
-        <GameDetailModal match={selected.match} teamName={selected.team.name} onClose={() => setSelected(null)} />
+        <GameDetailModal match={selected.match} team={selected.team} onClose={() => setSelected(null)} />
       )}
     </section>
   );
