@@ -7,6 +7,7 @@ export interface Dict {
   dir: "rtl" | "ltr";
   langName: string;
   nav: {
+    menu: string;
     home: string;
     teams: string;
     games: string;
@@ -46,7 +47,7 @@ export interface Dict {
     filterTeam: string; filterPlayer: string; allTeams: string; allPlayers: string;
     filterLocation: string; allLocations: string;
     upcoming: string; past: string; vs: string; at: string; viewIbba: string;
-    responsible: string; phone: string; home: string; away: string; round: string;
+    responsible: string; phone: string; home: string; away: string; round: string; showMore: string;
   };
   coach: {
     loginTitle: string; loginSubtitle: string; idLabel: string; idPlaceholder: string;
@@ -62,6 +63,7 @@ export interface Dict {
   highlights: { eyebrow: string; heading: string; subheading: string; empty: string };
   gallery: { eyebrow: string; heading: string; subheading: string };
   register: {
+    readLegal: string;
     eyebrow: string;
     heading: string;
     subheading: string;
@@ -97,12 +99,12 @@ export interface Dict {
   };
   footer: {
     contact: string; address: string; directions: string; follow: string; rights: string; adminLink: string;
-    privacy: string; cookies: string; terms: string; credit: string;
+    club: string; privacy: string; cookies: string; terms: string; accessibility: string; credit: string;
   };
   a11y: {
     open: string; title: string; close: string;
     fontSize: string; decrease: string; increase: string;
-    contrast: string; grayscale: string; underline: string; reduceMotion: string; reset: string;
+    contrast: string; grayscale: string; underline: string; reduceMotion: string; reset: string; statement: string;
   };
   admin: {
     loading: string;
@@ -280,7 +282,7 @@ export const dictionaries: Record<Locale, Dict> = {
   ar: {
     dir: "rtl",
     langName: "العربية",
-    nav: { home: "الرئيسية", teams: "الفرق", games: "المباريات", highlights: "أبرز اللقطات", gallery: "الصور", historic: "لمحة تاريخية", staff: "الطاقم", volunteers: "المتطوّعون", register: "التسجيل", contact: "تواصل" },
+    nav: { menu: "القائمة", home: "الرئيسية", teams: "الفرق", games: "المباريات", highlights: "أبرز اللقطات", gallery: "الصور", historic: "لمحة تاريخية", staff: "الطاقم", volunteers: "المتطوّعون", register: "التسجيل", contact: "تواصل" },
     hero: { badge: "النادي الأرثوذكسي لكرة السلة — الناصرة", cta: "سجّل الآن", secondary: "شاهد الفرق" },
     teams: {
       eyebrow: "فرقنا",
@@ -307,7 +309,8 @@ export const dictionaries: Record<Locale, Dict> = {
     games: {
       eyebrow: "الجدول",
       heading: "المباريات",
-      subheading: "كل مبارياتنا مرتّبة حسب التاريخ — من الأقرب إلى الأبعد.",
+      subheading: "المباريات القادمة أولاً، ثم نتائج المباريات السابقة.",
+      showMore: "عرض المزيد",
       empty: "لا توجد مباريات مجدولة بعد.",
       filterTeam: "حسب الفريق",
       filterPlayer: "حسب اللاعب",
@@ -359,6 +362,7 @@ export const dictionaries: Record<Locale, Dict> = {
     highlights: { eyebrow: "لقطات", heading: "أبرز اللقطات", subheading: "أجمل اللحظات من الملعب.", empty: "لا توجد مقاطع بعد." },
     gallery: { eyebrow: "من أجوائنا", heading: "الصور", subheading: "لحظات من المباريات والحياة في النادي." },
     register: {
+      readLegal: "للاطّلاع:",
       eyebrow: "انضمّ إلينا",
       heading: "التسجيل في النادي",
       subheading: "املأ بياناتك ووقّع استمارة التسجيل هنا مباشرة.",
@@ -396,12 +400,13 @@ export const dictionaries: Record<Locale, Dict> = {
     },
     footer: {
       contact: "تواصل", address: "العنوان", directions: "الاتجاهات عبر Waze", follow: "تابعنا", rights: "جميع الحقوق محفوظة.", adminLink: "الإدارة",
-      privacy: "سياسة الخصوصية", cookies: "سياسة ملفات تعريف الارتباط", terms: "شروط الاستخدام", credit: "تطوير",
+      club: "النادي الأرثوذكسي لكرة السلة – الناصرة",
+      privacy: "سياسة الخصوصية", cookies: "سياسة ملفات تعريف الارتباط", terms: "شروط الاستخدام", accessibility: "بيان إمكانية الوصول", credit: "تطوير",
     },
     a11y: {
       open: "إعدادات الوصول", title: "إمكانية الوصول", close: "إغلاق",
       fontSize: "حجم الخط", decrease: "تصغير", increase: "تكبير",
-      contrast: "تباين عالٍ", grayscale: "أبيض وأسود", underline: "تسطير الروابط", reduceMotion: "تقليل الحركة", reset: "إعادة الضبط",
+      contrast: "تباين عالٍ", grayscale: "أبيض وأسود", underline: "تسطير الروابط", reduceMotion: "تقليل الحركة", reset: "إعادة الضبط", statement: "بيان إمكانية الوصول",
     },
     admin: {
       loading: "جارٍ التحميل…",
@@ -591,7 +596,7 @@ export const dictionaries: Record<Locale, Dict> = {
   he: {
     dir: "rtl",
     langName: "עברית",
-    nav: { home: "בית", teams: "קבוצות", games: "משחקים", highlights: "שיאים", gallery: "גלריה", historic: "מבט היסטורי", staff: "צוות", volunteers: "מתנדבים", register: "הרשמה", contact: "צור קשר" },
+    nav: { menu: "תפריט", home: "בית", teams: "קבוצות", games: "משחקים", highlights: "שיאים", gallery: "גלריה", historic: "מבט היסטורי", staff: "צוות", volunteers: "מתנדבים", register: "הרשמה", contact: "צור קשר" },
     hero: { badge: "אגודת הכדורסל האורתודוקסית — נצרת", cta: "להרשמה", secondary: "לקבוצות" },
     teams: {
       eyebrow: "הקבוצות שלנו",
@@ -603,7 +608,7 @@ export const dictionaries: Record<Locale, Dict> = {
       noPlayers: "עדיין לא נוספו שחקנים.",
       noMatches: "אין משחקים מתוזמנים עדיין.",
       vs: "נגד",
-      at: "ב־",
+      at: "מיקום:",
       viewIbba: "עמוד IBBA",
       teamIbba: "עמוד הקבוצה ב-IBBA",
       open: "פרטים",
@@ -618,7 +623,8 @@ export const dictionaries: Record<Locale, Dict> = {
     games: {
       eyebrow: "לוח משחקים",
       heading: "משחקים",
-      subheading: "כל המשחקים שלנו לפי תאריך — מהקרוב לרחוק.",
+      subheading: "המשחקים הקרובים קודם, ואחריהם המשחקים שכבר התקיימו.",
+      showMore: "הצג עוד",
       empty: "אין משחקים מתוזמנים עדיין.",
       filterTeam: "לפי קבוצה",
       filterPlayer: "לפי שחקן",
@@ -629,7 +635,7 @@ export const dictionaries: Record<Locale, Dict> = {
       upcoming: "הקרובים",
       past: "שהיו",
       vs: "נגד",
-      at: "ב־",
+      at: "מיקום:",
       viewIbba: "עמוד IBBA",
       responsible: "איש קשר",
       phone: "טלפון",
@@ -670,6 +676,7 @@ export const dictionaries: Record<Locale, Dict> = {
     highlights: { eyebrow: "קליפים", heading: "שיאים", subheading: "הרגעים הכי טובים מהמגרש.", empty: "אין סרטונים עדיין." },
     gallery: { eyebrow: "הצצה אלינו", heading: "גלריה", subheading: "רגעים מהמשחקים ומחיי המועדון." },
     register: {
+      readLegal: "לעיון:",
       eyebrow: "הצטרפו אלינו",
       heading: "הרשמה למועדון",
       subheading: "מלאו את הפרטים וחתמו על טופס ההרשמה כאן.",
@@ -707,12 +714,13 @@ export const dictionaries: Record<Locale, Dict> = {
     },
     footer: {
       contact: "צור קשר", address: "כתובת", directions: "ניווט ב-Waze", follow: "עקבו אחרינו", rights: "כל הזכויות שמורות.", adminLink: "ניהול",
-      privacy: "מדיניות פרטיות", cookies: "מדיניות עוגיות", terms: "תנאי שימוש", credit: "פותח על ידי",
+      club: "האגודה האורתודוקסית לכדורסל – נצרת",
+      privacy: "מדיניות פרטיות", cookies: "מדיניות עוגיות", terms: "תנאי שימוש", accessibility: "הצהרת נגישות", credit: "פותח על ידי",
     },
     a11y: {
       open: "הגדרות נגישות", title: "נגישות", close: "סגירה",
       fontSize: "גודל טקסט", decrease: "הקטנה", increase: "הגדלה",
-      contrast: "ניגודיות גבוהה", grayscale: "גווני אפור", underline: "קו תחתון לקישורים", reduceMotion: "צמצום תנועה", reset: "איפוס",
+      contrast: "ניגודיות גבוהה", grayscale: "גווני אפור", underline: "קו תחתון לקישורים", reduceMotion: "צמצום תנועה", reset: "איפוס", statement: "הצהרת נגישות",
     },
     admin: {
       loading: "טוען…",
@@ -902,7 +910,7 @@ export const dictionaries: Record<Locale, Dict> = {
   en: {
     dir: "ltr",
     langName: "English",
-    nav: { home: "Home", teams: "Teams", games: "Games", highlights: "Highlights", gallery: "Gallery", historic: "Historic glance", staff: "Staff", volunteers: "Volunteers", register: "Register", contact: "Contact" },
+    nav: { menu: "Menu", home: "Home", teams: "Teams", games: "Games", highlights: "Highlights", gallery: "Gallery", historic: "Historic glance", staff: "Staff", volunteers: "Volunteers", register: "Register", contact: "Contact" },
     hero: { badge: "Orthodox Basketball Association — Nazareth", cta: "Register now", secondary: "See teams" },
     teams: {
       eyebrow: "Our teams",
@@ -929,7 +937,8 @@ export const dictionaries: Record<Locale, Dict> = {
     games: {
       eyebrow: "Schedule",
       heading: "Games",
-      subheading: "Every one of our games, ordered by date — soonest first.",
+      subheading: "Upcoming games first, followed by the games already played.",
+      showMore: "Show more",
       empty: "No games scheduled yet.",
       filterTeam: "By team",
       filterPlayer: "By player",
@@ -981,6 +990,7 @@ export const dictionaries: Record<Locale, Dict> = {
     highlights: { eyebrow: "Clips", heading: "Highlights", subheading: "The best moments from the court.", empty: "No clips yet." },
     gallery: { eyebrow: "A look inside", heading: "Gallery", subheading: "Moments from the games and club life." },
     register: {
+      readLegal: "Read:",
       eyebrow: "Join us",
       heading: "Register with the club",
       subheading: "Leave your details and sign the registration form right here.",
@@ -1018,12 +1028,13 @@ export const dictionaries: Record<Locale, Dict> = {
     },
     footer: {
       contact: "Contact", address: "Address", directions: "Directions on Waze", follow: "Follow us", rights: "All rights reserved.", adminLink: "Admin",
-      privacy: "Privacy Policy", cookies: "Cookie Policy", terms: "Terms of Use", credit: "Developed by",
+      club: "Orthodox Basketball Association – Nazareth",
+      privacy: "Privacy Policy", cookies: "Cookie Policy", terms: "Terms of Use", accessibility: "Accessibility Statement", credit: "Developed by",
     },
     a11y: {
       open: "Accessibility options", title: "Accessibility", close: "Close",
       fontSize: "Text size", decrease: "Decrease", increase: "Increase",
-      contrast: "High contrast", grayscale: "Grayscale", underline: "Underline links", reduceMotion: "Reduce motion", reset: "Reset",
+      contrast: "High contrast", grayscale: "Grayscale", underline: "Underline links", reduceMotion: "Reduce motion", reset: "Reset", statement: "Accessibility statement",
     },
     admin: {
       loading: "Loading…",

@@ -104,6 +104,9 @@ function Reel({ h }: { h: Highlight }) {
 export function Highlights({ highlights, bg }: { highlights: Highlight[]; bg?: string }) {
   const { t } = useI18n();
 
+  // No reels yet → leave the section out (the navbar drops its link).
+  if (highlights.length === 0) return null;
+
   return (
     <section id="highlights" className={`relative scroll-mt-20 overflow-hidden bg-surface py-20 md:py-28 ${bg ? "flex min-h-screen flex-col justify-center" : ""}`}>
       <SectionBg url={bg} />
@@ -111,17 +114,13 @@ export function Highlights({ highlights, bg }: { highlights: Highlight[]; bg?: s
         <SectionHeading eyebrow={t.highlights.eyebrow} title={t.highlights.heading} subtitle={t.highlights.subheading} />
       </div>
 
-      {highlights.length === 0 ? (
-        <p className="mt-12 text-center text-muted">{t.highlights.empty}</p>
-      ) : (
-        <div className="mt-10">
-          <Marquee pxPerSecond={38} className="py-1">
-            {highlights.map((h) => (
-              <Reel key={h.id} h={h} />
-            ))}
-          </Marquee>
-        </div>
-      )}
+      <div className="mt-10">
+        <Marquee pxPerSecond={38} className="py-1">
+          {highlights.map((h) => (
+            <Reel key={h.id} h={h} />
+          ))}
+        </Marquee>
+      </div>
     </section>
   );
 }

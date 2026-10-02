@@ -14,7 +14,7 @@ import { Gallery } from "@/components/site/Gallery";
 import { Register } from "@/components/site/Register";
 import { Footer } from "@/components/site/Footer";
 import { BlocksLive } from "@/components/site/Blocks";
-import type { BlocksPosition, HistoricSection, Localized } from "@/lib/types";
+import { publicCoach, publicPlayer, type BlocksPosition, type HistoricSection, type Localized } from "@/lib/types";
 
 const EMPTY_LOCALIZED: Localized = { ar: "", he: "", en: "" };
 const EMPTY_HISTORIC: HistoricSection = { title: EMPTY_LOCALIZED, body: EMPTY_LOCALIZED };
@@ -37,8 +37,9 @@ export default async function HomePage() {
   const [content, teams, players, coaches, highlights] = await Promise.all([
     getContent(),
     getTeams(),
-    getPlayers(),
-    getCoaches(),
+    // Only public fields are sent to the browser.
+    getPlayers().then((list) => list.map(publicPlayer)),
+    getCoaches().then((list) => list.map(publicCoach)),
     getHighlights(),
   ]);
   const enabledTeams = teams.filter((t) => t.enabled).sort((a, b) => a.order - b.order);

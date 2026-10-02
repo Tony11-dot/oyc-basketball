@@ -153,7 +153,27 @@ export const updateTeams = (fn: (list: Team[]) => Team[]) =>
 
 // ---- Highlights -------------------------------------------------------------
 
-export const getHighlights = () => read<Highlight[]>("highlights", seedHighlights);
+// Placeholder reels from early development (stock tech-promo clips and the old
+// seeded YouTube link). They're dropped on read and the cleanup written back.
+const PLACEHOLDER_REELS = [
+  "clip-COBp2LgM13sX4th4NUNShR1nADqe2C.mp4",
+  "clip-WqOpVIAoKVE30oGBwH5qwmyFxA4dJx.mp4",
+  "clip-nF6BnrNTMuz6bW3l3894eFa0j1oza3.mp4",
+  "youtube.com/watch?v=dQw4w9WgXcQ",
+];
+const isPlaceholderReel = (h: Highlight) =>
+  PLACEHOLDER_REELS.some((p) => h.videoUrl?.includes(p) || h.embedUrl?.includes(p));
+
+export async function getHighlights(): Promise<Highlight[]> {
+  const list = await read<Highlight[]>("highlights", seedHighlights);
+  if (!list.some(isPlaceholderReel)) return list;
+  try {
+    await mutate<Highlight[]>("highlights", (cur) => cur.filter((h) => !isPlaceholderReel(h)), seedHighlights);
+  } catch {
+    /* serve the cleaned view regardless */
+  }
+  return list.filter((h) => !isPlaceholderReel(h));
+}
 
 export const updateHighlights = (fn: (list: Highlight[]) => Highlight[]) =>
   mutate<Highlight[]>("highlights", fn, seedHighlights);

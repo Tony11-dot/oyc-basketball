@@ -88,11 +88,12 @@ export function Footer({ footer, styles }: { footer: SiteContent["footer"]; styl
         </div>
 
         <div className="mt-6 flex flex-col items-center gap-3 border-t border-white/15 pt-4 text-center text-sm text-white/70">
-          <p>© {new Date().getFullYear()} OBA Nazareth. {t.footer.rights}</p>
+          <p>© {new Date().getFullYear()} {t.footer.club}. {t.footer.rights}</p>
           <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-white/60">
             <Link href="/privacy" className="transition hover:text-white">{t.footer.privacy}</Link>
             <Link href="/cookies" className="transition hover:text-white">{t.footer.cookies}</Link>
             <Link href="/terms" className="transition hover:text-white">{t.footer.terms}</Link>
+            <Link href="/accessibility" className="transition hover:text-white">{t.footer.accessibility}</Link>
           </nav>
           <p className="text-xs text-white/50">
             {t.footer.credit}{" "}

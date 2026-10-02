@@ -40,22 +40,36 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
     });
   }, [teams]);
 
+  // Computed after mount so SSR and the first client render agree (avoids a
+  // hydration mismatch on the upcoming/past label and ordering).
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => setNow(Date.now()), []);
+
+  // Once we know "now": upcoming games first (soonest on top), then past games
+  // (most recent first) — a season can hold 100+ fixtures, so what's next matters.
+  const ordered = useMemo<Fixture[]>(() => {
+    if (now == null) return fixtures;
+    const isPast = (f: Fixture) => !!f.match.date && +new Date(f.match.date) < now;
+    return [...fixtures.filter((f) => !isPast(f)), ...fixtures.filter(isPast).reverse()];
+  }, [fixtures, now]);
+
   const visible = useMemo(
     () =>
-      fixtures.filter(({ match, team }) => {
+      ordered.filter(({ match, team }) => {
         if (teamFilter !== "all" && team.id !== teamFilter) return false;
         if (playerFilter !== "all" && !team.playerIds.includes(playerFilter)) return false;
         if (locationFilter === "home" && match.isHome === false) return false;
         if (locationFilter === "away" && match.isHome !== false) return false;
         return true;
       }),
-    [fixtures, teamFilter, playerFilter, locationFilter],
+    [ordered, teamFilter, playerFilter, locationFilter],
   );
 
-  // Computed after mount so SSR and the first client render agree (avoids a
-  // hydration mismatch on the upcoming/past label).
-  const [now, setNow] = useState<number | null>(null);
-  useEffect(() => setNow(Date.now()), []);
+  // Show a page of games at a time so the section stays a sensible length on
+  // phones; any filter change starts again from the first page.
+  const PAGE = 8;
+  const [limit, setLimit] = useState(PAGE);
+  useEffect(() => setLimit(PAGE), [teamFilter, playerFilter, locationFilter]);
 
   const formatDate = (m: Match) => formatMatchDateTime(m, locale);
 
@@ -101,8 +115,9 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
             {visible.length === 0 ? (
               <p className="mt-10 text-center text-muted">{t.games.empty}</p>
             ) : (
+              <>
               <ul className="mx-auto mt-10 max-w-3xl space-y-3">
-                {visible.map(({ match, team }, i) => {
+                {visible.slice(0, limit).map(({ match, team }, i) => {
                   const past = now != null && match.date ? +new Date(match.date) < now : false;
                   return (
                     <motion.li
@@ -190,6 +205,18 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                   );
                 })}
               </ul>
+              {visible.length > limit && (
+                <div className="mt-6 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setLimit((l) => l + PAGE * 2)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-line bg-white px-5 py-3 text-sm font-bold text-brand-dark shadow-sm transition hover:-translate-y-0.5 hover:shadow-card"
+                  >
+                    {t.games.showMore} <span className="text-muted">({visible.length - limit})</span>
+                  </button>
+                </div>
+              )}
+              </>
             )}
           </>
         )}

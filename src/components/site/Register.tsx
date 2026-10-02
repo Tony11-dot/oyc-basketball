@@ -89,9 +89,10 @@ function RegisterForm({ bg, content, stripeReady }: { bg?: string; content?: Reg
   const [payError, setPayError] = useState("");
 
   // Editable section copy (admin Content → Register), falling back to defaults.
-  const eyebrow = content?.eyebrow ? pick(content.eyebrow) : t.register.eyebrow;
-  const heading = content?.heading ? pick(content.heading) : t.register.heading;
-  const subheading = content?.subheading ? pick(content.subheading) : t.register.subheading;
+  // An admin field left blank (all languages "") falls back to the default text.
+  const eyebrow = (content?.eyebrow && pick(content.eyebrow)) || t.register.eyebrow;
+  const heading = (content?.heading && pick(content.heading)) || t.register.heading;
+  const subheading = (content?.subheading && pick(content.subheading)) || t.register.subheading;
   const feeNote = content?.feeNote && pick(content.feeNote) ? pick(content.feeNote) : f.feeNote;
   const consentText = content?.consent && pick(content.consent) ? pick(content.consent) : f.consent;
   const perks = content?.perks?.length ? content.perks.map((p) => pick(p)).filter(Boolean) : t.register.perks;
@@ -469,6 +470,13 @@ function RegisterForm({ bg, content, stripeReady }: { bg?: string; content?: Reg
                     />
                     <span className={cn("text-xs leading-relaxed", consentError ? "text-rose-600" : "text-muted")}>{consentText}</span>
                   </label>
+                  {/* New tab, so a half-filled form isn't lost. */}
+                  <p className="mt-2 ps-7 text-xs text-muted">
+                    {t.register.readLegal}{" "}
+                    <a href="/terms" target="_blank" rel="noopener" className="font-semibold text-brand-dark underline-offset-2 hover:underline">{t.footer.terms}</a>
+                    {" · "}
+                    <a href="/privacy" target="_blank" rel="noopener" className="font-semibold text-brand-dark underline-offset-2 hover:underline">{t.footer.privacy}</a>
+                  </p>
                 </FieldSet>
 
                 <button

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { Logo } from "@/components/ui/Logo";
-import { LanguageSwitcher } from "./LanguageSwitcher";
+import { LanguageSwitcher, LanguageButtons } from "./LanguageSwitcher";
 import { SocialIcon } from "./SocialIcon";
 import { cn } from "@/lib/cn";
 
@@ -22,8 +22,13 @@ export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] })
   const [active, setActive] = useState<SectionId>("home");
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Nav tabs follow the admin's Sections order/visibility.
-  const SECTIONS = sections as SectionId[];
+  // Nav tabs follow the admin's Sections order/visibility — minus any section
+  // that renders nothing (e.g. an empty gallery), so no link ever goes nowhere.
+  const [present, setPresent] = useState<string[] | null>(null);
+  useEffect(() => {
+    setPresent(sections.filter((id) => document.getElementById(id)));
+  }, [sections]);
+  const SECTIONS = (present ?? sections) as SectionId[];
 
   // Drive the scroll ourselves with a computed offset for reliable smooth scroll
   // (the native #anchor jump can be interrupted when the mobile menu collapses).
@@ -33,6 +38,9 @@ export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] })
     if (!el) return;
     e.preventDefault();
     setMenuOpen(false);
+    // Wait a frame so the menu starts closing before the scroll begins. The menu
+    // only animates transform/opacity — animating height:auto made framer-motion
+    // measure the page and restore scrollY, cancelling this scroll on Android.
     requestAnimationFrame(() => {
       const y = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
       window.scrollTo({ top: y, behavior: "smooth" });
@@ -103,12 +111,14 @@ export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] })
       )}
     >
       <nav className="container-x flex items-center justify-between gap-2">
-        <a href="#home" aria-label="OBA Nazareth home" className="group relative transition hover:opacity-90">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -inset-x-4 -inset-y-3 -z-10 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(18,48,110,0.18),transparent_70%)] blur-md"
-          />
-          <Logo className={cn("transition-all duration-300", scrolled ? "h-11" : "h-14")} />
+        <a
+          href="#home"
+          onClick={(e) => goToSection(e, "home")}
+          aria-label={t.nav.home}
+          className="shrink-0 rounded-xl bg-white p-1 shadow-soft transition hover:opacity-90"
+        >
+          {/* White chip keeps the crest's dark lettering legible over the dark hero. */}
+          <Logo className={cn("transition-all duration-300", scrolled ? "h-9" : "h-11")} />
         </a>
 
         {/* Desktop nav */}
@@ -117,6 +127,7 @@ export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] })
             <li key={id}>
               <a
                 href={`#${id}`}
+                onClick={(e) => goToSection(e, id)}
                 className={cn(
                   "relative whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition",
                   overHero
@@ -157,6 +168,7 @@ export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] })
           </div>
           <a
             href="#register"
+            onClick={(e) => goToSection(e, "register")}
             className="hidden rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(18,48,110,0.28)] transition hover:-translate-y-0.5 hover:bg-brand-dark sm:inline-flex"
           >
             {t.nav.register}
@@ -164,7 +176,7 @@ export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] })
           {/* Mobile menu toggle */}
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            aria-label="Menu"
+            aria-label={t.nav.menu}
             aria-expanded={menuOpen}
             className={cn(
               "grid size-10 place-items-center rounded-lg transition md:hidden",
@@ -180,10 +192,11 @@ export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] })
       <AnimatePresence>
         {menuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="relative z-10 overflow-hidden border-t border-line bg-white md:hidden"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18 }}
+            className="relative z-10 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t border-line bg-white shadow-card md:hidden"
           >
             <ul className="container-x flex flex-col gap-1 py-3">
               {SECTIONS.map((id) => (
@@ -200,8 +213,10 @@ export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] })
                   </a>
                 </li>
               ))}
-              <li className="px-3 py-2">
-                <LanguageSwitcher />
+              {/* Languages as plain buttons — a dropdown inside this panel was
+                  clipped on phones. */}
+              <li className="mt-1 border-t border-line px-1 pt-3">
+                <LanguageButtons onPick={() => setMenuOpen(false)} />
               </li>
             </ul>
           </motion.div>

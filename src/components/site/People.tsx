@@ -24,6 +24,9 @@ export function People({
   const { t, pick } = useI18n();
   const d = t[kind];
 
+  // Nothing to show yet → leave the section out (the navbar drops its link).
+  if (people.length === 0) return null;
+
   return (
     <section
       id={kind}
@@ -33,30 +36,26 @@ export function People({
       <div className="container-x">
         <SectionHeading eyebrow={d.eyebrow} title={d.heading} subtitle={d.subheading} />
 
-        {people.length === 0 ? (
-          <p className="mt-12 text-center text-muted">{d.empty}</p>
-        ) : (
-          <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
-            {people.map((person, i) => (
-              <motion.div
-                key={person.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.45, delay: (i % 4) * 0.08 }}
-                className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-card"
-              >
-                <div className="overflow-hidden" style={{ aspectRatio: person.aspectRatio ?? "4 / 5" }}>
-                  <ImageBlock src={person.image} alt={pick(person.name)} icon="user" rounded="rounded-none" objectPosition={person.imagePosition} />
-                </div>
-                <div className="p-3 text-center">
-                  <p className="truncate text-sm font-bold text-ink">{pick(person.name)}</p>
-                  {pick(person.role) && <p className="truncate text-xs font-semibold text-brand-dark">{pick(person.role)}</p>}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+        <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+          {people.map((person, i) => (
+            <motion.div
+              key={person.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.45, delay: (i % 4) * 0.08 }}
+              className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-card"
+            >
+              <div className="overflow-hidden" style={{ aspectRatio: person.aspectRatio ?? "4 / 5" }}>
+                <ImageBlock src={person.image} alt={pick(person.name)} icon="user" rounded="rounded-none" objectPosition={person.imagePosition} />
+              </div>
+              <div className="p-3 text-center">
+                <p className="truncate text-sm font-bold text-ink">{pick(person.name)}</p>
+                {pick(person.role) && <p className="truncate text-xs font-semibold text-brand-dark">{pick(person.role)}</p>}
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );

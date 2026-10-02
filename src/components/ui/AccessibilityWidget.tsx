@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import { cn } from "@/lib/cn";
@@ -149,6 +150,12 @@ export function AccessibilityWidget() {
           >
             {t.a11y.reset}
           </button>
+          <Link
+            href="/accessibility"
+            className="mt-2 block text-center text-xs font-semibold text-brand-dark hover:underline"
+          >
+            {t.a11y.statement}
+          </Link>
         </div>
       )}
 

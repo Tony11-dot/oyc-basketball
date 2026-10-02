@@ -113,14 +113,7 @@ export const seedTeams: Team[] = [
   },
 ];
 
-export const seedHighlights: Highlight[] = [
-  {
-    id: "hl-1",
-    embedUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    caption: { ar: "أفضل لقطات الموسم", he: "מיטב הרגעים של העונה", en: "Best moments of the season" },
-    aspectRatio: "9 / 16",
-  },
-];
+export const seedHighlights: Highlight[] = [];
 
 export const seedGallery: GalleryImage[] = [
   { id: "g-1", image: "", caption: { ar: "ليلة المباراة", he: "ערב משחק", en: "Game night" }, aspectRatio: "16 / 9" },

@@ -36,6 +36,21 @@ const SECTIONS: LegalSection[] = [
     ],
   },
   {
+    heading: { ar: "إلغاء التسجيل واسترداد الرسوم", he: "ביטול הרשמה והחזר תשלום", en: "Cancellation & refunds" },
+    body: [
+      {
+        ar: "يمكن إلغاء تسجيل تمّ عبر الموقع خلال 14 يوماً من تاريخ التسجيل، وفق قانون حماية المستهلك، ويُعاد المبلغ المدفوع بعد خصم رسوم إلغاء قدرها 5% من المبلغ أو 100 ₪، أيّهما أقل. بعد ذلك، يُنظر في طلبات الاسترداد (مثلاً لأسباب صحية أو الانتقال) من قِبل إدارة النادي حسب الفترة المتبقية من الموسم.",
+        he: "ניתן לבטל הרשמה שבוצעה באתר תוך 14 יום ממועד ההרשמה, בהתאם לחוק הגנת הצרכן, והסכום ששולם יוחזר בניכוי דמי ביטול של 5% מהסכום או 100 ₪, הנמוך מביניהם. לאחר מכן, בקשות להחזר (למשל מסיבות רפואיות או מעבר דירה) נבחנות על ידי הנהלת המועדון בהתאם לחלק היחסי של העונה שנותר.",
+        en: "A registration made through the site can be cancelled within 14 days of registering, under the Consumer Protection Law, and the amount paid is refunded less a cancellation fee of 5% or ₪100, whichever is lower. After that, refund requests (for example for medical reasons or moving away) are considered by the club management in proportion to the part of the season remaining.",
+      },
+      {
+        ar: "لطلب الإلغاء: سعيد أبو عرب، said_abu_a@hotmail.com. تُعاد المبالغ بنفس وسيلة الدفع خلال 14 يوماً من تلقّي الطلب.",
+        he: "לבקשת ביטול: סעיד אבו ערב, said_abu_a@hotmail.com. ההחזר יבוצע באותו אמצעי תשלום תוך 14 יום מקבלת הבקשה.",
+        en: "To cancel: Said Abu Arab, said_abu_a@hotmail.com. Refunds are made to the original payment method within 14 days of receiving the request.",
+      },
+    ],
+  },
+  {
     heading: { ar: "الصور والفيديو", he: "תמונות וסרטונים", en: "Photos & video" },
     body: [
       {

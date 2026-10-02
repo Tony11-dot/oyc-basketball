@@ -49,7 +49,7 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
         {teams.length === 0 ? (
           <p className="mt-12 text-center text-muted">{t.teams.empty}</p>
         ) : (
-          <div className="mx-auto mt-12 grid max-w-5xl items-start gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mx-auto mt-12 grid max-w-5xl items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {teams.map((tm, i) => (
               <motion.article
                 key={tm.id}
@@ -63,7 +63,12 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                 onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setOpenId(tm.id)}
                 className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-sm transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-card"
               >
-                <div className="overflow-hidden" style={{ aspectRatio: tm.aspectRatio ?? "16 / 10" }}>
+                {/* The admin's crop ratio on phones (one column); a uniform frame
+                    in the multi-column grid so every row lines up. */}
+                <div
+                  className="overflow-hidden [aspect-ratio:var(--team-ar)] sm:[aspect-ratio:16/10]"
+                  style={{ "--team-ar": tm.aspectRatio ?? "16 / 10" } as React.CSSProperties}
+                >
                   <ImageBlock src={tm.image} alt={pick(tm.name)} rounded="rounded-none" objectPosition={tm.imagePosition} />
                 </div>
                 <div className="flex flex-1 flex-col p-5 pt-4">
@@ -71,15 +76,15 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                   {pick(tm.description) && (
                     <p className="mt-2 line-clamp-3 whitespace-pre-line text-base leading-relaxed text-muted">{pick(tm.description)}</p>
                   )}
-                  <div className="mt-4 flex flex-wrap gap-3 text-sm font-semibold text-brand-dark">
+                  <div className="mb-4 mt-4 flex flex-wrap gap-3 text-sm font-semibold text-brand-dark">
                     <span className="inline-flex items-center gap-1.5">
-                      <span aria-hidden>👥</span> {teamPlayers(tm).length} {t.teams.players}
+                      <span aria-hidden>👥</span> {t.teams.players}: {teamPlayers(tm).length}
                     </span>
                     <span className="inline-flex items-center gap-1.5">
-                      <span aria-hidden>🏀</span> {tm.matches.length} {t.teams.matches}
+                      <span aria-hidden>🏀</span> {t.teams.matches}: {tm.matches.length}
                     </span>
                   </div>
-                  <span className="mt-4 inline-flex h-11 items-center justify-center rounded-xl bg-brand px-5 text-base font-semibold text-white transition group-hover:bg-brand-dark">
+                  <span className="mt-auto inline-flex h-11 items-center justify-center rounded-xl bg-brand px-5 text-base font-semibold text-white transition group-hover:bg-brand-dark">
                     {t.teams.open}
                   </span>
                 </div>

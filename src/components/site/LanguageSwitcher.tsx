@@ -14,11 +14,11 @@ export function LanguageSwitcher({ light = false }: { light?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const onClick = (e: MouseEvent) => {
+    const onDown = (e: PointerEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
   }, []);
 
   return (
@@ -66,6 +66,35 @@ export function LanguageSwitcher({ light = false }: { light?: boolean }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+/** All languages side by side as buttons — for the mobile menu, where a
+ * dropdown would be clipped by the scrollable panel. */
+export function LanguageButtons({ onPick }: { onPick?: () => void }) {
+  const { locale, setLocale, locales } = useI18n();
+  return (
+    <div className="grid grid-cols-3 gap-2" role="group" aria-label="Language">
+      {locales.map((l) => (
+        <button
+          key={l}
+          type="button"
+          lang={l}
+          aria-pressed={l === locale}
+          onClick={() => {
+            setLocale(l);
+            onPick?.();
+          }}
+          className={cn(
+            "flex touch-manipulation items-center justify-center gap-1.5 rounded-lg border px-2 py-2.5 text-sm font-semibold transition",
+            l === locale ? "border-brand bg-brand text-white" : "border-line bg-white text-ink hover:bg-brand-50",
+          )}
+        >
+          <span aria-hidden>{FLAGS[l]}</span>
+          {dictionaries[l].langName}
+        </button>
+      ))}
     </div>
   );
 }

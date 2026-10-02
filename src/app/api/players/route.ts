@@ -2,12 +2,14 @@ import { randomUUID } from "crypto";
 import { getPlayers, updatePlayers } from "@/lib/db";
 import { isAuthed } from "@/lib/auth";
 import { localized } from "@/lib/api";
-import type { Player } from "@/lib/types";
+import { publicPlayer, type Player } from "@/lib/types";
 
-// GET — list all players in the shared roster.
+// GET — list all players in the shared roster. Visitors only get the public
+// fields (name, number, photo); contact details, birth dates and fees are for
+// the admin.
 export async function GET() {
   const players = await getPlayers();
-  return Response.json({ players });
+  return Response.json({ players: (await isAuthed()) ? players : players.map(publicPlayer) });
 }
 
 // POST — create or update ("upsert") a player (admin only). Accepts an optional

@@ -356,3 +356,19 @@ export interface SiteContent {
   /** Section ids hidden from the page + nav (managed in admin → Sections). */
   hiddenSections?: string[];
 }
+
+/** The only player fields the public site may see — birth dates, phone numbers
+ * and fees stay with the admin. */
+export type PublicPlayer = Pick<Player, "id" | "name" | "number" | "image" | "imagePosition" | "aspectRatio">;
+
+export const publicPlayer = ({ id, name, number, image, imagePosition, aspectRatio }: Player): PublicPlayer => ({
+  id, name, number, image, imagePosition, aspectRatio,
+});
+
+/** Public coach fields (the team sheet shows the coach's phone). The ID number
+ * doubles as the coach-portal login, so it must never reach the browser. */
+export type PublicCoach = Pick<Coach, "id" | "name" | "phone" | "image" | "imagePosition" | "aspectRatio">;
+
+export const publicCoach = ({ id, name, phone, image, imagePosition, aspectRatio }: Coach): PublicCoach => ({
+  id, name, phone, image, imagePosition, aspectRatio,
+});

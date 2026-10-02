@@ -36,12 +36,32 @@ const SECTIONS: LegalSection[] = [
     ],
   },
   {
+    heading: { ar: "هل يجب تقديم المعلومات؟", he: "האם חובה למסור את המידע?", en: "Do you have to provide it?" },
+    body: [
+      {
+        ar: "لا يوجد التزام قانوني بتقديم هذه المعلومات، وتقديمها يتم بموافقتكم. لكن بدون التفاصيل الأساسية (اسم اللاعب، رقم الهويّة، تاريخ الميلاد ووسيلة تواصل مع وليّ الأمر) لا يمكن إتمام التسجيل في النادي أو في اتحاد كرة السلة.",
+        he: "אין חובה חוקית למסור מידע זה, ומסירתו נעשית בהסכמתכם. עם זאת, ללא הפרטים הבסיסיים (שם השחקן, מספר תעודת זהות, תאריך לידה ודרך ליצירת קשר עם ההורה) לא ניתן להשלים את ההרשמה למועדון או לאיגוד הכדורסל.",
+        en: "You are not legally required to provide this information, and you do so with your consent. However, without the basic details (the player's name, ID number, date of birth and a way to reach a parent) the registration with the club and the basketball association cannot be completed.",
+      },
+    ],
+  },
+  {
     heading: { ar: "التخزين والحماية", he: "אחסון ואבטחה", en: "Storage & security" },
     body: [
       {
         ar: "تُخزَّن بياناتكم على خوادم آمنة، والوصول إليها مقتصر على إدارة النادي. لا نبيع بياناتكم الشخصية لأي طرف، ولا نشاركها إلا مع اتحاد كرة السلة عند الحاجة أو مزوّدي الخدمات التقنية الذين يشغّلون الموقع نيابة عنا.",
         he: "המידע שלכם מאוחסן על שרתים מאובטחים, והגישה אליו מוגבלת להנהלת המועדון. איננו מוכרים את המידע האישי שלכם לאף גורם, ואיננו משתפים אותו אלא עם איגוד הכדורסל בעת הצורך או עם ספקי השירותים הטכניים המפעילים את האתר עבורנו.",
-        en: "Your data is stored on secure servers, and access is limited to club administrators. We do not sell your personal data to anyone, and only share it with the basketball association where required, or with the technical service providers who run the site on our behalf.",
+        en: "Your data is stored on secure servers, and access is limited to club administrators. We do not sell your personal data to anyone, and only share it with the basketball association where required, or with the technical service providers who run the site on our behalf (hosting, data storage, email and SMS delivery, and the Stripe payment gateway).",
+      },
+    ],
+  },
+  {
+    heading: { ar: "مدة الاحتفاظ بالبيانات", he: "תקופת שמירת המידע", en: "How long we keep it" },
+    body: [
+      {
+        ar: "نحتفظ ببيانات التسجيل طوال فترة نشاط اللاعب في النادي، ولمدّة تصل إلى سبع سنوات بعد ذلك فقط حيث يلزم القانون الاحتفاظ بسجلات مالية (مثل الإيصالات). بعد ذلك تُحذف البيانات أو تُجعل مجهولة الهويّة.",
+        he: "אנו שומרים את פרטי ההרשמה כל עוד השחקן פעיל במועדון, ועד שבע שנים לאחר מכן רק במקום שבו החוק מחייב שמירת רשומות כספיות (כגון קבלות). לאחר מכן המידע נמחק או הופך לאנונימי.",
+        en: "We keep registration details while the player is active in the club, and for up to seven years afterwards only where the law requires financial records (such as receipts) to be kept. After that the data is deleted or anonymised.",
       },
     ],
   },
@@ -49,9 +69,19 @@ const SECTIONS: LegalSection[] = [
     heading: { ar: "حقوقكم", he: "הזכויות שלכם", en: "Your rights" },
     body: [
       {
-        ar: "يمكنكم في أي وقت طلب الاطّلاع على بياناتكم أو تصحيحها أو حذفها، عبر التواصل معنا من خلال قسم «تواصل» على الموقع.",
-        he: "בכל עת תוכלו לבקש לעיין במידע שלכם, לתקן אותו או למחוק אותו, על ידי פנייה אלינו דרך מקטע «צור קשר» באתר.",
-        en: "You can ask to review, correct or delete your data at any time by reaching out through the Contact section of the site.",
+        ar: "يمكنكم في أي وقت طلب الاطّلاع على بياناتكم أو تصحيحها أو حذفها، عبر التواصل مع المسؤول عن البيانات أدناه. نردّ على الطلبات خلال 30 يوماً.",
+        he: "בכל עת תוכלו לבקש לעיין במידע שלכם, לתקן אותו או למחוק אותו, על ידי פנייה לאחראי על המידע המופיע להלן. אנו משיבים לבקשות תוך 30 יום.",
+        en: "You can ask to review, correct or delete your data at any time by contacting the data controller below. We respond to requests within 30 days.",
+      },
+    ],
+  },
+  {
+    heading: { ar: "المسؤول عن البيانات والتواصل", he: "בעל השליטה במידע ויצירת קשר", en: "Data controller & contact" },
+    body: [
+      {
+        ar: "المسؤول عن قاعدة البيانات هو النادي الأرثوذكسي لكرة السلة (OBA) – الناصرة. للاستفسارات وطلبات الخصوصية: سعيد أبو عرب، said_abu_a@hotmail.com.",
+        he: "בעל השליטה במאגר המידע הוא האגודה האורתודוקסית לכדורסל (OBA) – נצרת. לשאלות ולבקשות פרטיות: סעיד אבו ערב, said_abu_a@hotmail.com.",
+        en: "The data controller is the Orthodox Basketball Association (OBA) – Nazareth. For questions and privacy requests: Said Abu Arab, said_abu_a@hotmail.com.",
       },
     ],
   },

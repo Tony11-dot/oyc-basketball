@@ -51,7 +51,7 @@ export function GameDetailModal({
       </span>
       <span className="text-sm font-bold text-white/85 md:text-base">
         {pick(match.opponent)}
-        {match.opponentNumber && <span className="ms-1 font-normal text-white/60">#{match.opponentNumber}</span>}
+        {match.opponentNumber && <span dir="ltr" className="block text-xs font-normal text-white/60">#{match.opponentNumber}</span>}
       </span>
     </div>
   );
