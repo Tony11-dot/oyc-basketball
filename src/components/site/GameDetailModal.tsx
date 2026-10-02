@@ -3,8 +3,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
-import type { Localized, Match } from "@/lib/types";
-import { formatMatchDateTime } from "@/lib/matchDate";
+import type { Localized, Match, Team } from "@/lib/types";
+import { matchDateParts } from "@/lib/matchDate";
 import { ImageBlock } from "@/components/ui/ImageBlock";
 import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/cn";
@@ -18,16 +18,16 @@ const CLUB_NAME: Localized = { ar: "النادي الأرثوذكسي", he: "ה�
  * home side) and on the left for home games. */
 export function GameDetailModal({
   match,
-  teamName,
+  team,
   onClose,
 }: {
   match: Match;
-  teamName: Localized;
+  team: Team;
   onClose: () => void;
 }) {
   const { t, pick, locale } = useI18n();
   const isAway = match.isHome === false;
-  const dateLabel = formatMatchDateTime(match, locale);
+  const dp = matchDateParts(match, locale);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -37,19 +37,19 @@ export function GameDetailModal({
 
   const clubSlot = (
     <div className="flex flex-1 flex-col items-center gap-2 text-center">
-      <span className="inline-flex rounded-2xl bg-white p-2 shadow-lg ring-2 ring-accent/70">
-        <Logo className="h-12 w-auto" />
+      <span className="size-24 overflow-hidden rounded-2xl bg-white shadow-2xl ring-4 ring-white md:size-32">
+        <span className="grid h-full w-full place-items-center p-2"><Logo className="h-full w-auto" /></span>
       </span>
-      <span className="text-base font-extrabold text-white drop-shadow md:text-lg">{pick(CLUB_NAME)}</span>
+      <span className="text-lg font-black leading-tight text-white drop-shadow md:text-xl">{pick(CLUB_NAME)}</span>
     </div>
   );
 
   const opponentSlot = (
     <div className="flex flex-1 flex-col items-center gap-2 text-center">
-      <span className="size-16 overflow-hidden rounded-full ring-2 ring-white/30">
+      <span className="size-24 overflow-hidden rounded-full shadow-2xl ring-4 ring-white/40 md:size-32">
         <ImageBlock src={match.opponentLogo} alt={pick(match.opponent)} rounded="rounded-none" />
       </span>
-      <span className="text-sm font-bold text-white/85 md:text-base">
+      <span className="text-lg font-black leading-tight text-white drop-shadow md:text-xl">
         {pick(match.opponent)}
         {match.opponentNumber && <span dir="ltr" className="block text-xs font-normal text-white/60">#{match.opponentNumber}</span>}
       </span>
@@ -73,24 +73,33 @@ export function GameDetailModal({
           onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
-          className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+          className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
         >
+          {/* Full team photo (the squad) */}
+          <div className="relative w-full overflow-hidden" style={{ aspectRatio: team.aspectRatio ?? "16 / 9" }}>
+            <ImageBlock src={team.image} alt={pick(team.name)} rounded="rounded-none" objectPosition={team.imagePosition} />
+            <div className={cn("pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t to-transparent", isAway ? "from-accent-dark" : "from-brand-dark")} />
+          </div>
+
           {/* Scoreboard header */}
-          <div className="relative brand-gradient px-5 pb-6 pt-8 md:px-8">
+          <div className={cn(
+              "px-5 pb-7 pt-6 md:px-8",
+              isAway ? "bg-gradient-to-br from-brand-darker via-accent-dark to-accent" : "bg-gradient-to-br from-brand-darker via-brand-dark to-brand-light",
+            )}>
             <button
               type="button"
               onClick={onClose}
               aria-label={t.a11y.close}
-              className="absolute end-3 top-3 grid size-9 place-items-center rounded-full bg-white/15 text-lg text-white transition hover:bg-white/25"
+              className="absolute end-3 top-3 z-10 grid size-9 place-items-center rounded-full bg-black/40 text-lg text-white backdrop-blur transition hover:bg-black/60"
             >
               ✕
             </button>
 
-            <p className="text-center text-xs font-bold uppercase tracking-widest text-white/60">{pick(teamName)}</p>
+            <p className="text-center text-sm font-black uppercase tracking-widest text-white/75">{pick(team.name)}</p>
 
             <div dir="ltr" className="mt-4 flex items-start justify-between gap-2">
               {isAway ? clubSlot : opponentSlot}
-              <div className="flex shrink-0 flex-col items-center gap-1.5 pt-3">
+              <div className="flex shrink-0 flex-col items-center gap-1.5 pt-6">
                 <span
                   className={cn(
                     "rounded-full border px-2.5 py-0.5 text-[11px] font-bold",
@@ -99,7 +108,7 @@ export function GameDetailModal({
                 >
                   {isAway ? t.games.away : t.games.home}
                 </span>
-                <span className="text-2xl font-black text-white/90">{t.games.vs}</span>
+                <span className="text-4xl font-black italic tracking-tighter text-white drop-shadow-lg md:text-5xl">{t.games.vs}</span>
                 {match.round && (
                   <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-bold text-white">
                     {t.games.round} {match.round}
@@ -111,16 +120,27 @@ export function GameDetailModal({
           </div>
 
           {/* Details */}
-          <div className="space-y-2 p-5 md:p-6">
-            {dateLabel && <p className="text-sm text-muted">🗓️ {dateLabel}</p>}
+          <div className="space-y-3 p-5 md:p-6">
+            {dp && (
+              <div className="grid grid-cols-2 overflow-hidden rounded-2xl bg-surface text-center ring-1 ring-line">
+                <div className="px-3 py-3">
+                  <p className="text-sm font-bold text-muted">🗓️ {dp.weekday}</p>
+                  <p dir="ltr" className="mt-0.5 text-3xl font-black tabular-nums tracking-tight text-ink">{dp.date}</p>
+                </div>
+                <div className="border-s border-line px-3 py-3">
+                  <p className="text-sm font-bold text-muted">⏰</p>
+                  <p dir="ltr" className="mt-0.5 text-3xl font-black tabular-nums tracking-tight text-ink">{dp.time}</p>
+                </div>
+              </div>
+            )}
             {isAway && (
               <>
-                {pick(match.where) && <p className="text-sm text-muted">📍 {t.games.at} {pick(match.where)}</p>}
+                {pick(match.where) && <p className="text-base font-semibold text-ink">📍 {t.games.at} {pick(match.where)}</p>}
                 {match.contactName && pick(match.contactName) && (
-                  <p className="text-sm text-muted">🧑‍💼 {t.games.responsible}: {pick(match.contactName)}</p>
+                  <p className="text-base font-semibold text-ink">🧑‍💼 {t.games.responsible}: {pick(match.contactName)}</p>
                 )}
                 {match.contactPhone && (
-                  <p className="text-sm text-muted">
+                  <p className="text-base font-semibold text-ink">
                     📞 <a href={`tel:${match.contactPhone}`} dir="ltr" className="font-semibold text-brand-dark hover:underline">{match.contactPhone}</a>
                   </p>
                 )}
