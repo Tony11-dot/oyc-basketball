@@ -43,6 +43,7 @@ export async function POST(request: Request) {
       aspectRatio: typeof body.aspectRatio === "string" ? body.aspectRatio : undefined,
       detailBg: typeof body.detailBg === "string" ? body.detailBg : undefined,
       ibbaLink: typeof body.ibbaLink === "string" ? body.ibbaLink : undefined,
+      number: typeof body.number === "string" ? body.number.trim() || undefined : undefined,
       playerIds: strList(body.playerIds),
       coachIds: strList(body.coachIds),
       matches: parseMatches(body.matches),

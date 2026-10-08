@@ -422,6 +422,12 @@ export default function TeamsAdmin() {
                   <ImagePositioner src={editing.image} value={editing.imagePosition} onChange={(imagePosition) => updateTeam(editing.id, { imagePosition })} aspectRatio={editing.aspectRatio ?? "16 / 10"} onAspectChange={(aspectRatio) => updateTeam(editing.id, { aspectRatio })} />
                 )}
                 <LocalizedField label={t.admin.team.name} value={editing.name} onChange={(name) => updateTeam(editing.id, { name })} />
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-semibold text-ink">
+                    {t.admin.team.teamNumber} <span className="font-normal text-muted">— {t.admin.team.teamNumberHint}</span>
+                  </span>
+                  <input dir="ltr" inputMode="numeric" placeholder="1234" value={editing.number ?? ""} onChange={(e) => updateTeam(editing.id, { number: e.target.value })} className={plainInput} />
+                </label>
                 <LocalizedField label={t.admin.team.description} textarea value={editing.description} onChange={(description) => updateTeam(editing.id, { description })} />
 
                 <label className="block">

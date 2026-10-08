@@ -32,6 +32,7 @@ export async function PATCH(
         aspectRatio: typeof body.aspectRatio === "string" ? body.aspectRatio : t.aspectRatio,
         detailBg: typeof body.detailBg === "string" ? body.detailBg : t.detailBg,
         ibbaLink: typeof body.ibbaLink === "string" ? body.ibbaLink : t.ibbaLink,
+        number: typeof body.number === "string" ? body.number.trim() || undefined : t.number,
         playerIds: Array.isArray(body.playerIds)
           ? body.playerIds.filter((x): x is string => typeof x === "string")
           : t.playerIds,

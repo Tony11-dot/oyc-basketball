@@ -204,6 +204,8 @@ export interface Dict {
       detailBgHint: string;
       ibbaLink: string;
       ibbaLinkHint: string;
+      teamNumber: string;
+      teamNumberHint: string;
       show: string;
       deleteTitle: string;
       deleteWarn: string;
@@ -520,6 +522,8 @@ export const dictionaries: Record<Locale, Dict> = {
         detailBgHint: "تظهر بملء الشاشة عند فتح الفريق",
         ibbaLink: "رابط IBBA للفريق",
         ibbaLinkHint: "رابط صفحة الفريق على موقع IBBA",
+        teamNumber: "رقم الفريق",
+        teamNumberHint: "يظهر على بطاقة الفريق في قسم الفرق",
         show: "إظهار الفريق على الموقع",
         deleteTitle: "حذف الفريق",
         deleteWarn: "حذف؟ لن يظهر على الموقع. اللاعبون يبقون في القائمة العامة.",
@@ -834,6 +838,8 @@ export const dictionaries: Record<Locale, Dict> = {
         detailBgHint: "מוצג במסך מלא בפתיחת הקבוצה",
         ibbaLink: "קישור IBBA לקבוצה",
         ibbaLinkHint: "קישור לעמוד הקבוצה באתר IBBA",
+        teamNumber: "מספר קבוצה",
+        teamNumberHint: "מוצג על כרטיס הקבוצה באזור הקבוצות",
         show: "הצגת הקבוצה באתר",
         deleteTitle: "מחיקת קבוצה",
         deleteWarn: "למחוק? לא תוצג באתר. השחקנים נשארים ברשימה הכללית.",
@@ -1148,6 +1154,8 @@ export const dictionaries: Record<Locale, Dict> = {
         detailBgHint: "shown full-screen when the team is opened",
         ibbaLink: "Team IBBA link",
         ibbaLinkHint: "link to the team's page on the IBBA website",
+        teamNumber: "Team number",
+        teamNumberHint: "shown on the team's card in the Teams section",
         show: "Show this team on the site",
         deleteTitle: "Delete team",
         deleteWarn: "Delete it? It won't show on the site. Players stay in the shared roster.",

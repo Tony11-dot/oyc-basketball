@@ -123,6 +123,8 @@ export interface Team {
   detailBg?: string;
   /** Link to this team's page on the IBBA website. */
   ibbaLink?: string;
+  /** The team's league / registration number, shown on its public card. */
+  number?: string;
   /** Players attached to this team, referencing {@link Player.id}. */
   playerIds: string[];
   /** Coaches attached to this team, referencing {@link Coach.id}. */

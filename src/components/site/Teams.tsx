@@ -72,7 +72,12 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                   <ImageBlock src={tm.image} alt={pick(tm.name)} rounded="rounded-none" objectPosition={tm.imagePosition} />
                 </div>
                 <div className="flex flex-1 flex-col p-5 pt-4">
-                  <h3 className="whitespace-pre-line text-xl font-bold text-ink">{pick(tm.name)}</h3>
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="whitespace-pre-line text-xl font-bold text-ink">{pick(tm.name)}</h3>
+                    {tm.number && (
+                      <span dir="ltr" className="mt-0.5 shrink-0 rounded-full bg-brand-50 px-2.5 py-0.5 text-sm font-extrabold text-brand-dark">#{tm.number}</span>
+                    )}
+                  </div>
                   {pick(tm.description) && (
                     <p className="mt-2 line-clamp-3 whitespace-pre-line text-base leading-relaxed text-muted">{pick(tm.description)}</p>
                   )}
@@ -149,6 +154,9 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                   </div>
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-5 md:p-7">
                     <h3 className="whitespace-pre-line text-2xl font-extrabold text-white drop-shadow md:text-4xl">{pick(open.name)}</h3>
+                    {open.number && (
+                      <span dir="ltr" className="mt-2 inline-block rounded-full bg-white/20 px-3 py-0.5 text-sm font-extrabold text-white backdrop-blur">#{open.number}</span>
+                    )}
                   </div>
                 </div>
 
