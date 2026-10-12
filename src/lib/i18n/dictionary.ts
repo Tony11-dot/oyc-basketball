@@ -45,7 +45,7 @@ export interface Dict {
   games: {
     eyebrow: string; heading: string; subheading: string; empty: string;
     filterTeam: string; filterPlayer: string; allTeams: string; allPlayers: string;
-    filterLocation: string; allLocations: string;
+    filterLocation: string; allLocations: string; filterRound: string; allRounds: string;
     upcoming: string; past: string; vs: string; at: string; viewIbba: string;
     responsible: string; phone: string; home: string; away: string; round: string; showMore: string;
   };
@@ -318,6 +318,8 @@ export const dictionaries: Record<Locale, Dict> = {
       allPlayers: "كل اللاعبين",
       filterLocation: "حسب المكان",
       allLocations: "الكل",
+      filterRound: "حسب الجولة",
+      allRounds: "كل الجولات",
       upcoming: "القادمة",
       past: "السابقة",
       vs: "ضد",
@@ -632,6 +634,8 @@ export const dictionaries: Record<Locale, Dict> = {
       allPlayers: "כל השחקנים",
       filterLocation: "לפי מקום",
       allLocations: "הכול",
+      filterRound: "לפי מחזור",
+      allRounds: "כל המחזורים",
       upcoming: "הקרובים",
       past: "שהיו",
       vs: "נגד",
@@ -946,6 +950,8 @@ export const dictionaries: Record<Locale, Dict> = {
       allPlayers: "All players",
       filterLocation: "By location",
       allLocations: "All",
+      filterRound: "By round",
+      allRounds: "All rounds",
       upcoming: "Upcoming",
       past: "Past",
       vs: "vs",
