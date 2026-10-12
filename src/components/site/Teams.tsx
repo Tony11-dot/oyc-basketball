@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { Coach, Match, Player, Team } from "@/lib/types";
 import { formatMatchDateTime } from "@/lib/matchDate";
+import { teamRounds } from "@/lib/rounds";
 import { ImageBlock } from "@/components/ui/ImageBlock";
 import { SectionHeading } from "./SectionHeading";
 import { SectionBg } from "./SectionBg";
@@ -24,6 +25,7 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
   const [openId, setOpenId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Fixture | null>(null);
   const open = teams.find((tm) => tm.id === openId) ?? null;
+  const openRounds = open ? teamRounds(open) : null;
 
   const byId = new Map(players.map((p) => [p.id, p]));
   const teamPlayers = (tm: Team): Player[] => tm.playerIds.map((id) => byId.get(id)).filter((p): p is Player => !!p);
@@ -223,7 +225,7 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                       <p className="mt-3 text-sm text-muted">{t.teams.noMatches}</p>
                     ) : (
                       <ul className="mt-4 space-y-3">
-                        {open.matches.map((m) => (
+                        {open.matches.map((m) => ({ m, round: openRounds?.get(m.id) })).map(({ m, round }) => (
                           <li
                             key={m.id}
                             onClick={() => setSelected({ match: m, team: open })}
@@ -256,9 +258,9 @@ export function Teams({ teams, players, coaches = [], bg }: { teams: Team[]; pla
                               >
                                 {m.isHome === false ? t.teams.away : t.teams.home}
                               </span>
-                              {m.round && (
+                              {round && (
                                 <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">
-                                  {t.teams.round} {m.round}
+                                  {t.teams.round} {round}
                                 </span>
                               )}
                             </div>
