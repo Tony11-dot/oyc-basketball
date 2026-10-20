@@ -1,14 +1,16 @@
 // Admin auth. The password can be changed at runtime from the admin panel —
 // it's stored (salted + hashed) in the database; until one is set, the
-// ADMIN_PASSWORD env var (or its default) is used.
+// ADMIN_PASSWORD env var is used.
 import "server-only";
 import { cookies } from "next/headers";
 import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
 import { getSettings, updateSettings } from "./db";
 
 export const SESSION_COOKIE = "oyc_admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "oyc-nazareth";
-const SESSION_TOKEN = process.env.ADMIN_TOKEN ?? "oyc-session-ok";
+// No fallbacks: this repo is public, so a default written here is a password
+// anyone can read. Unset means that way in stays closed.
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+const SESSION_TOKEN = process.env.ADMIN_TOKEN || "";
 
 function hash(password: string, salt: string): string {
   return scryptSync(password, salt, 64).toString("hex");
@@ -17,16 +19,16 @@ function hash(password: string, salt: string): string {
 /** Verify a password. The ADMIN_PASSWORD env value is ALWAYS accepted as a
  * break-glass admin login, so setting it in the host env reliably works even if
  * an in-app password was previously stored. Otherwise the stored (salted+hashed)
- * password is checked, falling back to the env default when none is set. */
+ * password is checked, falling back to the env value when none is set. */
 export async function checkPassword(password: string): Promise<boolean> {
-  if (password === ADMIN_PASSWORD) return true;
+  if (ADMIN_PASSWORD !== "" && password === ADMIN_PASSWORD) return true;
   const s = await getSettings();
   if (s.passwordSalt && s.passwordHash) {
     const candidate = Buffer.from(hash(password, s.passwordSalt), "hex");
     const stored = Buffer.from(s.passwordHash, "hex");
     return candidate.length === stored.length && timingSafeEqual(candidate, stored);
   }
-  return password === ADMIN_PASSWORD;
+  return ADMIN_PASSWORD !== "" && password === ADMIN_PASSWORD;
 }
 
 /** Set a new admin password (stored salted + hashed). */
@@ -37,11 +39,12 @@ export async function setPassword(next: string): Promise<void> {
 }
 
 export function sessionToken(): string {
+  if (SESSION_TOKEN === "") throw new Error("ADMIN_TOKEN is not set");
   return SESSION_TOKEN;
 }
 
 /** True when the request carries a valid admin session cookie (async in Next 16). */
 export async function isAuthed(): Promise<boolean> {
   const store = await cookies();
-  return store.get(SESSION_COOKIE)?.value === SESSION_TOKEN;
+  return SESSION_TOKEN !== "" && store.get(SESSION_COOKIE)?.value === SESSION_TOKEN;
 }
