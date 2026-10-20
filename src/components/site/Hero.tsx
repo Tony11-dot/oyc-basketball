@@ -6,6 +6,9 @@ import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { SiteContent } from "@/lib/types";
 import { STYLE_KEYS, styleToCss } from "@/lib/textStyle";
 
+const PRIMARY_CTA =
+  "inline-flex h-13 items-center justify-center rounded-xl bg-accent px-8 text-base font-semibold text-white shadow-[0_12px_34px_rgba(198,38,49,0.45)] transition hover:-translate-y-0.5 hover:bg-accent-dark";
+
 // Full-bleed immersive hero: the photo (or brand gradient) fills the section,
 // a navy scrim keeps text readable, and the crest + headline + CTAs sit centred
 // on top. A deliberate departure from the old two-column template layout.
@@ -13,10 +16,13 @@ export function Hero({
   hero,
   styles,
   bg,
+  showRegister = true,
 }: {
   hero: SiteContent["hero"];
   styles?: SiteContent["styles"];
   bg?: string;
+  /** False while registration is hidden — "See teams" then takes the primary spot. */
+  showRegister?: boolean;
 }) {
   const { t, pick } = useI18n();
   const titleStyle = styleToCss(styles?.[STYLE_KEYS.heroTitle]);
@@ -129,15 +135,18 @@ export function Hero({
           transition={{ duration: 0.6, delay: 0.42 }}
           className="mt-9 flex flex-wrap items-center justify-center gap-3"
         >
-          <a
-            href="#register"
-            className="inline-flex h-13 items-center justify-center rounded-xl bg-accent px-8 text-base font-semibold text-white shadow-[0_12px_34px_rgba(198,38,49,0.45)] transition hover:-translate-y-0.5 hover:bg-accent-dark"
-          >
-            {t.hero.cta}
-          </a>
+          {showRegister && (
+            <a href="#register" className={PRIMARY_CTA}>
+              {t.hero.cta}
+            </a>
+          )}
           <a
             href="#teams"
-            className="inline-flex h-13 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-8 text-base font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20"
+            className={
+              showRegister
+                ? "inline-flex h-13 items-center justify-center rounded-xl border border-white/30 bg-white/10 px-8 text-base font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/20"
+                : PRIMARY_CTA
+            }
           >
             {t.hero.secondary}
           </a>

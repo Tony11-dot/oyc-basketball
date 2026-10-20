@@ -166,13 +166,16 @@ export function Navbar({ sections = SECTIONS_DEFAULT }: { sections?: string[] })
           <div className="hidden md:block">
             <LanguageSwitcher light={overHero} />
           </div>
-          <a
-            href="#register"
-            onClick={(e) => goToSection(e, "register")}
-            className="hidden rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(18,48,110,0.28)] transition hover:-translate-y-0.5 hover:bg-brand-dark sm:inline-flex"
-          >
-            {t.nav.register}
-          </a>
+          {/* Only while the register section is shown (admin Sections page). */}
+          {SECTIONS.includes("register") && (
+            <a
+              href="#register"
+              onClick={(e) => goToSection(e, "register")}
+              className="hidden rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(18,48,110,0.28)] transition hover:-translate-y-0.5 hover:bg-brand-dark sm:inline-flex"
+            >
+              {t.nav.register}
+            </a>
+          )}
           {/* Mobile menu toggle */}
           <button
             onClick={() => setMenuOpen((o) => !o)}

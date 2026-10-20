@@ -51,9 +51,14 @@ export default async function HomePage() {
   // otherwise fall back to public/home.jpg if you've dropped one in.
   const homeBg = bg("home") ?? (await fileBg("home.jpg"));
 
+  // Hiding "register" on the admin Sections page closes registration on the
+  // public site: the section, its nav tab and every button pointing at it.
+  const hidden = new Set(content.hiddenSections ?? []);
+  const registerOpen = !hidden.has("register");
+
   // Every section can be reordered / hidden from the admin (Sections page).
   const sectionEls: Record<string, React.ReactNode> = {
-    home: <Hero key="home" hero={content.hero} styles={content.styles} bg={homeBg} />,
+    home: <Hero key="home" hero={content.hero} styles={content.styles} bg={homeBg} showRegister={registerOpen} />,
     teams: <Teams key="teams" teams={enabledTeams} players={players} coaches={coaches} bg={bg("teams")} />,
     games: <Games key="games" teams={enabledTeams} players={players} bg={bg("games")} />,
     highlights: <Highlights key="highlights" highlights={highlights} bg={bg("highlights")} />,
@@ -67,14 +72,19 @@ export default async function HomePage() {
   const DEFAULT_ORDER = ["home", "teams", "games", "highlights", "gallery", "historic", "staff", "volunteers", "register", "contact"];
   const order = (content.sectionOrder ?? DEFAULT_ORDER).filter((id) => id in sectionEls);
   for (const id of DEFAULT_ORDER) if (!order.includes(id)) order.push(id);
-  const hidden = new Set(content.hiddenSections ?? []);
   const visibleOrder = order.filter((id) => !hidden.has(id));
+
+  // Button blocks with no link default to #register — drop those (and any
+  // explicit #register ones) while registration is hidden.
+  const liveBlocks = registerOpen
+    ? content.blocks
+    : content.blocks?.filter((b) => !(b.type === "button" && (!b.href || b.href === "#register")));
 
   // Custom blocks (if any) anchor relative to certain sections.
   const blocksBefore: Record<string, BlocksPosition> = { register: "beforeRegister", contact: "beforeFooter" };
   const blocksAfter: Record<string, BlocksPosition> = { home: "afterHero", teams: "afterTeams" };
   const blocks = (at: BlocksPosition | undefined) =>
-    at && position === at ? <BlocksLive blocks={content.blocks} /> : null;
+    at && position === at ? <BlocksLive blocks={liveBlocks} /> : null;
 
   return (
     <>

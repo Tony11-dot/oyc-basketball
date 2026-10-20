@@ -16,7 +16,7 @@ const GROUPS: Group[] = [
         href: "/",
         icon: "🏀",
         label: { ar: "الموقع الرسمي", he: "האתר הרשמי", en: "Main site" },
-        desc: { ar: "فرقنا، أبرز اللقطات والتسجيل", he: "קבוצות, שיאים והרשמה", en: "Teams, highlights & registration" },
+        desc: { ar: "فرقنا، المباريات وأبرز اللقطات", he: "קבוצות, משחקים ושיאים", en: "Teams, games & highlights" },
       },
       {
         href: "/admin",
