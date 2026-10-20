@@ -6,6 +6,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import type { AdminSettings, AttendanceRecord, Coach, Highlight, Player, Receipt, Registration, SiteContent, Team } from "./types";
 import { demoCoaches, demoGallery, demoHighlights, demoPlayers, demoStaff, demoTeams, demoVolunteers } from "./demoData";
+import { currentIbbaLink } from "./ibbaLeagues";
 import { seedAttendance, seedCoaches, seedHighlights, seedPlayers, seedReceipts, seedRegistrations, seedTeams, seedContent } from "./seed";
 
 const useRedis = !!process.env.KV_REST_API_URL && !!process.env.KV_REST_API_TOKEN;
@@ -210,8 +211,10 @@ export async function getTeams(): Promise<Team[]> {
     const coachIds = (t.coachIds ?? []).filter((id) => cids.has(id));
     const matches = t.matches.map(healMatch);
     const matchesChanged = matches.some((m, i) => m !== t.matches[i]);
-    return playerIds.length !== t.playerIds.length || coachIds.length !== (t.coachIds ?? []).length || matchesChanged
-      ? { ...t, playerIds, coachIds, matches }
+    // Point the team at its IBBA league page for the current season.
+    const ibbaLink = currentIbbaLink(t);
+    return playerIds.length !== t.playerIds.length || coachIds.length !== (t.coachIds ?? []).length || matchesChanged || ibbaLink !== t.ibbaLink
+      ? { ...t, playerIds, coachIds, matches, ibbaLink }
       : t;
   };
   const cleaned = teams.map(clean);

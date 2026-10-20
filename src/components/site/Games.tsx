@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { Match, Player, Team } from "@/lib/types";
 import { matchDateParts } from "@/lib/matchDate";
+import { teamRounds } from "@/lib/rounds";
 import { ImageBlock } from "@/components/ui/ImageBlock";
 import { Logo } from "@/components/ui/Logo";
 import { SectionHeading } from "./SectionHeading";
@@ -28,9 +29,22 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
   const [teamFilter, setTeamFilter] = useState<string>("all");
   const [playerFilter, setPlayerFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<LocationFilter>("all");
+  const [roundFilter, setRoundFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Fixture | null>(null);
 
   // Flatten all fixtures and sort ascending by date (undated games sort last).
+  // Round of every fixture, per team (admin's label, else its schedule position).
+  const rounds = useMemo(() => new Map(teams.map((tm) => [tm.id, teamRounds(tm)])), [teams]);
+
+  // Every round label in use, in natural order (1, 2, … 10), for the filter.
+  const roundOptions = useMemo(
+    () =>
+      [...new Set([...rounds.values()].flatMap((m) => [...m.values()]))].sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true }),
+      ),
+    [rounds],
+  );
+
   const fixtures = useMemo<Fixture[]>(() => {
     const all: Fixture[] = [];
     for (const team of teams) for (const match of team.matches) all.push({ match, team });
@@ -61,16 +75,17 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
         if (playerFilter !== "all" && !team.playerIds.includes(playerFilter)) return false;
         if (locationFilter === "home" && match.isHome === false) return false;
         if (locationFilter === "away" && match.isHome !== false) return false;
+        if (roundFilter !== "all" && rounds.get(team.id)?.get(match.id) !== roundFilter) return false;
         return true;
       }),
-    [ordered, teamFilter, playerFilter, locationFilter],
+    [ordered, teamFilter, playerFilter, locationFilter, roundFilter, rounds],
   );
 
   // Show a page of games at a time so the section stays a sensible length on
   // phones; any filter change starts again from the first page.
   const PAGE = 8;
   const [limit, setLimit] = useState(PAGE);
-  useEffect(() => setLimit(PAGE), [teamFilter, playerFilter, locationFilter]);
+  useEffect(() => setLimit(PAGE), [teamFilter, playerFilter, locationFilter, roundFilter]);
 
   const selectCls =
     "h-11 rounded-xl border border-line bg-white px-3.5 text-sm font-semibold text-ink outline-none transition focus:border-brand focus:ring-4 focus:ring-brand/10";
@@ -109,6 +124,14 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                 <option value="home">{t.games.home}</option>
                 <option value="away">{t.games.away}</option>
               </select>
+              {roundOptions.length > 0 && (
+                <select value={roundFilter} onChange={(e) => setRoundFilter(e.target.value)} className={selectCls} aria-label={t.games.filterRound}>
+                  <option value="all">{t.games.allRounds}</option>
+                  {roundOptions.map((r) => (
+                    <option key={r} value={r}>{t.games.round} {r}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {visible.length === 0 ? (
@@ -119,6 +142,7 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                 {visible.slice(0, limit).map(({ match, team }, i) => {
                   const past = now != null && match.date ? +new Date(match.date) < now : false;
                   const dp = matchDateParts(match, locale);
+                  const round = rounds.get(team.id)?.get(match.id);
                   return (
                     <motion.li
                       key={`${team.id}-${match.id}`}
@@ -165,9 +189,9 @@ export function Games({ teams, players, bg }: { teams: Team[]; players: Player[]
                             >
                               {past ? t.games.past : t.games.upcoming}
                             </span>
-                            {match.round && (
-                              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold md:text-sm">
-                                {t.games.round} {match.round}
+                            {round && (
+                              <span className="rounded-full bg-black/40 px-3 py-1 text-xs font-black text-white ring-1 ring-white/30 backdrop-blur-sm md:text-sm">
+                                {t.games.round} {round}
                               </span>
                             )}
                           </div>

@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useI18n } from "@/lib/i18n/LanguageProvider";
 import type { Localized, Match, Team } from "@/lib/types";
 import { matchDateParts } from "@/lib/matchDate";
+import { matchRound } from "@/lib/rounds";
 import { ImageBlock } from "@/components/ui/ImageBlock";
 import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/cn";
@@ -28,6 +29,7 @@ export function GameDetailModal({
   const { t, pick, locale } = useI18n();
   const isAway = match.isHome === false;
   const dp = matchDateParts(match, locale);
+  const round = matchRound(team, match);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -109,9 +111,9 @@ export function GameDetailModal({
                   {isAway ? t.games.away : t.games.home}
                 </span>
                 <span className="text-4xl font-black italic tracking-tighter text-white drop-shadow-lg md:text-5xl">{t.games.vs}</span>
-                {match.round && (
+                {round && (
                   <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-bold text-white">
-                    {t.games.round} {match.round}
+                    {t.games.round} {round}
                   </span>
                 )}
               </div>
